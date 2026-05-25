@@ -15,7 +15,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
   }, [mobileOpen]);
 
   return (
-    <div className="min-h-screen w-full bg-background">
+    <div className="min-h-screen w-full bg-surface-page">
       {/* Desktop sidebar */}
       <div className="fixed inset-y-0 left-0 z-30 hidden md:block">
         <SidebarContent collapsed={collapsed} onToggle={() => setCollapsed((c) => !c)} />
@@ -23,21 +23,18 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
 
       {/* Mobile drawer */}
       <div
-        className={`fixed inset-0 z-40 md:hidden transition-smooth ${
-          mobileOpen ? "pointer-events-auto" : "pointer-events-none"
-        }`}
+        className={`fixed inset-0 z-40 md:hidden transition-smooth ${mobileOpen ? "pointer-events-auto" : "pointer-events-none"
+          }`}
         aria-hidden={!mobileOpen}
       >
         <div
           onClick={() => setMobileOpen(false)}
-          className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-smooth ${
-            mobileOpen ? "opacity-100" : "opacity-0"
-          }`}
+          className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-smooth ${mobileOpen ? "opacity-100" : "opacity-0"
+            }`}
         />
         <div
-          className={`absolute inset-y-0 left-0 transition-smooth ${
-            mobileOpen ? "translate-x-0" : "-translate-x-full"
-          }`}
+          className={`absolute inset-y-0 left-0 transition-smooth ${mobileOpen ? "translate-x-0" : "-translate-x-full"
+            }`}
         >
           <div className="relative h-full">
             <SidebarContent
@@ -58,12 +55,11 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
 
       {/* Main content */}
       <div
-        className={`transition-smooth ${
-          collapsed ? "md:pl-[84px]" : "md:pl-[280px]"
-        }`}
+        className={`transition-smooth ${collapsed ? "md:pl-[84px]" : "md:pl-[280px]"
+          }`}
       >
         {/* Mobile top bar */}
-        <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-border bg-background/80 px-4 py-3 backdrop-blur md:hidden">
+        <header className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-border-surface bg-surface-sidebar px-4 py-3 backdrop-blur md:hidden">
           <div className="text-sm font-semibold tracking-wide">SUGITY CREATIVES</div>
           <button
             onClick={() => setMobileOpen(true)}

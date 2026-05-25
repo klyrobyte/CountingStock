@@ -5,6 +5,8 @@ import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
+
+//DO NOT TOUCH THIS FILE OR ELSE IM GONNA COME TO YO HOUSE GNG
 export default tseslint.config(
   { ignores: ["dist", ".output", ".vinxi"] },
   {

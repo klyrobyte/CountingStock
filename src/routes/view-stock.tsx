@@ -1,153 +1,251 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Boxes, Search, Filter, TrendingUp, TrendingDown, Package } from "lucide-react";
+import {
+  Boxes,
+  Search,
+  Filter,
+  TrendingUp,
+  TrendingDown,
+  Package,
+  Minus,
+  RefreshCw,
+} from "lucide-react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { useStock, useStockStats, useStockFactories, type StockRow } from "@/hooks/use-stock";
 
 export const Route = createFileRoute("/view-stock")({
   head: () => ({
     meta: [
-      { title: "View Stock — Sugity Creatives" },
-      { name: "description", content: "Realtime stock data view." },
+      { title: "Lihat Stock  — Sugity Creatives" },
+      { name: "description", content: "Realtime stock data view with IN/OUT tracking." },
     ],
   }),
   component: ViewStockPage,
 });
 
-type StockRow = {
-  partName: string;
-  factory: string;
-  material: string;
-  units: number;
-  trend: "up" | "down";
-  delta: number;
-};
-
-const STOCK: StockRow[] = [
-  { partName: "Lorem Ipsum A", factory: "Factory Seizo", material: "Steel Plate", units: 1240, trend: "up", delta: 12 },
-  { partName: "Bracket M-22", factory: "Factory Aichi", material: "Aluminum Sheet", units: 860, trend: "down", delta: 4 },
-  { partName: "Coil Spring", factory: "Factory Karawang", material: "Copper Coil", units: 432, trend: "up", delta: 6 },
-  { partName: "Resin Cap", factory: "Factory Seizo", material: "Plastic Resin", units: 2120, trend: "up", delta: 18 },
-  { partName: "Hinge B-04", factory: "Factory Aichi", material: "Steel Plate", units: 78, trend: "down", delta: 22 },
-  { partName: "Gasket R-9", factory: "Factory Karawang", material: "Plastic Resin", units: 540, trend: "up", delta: 3 },
-];
-
 function ViewStockPage() {
   const [query, setQuery] = useState("");
   const [factory, setFactory] = useState("All");
 
-  const factories = ["All", ...Array.from(new Set(STOCK.map((s) => s.factory)))];
-  const filtered = useMemo(
-    () =>
-      STOCK.filter(
-        (r) =>
-          (factory === "All" || r.factory === factory) &&
-          r.partName.toLowerCase().includes(query.toLowerCase()),
-      ),
-    [query, factory],
-  );
+  const { data: factories = [], isLoading: loadingFactories } = useStockFactories();
+  const allFactories = ["All", ...factories];
 
-  const totalUnits = STOCK.reduce((a, b) => a + b.units, 0);
-  const lowStock = STOCK.filter((s) => s.units < 100).length;
+  const { data: stockData = [], isLoading, refetch } = useStock(query, factory);
+  const { data: statsData, isLoading: loadingStats } = useStockStats();
+
+  const totalUnits = statsData?.totalUnits ?? 0;
+  const skuCount = statsData?.skuCount ?? 0;
+  const emptyStock = statsData?.emptyStock ?? 0;
 
   return (
     <DashboardLayout>
       <div className="animate-in fade-in duration-300">
+        {/* Header */}
         <div className="mb-6 flex flex-col gap-1">
           <span className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
             Inventory
           </span>
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">View Stock</h1>
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Lihat Stock</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Tingkat stok live yang disinkronkan dengan setiap pemindaian QR. Diperbarui setiap 21,4 Milidetik.
+          </p>
         </div>
 
+        {/* Stat cards */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <StatCard label="Total Units" value={totalUnits.toLocaleString()} icon={Package} />
-          <StatCard label="SKUs Tracked" value={STOCK.length.toString()} icon={Boxes} />
-          <StatCard label="Low Stock Alerts" value={lowStock.toString()} icon={TrendingDown} accent />
+          <StatCard
+            label="Total Units di Stock"
+            value={loadingStats ? "—" : Number(totalUnits).toLocaleString()}
+            icon={Package}
+          />
+          <StatCard
+            label="Jumlah Parts yang Dipantau"
+            value={loadingStats ? "—" : skuCount.toString()}
+            icon={Boxes}
+          />
+          <StatCard
+            label="Stock Habis (0 unit)"
+            value={loadingStats ? "—" : emptyStock.toString()}
+            icon={TrendingDown}
+            accent
+          />
         </div>
 
-        <section className="mt-6 rounded-3xl border border-border bg-card p-5 sm:p-7">
+        {/* Stock table */}
+        <section className="mt-6 rounded-3xl border border-border-surface bg-surface-section p-5 sm:p-7">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="text-base font-semibold text-foreground">Stock Levels</h2>
             <div className="flex flex-wrap items-center gap-2">
+              {/* Search */}
               <div className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <input
+                  id="search-stock"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search part…"
-                  className="h-10 w-full rounded-full border border-transparent bg-card-elevated pl-9 pr-4 text-sm outline-none transition-smooth focus:border-primary/60 sm:w-56"
+                  placeholder="Cari part atau QR ID…"
+                  className="h-10 w-full rounded-full border border-border-surface bg-card-elevated pl-9 pr-4 text-sm outline-none transition-smooth focus:border-[#C05C30] sm:w-52"
                 />
               </div>
+              {/* Factory filter */}
               <div className="relative">
                 <Filter className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <select
+                  id="filter-factory"
                   value={factory}
                   onChange={(e) => setFactory(e.target.value)}
-                  className="h-10 appearance-none rounded-full border border-transparent bg-card-elevated pl-9 pr-8 text-sm text-foreground outline-none transition-smooth focus:border-primary/60"
+                  disabled={loadingFactories}
+                  className="h-10 appearance-none rounded-full border border-border-surface bg-card-elevated pl-9 pr-8 text-sm text-foreground outline-none transition-smooth focus:border-[#C05C30]"
                 >
-                  {factories.map((f) => (
+                  {allFactories.map((f) => (
                     <option key={f} value={f} className="bg-card">
                       {f}
                     </option>
                   ))}
                 </select>
               </div>
+              {/* Refresh */}
+              <button
+                id="btn-refresh-stock"
+                onClick={() => refetch()}
+                className="inline-flex h-10 w-10 items-center justify-center border border-border-surface rounded-full bg-card-elevated text-muted-foreground transition-smooth hover:bg-accent hover:text-foreground"
+                title="Refresh now"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </button>
             </div>
           </div>
 
-          <div className="mt-4 -mx-2 overflow-x-auto px-2 scrollbar-thin">
-            <table className="w-full min-w-[680px] border-separate border-spacing-0 text-left text-sm">
-              <thead>
-                <tr className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
-                  <th className="border-b border-border px-3 py-3 font-medium">Part Name</th>
-                  <th className="border-b border-border px-3 py-3 font-medium">Factory</th>
-                  <th className="border-b border-border px-3 py-3 font-medium">Material</th>
-                  <th className="border-b border-border px-3 py-3 font-medium">Units</th>
-                  <th className="border-b border-border px-3 py-3 font-medium text-right">Trend</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((r, i) => (
-                  <tr key={i} className="transition-smooth hover:bg-card-elevated/40">
-                    <td className="border-b border-border/60 px-3 py-3.5 text-foreground">{r.partName}</td>
-                    <td className="border-b border-border/60 px-3 py-3.5 text-muted-foreground">{r.factory}</td>
-                    <td className="border-b border-border/60 px-3 py-3.5 text-muted-foreground">{r.material}</td>
-                    <td className="border-b border-border/60 px-3 py-3.5 text-foreground">
-                      {r.units.toLocaleString()}
-                    </td>
-                    <td className="border-b border-border/60 px-3 py-3.5 text-right">
-                      <span
-                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs ${
-                          r.trend === "up"
-                            ? "bg-pixel-blue-soft/20 text-[oklch(0.82_0.06_245)]"
-                            : "bg-destructive/15 text-destructive"
-                        }`}
-                      >
-                        {r.trend === "up" ? (
-                          <TrendingUp className="h-3.5 w-3.5" />
-                        ) : (
-                          <TrendingDown className="h-3.5 w-3.5" />
-                        )}
-                        {r.delta}%
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-                {filtered.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="px-3 py-10 text-center text-sm text-muted-foreground">
-                      No items match your filters.
-                    </td>
-                  </tr>
+          <div className="mt-4 space-y-3">
+            {isLoading ? (
+              <div className="py-12 text-center text-sm text-muted-foreground">
+                Loading stock data...
+              </div>
+            ) : stockData.length === 0 ? (
+              <div className="py-12 text-center text-sm text-muted-foreground">
+                No stock items match your filters.{" "}
+                {query === "" && factory === "All" && (
+                  <span className="block mt-1 text-xs">
+                    Create a QR code first — each new QR auto-creates a stock entry.
+                  </span>
                 )}
-              </tbody>
-            </table>
+              </div>
+            ) : (
+              stockData.map((row) => <StockCard key={row.id} row={row} />)
+            )}
           </div>
         </section>
+
+        {/* Legend */}
+        <div className="mt-4 flex flex-wrap items-center gap-4 text-[11.5px] text-muted-foreground px-1">
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500" />
+            Stocked (has units)
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block h-2.5 w-2.5 rounded-full bg-red-500" />
+            Empty (0 units — cannot scan OUT)
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block h-2.5 w-2.5 rounded-full bg-muted-foreground/40" />
+            Untouched (awaiting first scan)
+          </span>
+        </div>
       </div>
     </DashboardLayout>
   );
 }
+
+// ── Stock Card ─────────────────────────────────────────────────────────────
+
+function StockCard({ row }: { row: StockRow }) {
+  const unitValue = Number(row.unit_value);
+  const currentStock = Number(row.current_stock);
+  const percentage = Number(row.percentage);
+
+  const isUntouched = row.trend === "none";
+  const isEmpty = currentStock === 0 && !isUntouched;
+  const isStocked = currentStock > 0;
+
+  const statusColor = isUntouched
+    ? "bg-muted-foreground/15 text-muted-foreground"
+    : isEmpty
+      ? "bg-red-500/10 text-red-400"
+      : "bg-emerald-500/10 text-emerald-400";
+
+  const barColor = isUntouched
+    ? "bg-muted-foreground/30"
+    : isEmpty
+      ? "bg-red-500"
+      : "bg-emerald-500";
+
+  const TrendIcon = row.trend === "up" ? TrendingUp : row.trend === "down" ? TrendingDown : Minus;
+
+  const updatedAt = new Date(row.updated_at).toLocaleString("en-CA", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  return (
+    <div className="group rounded-2xl border border-border-surface bg-surface-elevated p-4 transition-smooth hover:bg-surface-hover">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        {/* Left info */}
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-semibold text-foreground truncate">{row.part_name}</span>
+            <span className="rounded-full bg-card px-2 py-0.5 text-[10px] font-mono text-muted-foreground">
+              {row.qr_id}
+            </span>
+          </div>
+          <div className="mt-0.5 text-xs text-muted-foreground">{row.factory}</div>
+        </div>
+
+        {/* Right badges */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Trend icon */}
+          <div className={`flex h-8 w-8 items-center justify-center rounded-full ${statusColor}`}>
+            <TrendIcon className="h-4 w-4" />
+          </div>
+          {/* Status badge */}
+          <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${statusColor}`}>
+            {isUntouched ? "Not scanned" : isEmpty ? "Empty" : "Stocked"}
+          </span>
+        </div>
+      </div>
+
+      {/* Progress bar */}
+      <div className="mt-3">
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-[11.5px] text-muted-foreground">
+            <span className={`font-semibold ${isStocked ? "text-foreground" : "text-muted-foreground"}`}>
+              {currentStock}
+            </span>
+            {" "}/ {unitValue} units
+          </span>
+          <span className="text-[11.5px] font-medium text-foreground">
+            {isUntouched ? "—" : `${percentage.toFixed(1)}%`}
+          </span>
+        </div>
+        <div className="h-2 w-full overflow-hidden rounded-full bg-card">
+          <div
+            className={`h-full rounded-full transition-all duration-500 ${barColor}`}
+            style={{ width: `${isUntouched ? 0 : Math.min(100, percentage)}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="mt-2 flex items-center justify-between text-[10.5px] text-muted-foreground/60">
+        <span>Unit value: {unitValue} per scan</span>
+        <span>Updated {updatedAt}</span>
+      </div>
+    </div>
+  );
+}
+
+// ── Stat Card ──────────────────────────────────────────────────────────────
 
 function StatCard({
   label,
@@ -161,17 +259,16 @@ function StatCard({
   accent?: boolean;
 }) {
   return (
-    <div className="rounded-3xl border border-border bg-card p-5">
+    <div className="rounded-3xl border border-border-surface bg-card p-5">
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
           {label}
         </span>
         <span
-          className={`flex h-9 w-9 items-center justify-center rounded-full ${
-            accent ? "bg-destructive/15 text-destructive" : "bg-card-elevated text-foreground/80"
-          }`}
+          className={`flex h-9 w-9 items-center justify-center rounded-full ${accent ? "bg-destructive/15 text-destructive" : "bg-card-elevated text-foreground/80"
+            }`}
         >
-          <Icon className="h-4.5 w-4.5" />
+          <Icon className="h-4 w-4" />
         </span>
       </div>
       <div className="mt-4 text-2xl font-semibold tracking-tight">{value}</div>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback, lazy, Suspense, useEffect } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ArrowRight,
@@ -8,82 +8,133 @@ import {
   QrCode,
   RotateCcw,
   Sparkles,
+  CheckCircle2,
+  Package,
+  Loader2,
 } from "lucide-react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { useQrCodes, useGenerateQrCode, type GenerateQrResult } from "@/hooks/use-qr-codes";
+import { useMasterParts } from "@/hooks/use-master-parts";
+import { useMesin } from "@/hooks/use-mesin";
+import { FactoryApi } from "@/hooks/use-master-data";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { isTokenValid } from "@/lib/auth";
+
+// Lazy-load the dashboard landing — only fetched for unauthenticated visitors
+const DashboardLanding = lazy(() =>
+  import("@/routes/dashboard").then((m) => ({ default: m.DashboardLandingPage }))
+);
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Stock Scan — Manage & Create QR Codes" },
+      { title: "Stock Scan — Manage & Buat QR Codes" },
       {
         name: "description",
         content:
-          "Create QR stock codes, track factory origin, materials, and unit values in a clean dark dashboard.",
+          "Buat QR stock codes, track asal factory dan jumlah stock dengan dashboard.",
       },
-      { property: "og:title", content: "Stock Scan — Manage & Create QR Codes" },
+      { property: "og:title", content: "Stock Scan — Manage & Buat QR Codes" },
       {
         property: "og:description",
-        content: "Create QR stock codes for your factory inventory with ease.",
+        content: "Buat QR stock codes, track asal factory dan jumlah stock dengan dashboard.",
       },
     ],
   }),
-  component: StockScanPage,
+  component: IndexPage,
 });
 
-const FACTORIES = ["Factory Seizo", "Factory Aichi", "Factory Karawang"];
-const MATERIALS = ["Steel Plate", "Aluminum Sheet", "Copper Coil", "Plastic Resin"];
+// ── Dual-page index: unauthenticated → landing, authenticated → QR app ───
+function IndexPage() {
+  const [mounted, setMounted] = useState(false);
 
-type HistoryRow = {
-  time: string;
-  partName: string;
-  factory: string;
-  material: string;
-  value: string;
-  units: number;
-};
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // During SSR/Hydration, wait for mount before deciding which UI to show
+  if (!mounted) {
+    return <div className="min-h-screen bg-background" />;
+  }
+
+  if (!isTokenValid()) {
+    return (
+      <Suspense fallback={<div className="min-h-screen bg-background" />}>
+        <DashboardLanding />
+      </Suspense>
+    );
+  }
+  return <StockScanPage />;
+}
+
+
 
 function StockScanPage() {
   const [partName, setPartName] = useState("");
-  const [factory, setFactory] = useState("");
-  const [material, setMaterial] = useState("");
-  const [qrValue, setQrValue] = useState("");
-  const [generated, setGenerated] = useState<HistoryRow | null>(null);
-  const [history, setHistory] = useState<HistoryRow[]>([
-    {
-      time: "2026-10-27",
-      partName: "Lorem Ipsum A",
-      factory: "Factory Seizo",
-      material: "20254",
-      value: "10",
-      units: 10,
-    },
-  ]);
+  const [factoryOrigin, setFactoryOrigin] = useState("");
+  const [value, setValue] = useState("");
+  const [machineOrigin, setMachineOrigin] = useState("");
+  const [createdQr, setCreatedQr] = useState<GenerateQrResult | null>(null);
+
+  // [NEW] Populate dropdowns from existing APIs
+  const { data: masterParts = [] } = useMasterParts();
+  const { data: mesinList = [] } = useMesin();
+  const { data: factories = [] } = FactoryApi.useGetAll();
+
+  const { data: history = [], isLoading } = useQrCodes();
+  const generateQrCode = useGenerateQrCode();
 
   const canSubmit = useMemo(
-    () => partName && factory && material && qrValue,
-    [partName, factory, material, qrValue],
+    () => partName.trim() && factoryOrigin && value && Number(value) > 0 && machineOrigin,
+    [partName, factoryOrigin, value, machineOrigin]
   );
+
+  const handlePartChange = (val: string) => {
+    setPartName(val);
+    const selectedPart = masterParts.find((p) => p.part_name === val);
+    if (selectedPart && selectedPart.factory_origin) {
+      setFactoryOrigin(selectedPart.factory_origin);
+    }
+  };
 
   const handleGenerate = () => {
     if (!canSubmit) return;
-    const row: HistoryRow = {
-      time: new Date().toISOString().slice(0, 10),
-      partName,
-      factory,
-      material,
-      value: qrValue,
-      units: Number(qrValue) || 0,
-    };
-    setGenerated(row);
-    setHistory((h) => [row, ...h]);
+
+    generateQrCode.mutate(
+      { partName: partName.trim(), factoryOrigin, value: Number(value), machineOrigin },
+      {
+        onSuccess: (data) => {
+          setCreatedQr(data);
+        },
+      }
+    );
+
+    // Reset form but keep preview
+    setPartName("");
+    setValue("");
   };
 
   const handleReset = () => {
     setPartName("");
-    setFactory("");
-    setMaterial("");
-    setQrValue("");
+    setFactoryOrigin("");
+    setValue("");
+    setMachineOrigin("");
+    setCreatedQr(null);
   };
+
+  const handleDownload = useCallback(() => {
+    if (!createdQr?.qrImageBase64) return;
+    const link = document.createElement("a");
+    link.href = createdQr.qrImageBase64;
+    link.download = `QR-${createdQr.qrId || createdQr.batchId}.png`;
+    link.click();
+  }, [createdQr]);
 
   return (
     <DashboardLayout>
@@ -94,51 +145,81 @@ function StockScanPage() {
             Stock Scan
           </span>
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            Manage & Create QR Codes
+            Kelola & Buat QR Codes
           </h1>
         </div>
 
         {/* Top card: form + preview */}
-        <section className="rounded-3xl border border-border bg-card p-5 sm:p-7">
+        <section className="rounded-3xl border border-border-surface bg-surface-section p-5 sm:p-7">
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_1fr]">
             {/* Form */}
             <div>
               <h2 className="text-base font-semibold text-foreground">
-                Create A New QR Stock Code
+                Buat QR Code Stock Baru
               </h2>
               <p className="mt-1 text-xs text-muted-foreground">
-                Fill in all fields below to generate a new QR code for your inventory.
+                Isi form di bawah untuk membuat QR code asli dengan metadata yang tertanam.
               </p>
 
               <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field label="Part Name">
-                  <TextInput
-                    value={partName}
-                    onChange={setPartName}
-                    placeholder="Type part name"
-                  />
+                  <Select value={partName} onValueChange={handlePartChange}>
+                    <SelectTrigger className="h-11 w-full rounded-xl border border-border-surface bg-card-elevated px-4 text-sm focus:border-[#C05C30]">
+                      <SelectValue placeholder="Pilih Nama Part" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60 rounded-xl border-border bg-card shadow-2xl">
+                      <div className="p-1">
+                        {masterParts.filter(p => p.status === "active").map((part) => (
+                          <SelectItem
+                            key={part.id}
+                            value={part.part_name}
+                            className="rounded-md focus:bg-accent focus:text-accent-foreground cursor-pointer"
+                          >
+                            <div className="flex flex-col">
+                              <span className="font-medium text-foreground">{part.part_name}</span>
+                              <span className="text-[10px] text-muted-foreground">{part.part_number}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </div>
+                    </SelectContent>
+                  </Select>
                 </Field>
                 <Field label="Factory Origin">
+                  <Select value={factoryOrigin} onValueChange={setFactoryOrigin}>
+                    <SelectTrigger className="h-11 w-full rounded-xl border border-border-surface bg-card-elevated px-4 text-sm focus:border-[#C05C30]">
+                      <SelectValue placeholder="Pilih Asal Factory" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60 rounded-xl border-border bg-card shadow-2xl">
+                      <div className="p-1">
+                        {factories.map((f) => (
+                          <SelectItem
+                            key={f.id}
+                            value={f.name}
+                            className="rounded-md focus:bg-accent focus:text-accent-foreground cursor-pointer"
+                          >
+                            {f.name}
+                          </SelectItem>
+                        ))}
+                      </div>
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field label="Machine Origin" className="sm:col-span-2">
                   <SelectInput
-                    value={factory}
-                    onChange={setFactory}
-                    placeholder="Select Factory"
-                    options={FACTORIES}
+                    id="field-machine-origin"
+                    value={machineOrigin}
+                    onChange={setMachineOrigin}
+                    placeholder="Pilih Mesin"
+                    options={mesinList.filter(m => m.status === "active").map(m => `${m.machine_code} — ${m.machine_name}`)}
                   />
                 </Field>
-                <Field label="Material">
-                  <SelectInput
-                    value={material}
-                    onChange={setMaterial}
-                    placeholder="Select Material"
-                    options={MATERIALS}
-                  />
-                </Field>
-                <Field label="QR Content Value">
+                <Field label="Unit Value" className="sm:col-span-2">
                   <TextInput
-                    value={qrValue}
-                    onChange={setQrValue}
-                    placeholder="How many units"
+                    id="field-unit-value"
+                    value={value}
+                    onChange={setValue}
+                    placeholder="Berapa Jumlah Stock nya (Unit Value)"
                     type="number"
                   />
                 </Field>
@@ -146,60 +227,130 @@ function StockScanPage() {
 
               <div className="mt-7 flex flex-wrap items-center gap-3">
                 <button
+                  id="btn-create-qr"
                   onClick={handleGenerate}
-                  disabled={!canSubmit}
-                  className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-smooth hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                  disabled={!canSubmit || generateQrCode.isPending}
+                  className="inline-flex items-center gap-2 rounded-full px-[22px] py-[10px] text-sm font-medium transition-all duration-200 disabled:cursor-not-allowed"
+                  style={{
+                    background: generateQrCode.isPending ? "#2A1A0E" : "#C05C30",
+                    color: generateQrCode.isPending ? "#FB923C" : "#FEF3EC",
+                    border: generateQrCode.isPending ? "1px solid #6B3D27" : "none",
+                    boxShadow: generateQrCode.isPending
+                      ? "none"
+                      : "inset 0 1px 0 rgba(255,255,255,0.10)",
+                    opacity: !canSubmit && !generateQrCode.isPending ? "0.5" : "1",
+                  }}
+                  onMouseEnter={e => {
+                    if (!generateQrCode.isPending && canSubmit) {
+                      e.currentTarget.style.background = "#A84D24";
+                      e.currentTarget.style.boxShadow = "0 4px 20px rgba(192,92,48,0.40)";
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    if (!generateQrCode.isPending) {
+                      e.currentTarget.style.background = "#C05C30";
+                      e.currentTarget.style.boxShadow = "inset 0 1px 0 rgba(255,255,255,0.10)";
+                    }
+                  }}
                 >
-                  <Sparkles className="h-4 w-4" />
-                  Create QR Code
+                  {generateQrCode.isPending
+                    ? <Loader2 className="h-4 w-4 animate-spin" />
+                    : <Sparkles className="h-4 w-4" />}
+                  {generateQrCode.isPending ? "Membuat Sabar yah hehe..." : "Buat QR Code"}
                 </button>
                 <button
+                  id="btn-reset-form"
                   onClick={handleReset}
                   className="inline-flex items-center gap-2 rounded-full border border-border bg-transparent px-5 py-2.5 text-sm font-medium text-foreground transition-smooth hover:bg-accent"
                 >
                   <RotateCcw className="h-4 w-4" />
-                  Reset
+                  Mengatur Ulang
                 </button>
               </div>
+
+              {generateQrCode.isError && (
+                <p className="mt-3 text-xs text-destructive">
+                  Error: {generateQrCode.error?.message}
+                </p>
+              )}
             </div>
 
             {/* Preview */}
-            <div className="rounded-2xl border border-border bg-card-elevated/40 p-5">
-              <h3 className="text-sm font-semibold text-foreground">QR Code Created</h3>
-              <div className="mt-4 flex aspect-square w-full items-center justify-center rounded-2xl border border-dashed border-border-strong bg-card text-center">
-                {generated ? (
-                  <div className="flex flex-col items-center gap-3 px-4">
-                    <QrPlaceholder large />
-                    <div className="text-xs text-muted-foreground">
-                      {generated.partName} · {generated.units} units
+            <div className="rounded-2xl border border-border-surface bg-surface-elevated p-5">
+              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <QrCode className="h-4 w-4 text-muted-foreground" />
+                QR Code Created
+              </h3>
+
+              <div className="mt-4 flex aspect-square w-full items-center justify-center rounded-2xl border border-dashed border-border-strong bg-card text-center overflow-hidden">
+                {createdQr?.qrImageBase64 ? (
+                  <div className="flex flex-col items-center gap-3 px-4 py-4 w-full">
+                    {/* Real QR image */}
+                    <img
+                      src={createdQr.qrImageBase64}
+                      alt={`QR code for ${createdQr.partName}`}
+                      className="w-full max-w-[200px] rounded-xl"
+                    />
+                    <div className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-1 text-[11px] text-emerald-400">
+                      <CheckCircle2 className="h-3 w-3" />
+                      QR Generated · Status: IN
                     </div>
+                    <div className="text-xs text-muted-foreground text-center">
+                      <span className="font-medium text-foreground">{createdQr.partName}</span>
+                      {" · "}{createdQr.factoryOrigin}
+                      {" · "}{createdQr.value} units
+                    </div>
+                    <div className="text-[10px] text-muted-foreground/60 font-mono break-all px-2">
+                      {createdQr.batchId}
+                    </div>
+                  </div>
+                ) : generateQrCode.isPending ? (
+                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                    <span className="text-xs">Membuat QR nya Sabar Yah...</span>
                   </div>
                 ) : (
                   <div className="px-6 text-sm text-muted-foreground">
-                    Make QR First
+                    <Package className="mx-auto mb-2 h-8 w-8 opacity-40" />
+                    Isi Formnya Dulu dan Tekan "Buat QR Code"
                   </div>
                 )}
               </div>
-              <button
-                disabled={!generated}
-                className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full border border-border px-4 py-2.5 text-sm font-medium text-foreground transition-smooth hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                <Download className="h-4 w-4" />
-                Download QR
-              </button>
+
+              <div className="mt-4 flex gap-2">
+                <button
+                  id="btn-download-qr"
+                  onClick={handleDownload}
+                  disabled={!createdQr?.qrImageBase64}
+                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-full border border-border px-4 py-2.5 text-sm font-medium text-foreground transition-smooth hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <Download className="h-4 w-4" />
+                  Download QR
+                </button>
+                {createdQr?.qrImageBase64 && (
+                  <Link
+                    to="/qr-viewer"
+                    search={{ img: createdQr.qrImageBase64, label: createdQr.partName }}
+                    className="inline-flex items-center justify-center gap-2 rounded-full border border-border px-4 py-2.5 text-sm font-medium text-foreground transition-smooth hover:bg-accent"
+                    title="View full screen"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </Link>
+                )}
+              </div>
               <p className="mt-3 text-center text-[11px] leading-relaxed text-muted-foreground">
-                The QR code will be displayed after pressing the Generate button.
+                Scan QR Code dengan aplikasi Camera atau Scanner, QR Code ini bersifat permanen (STATIS).
               </p>
             </div>
           </div>
         </section>
 
         {/* History */}
-        <section className="mt-6 rounded-3xl border border-border bg-card p-5 sm:p-7">
+        <section className="mt-6 rounded-3xl border border-border-surface bg-surface-section p-5 sm:p-7">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <h2 className="text-base font-semibold text-foreground">
-                QR Creation History
+                History Pembuatan QR Code
               </h2>
               <span className="text-xs text-muted-foreground">
                 {history.length} record{history.length !== 1 ? "s" : ""}
@@ -209,7 +360,7 @@ function StockScanPage() {
               to="/all-qr"
               className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card-elevated/40 px-4 py-2 text-xs font-medium text-foreground transition-smooth hover:bg-accent"
             >
-              View All QR
+              Lihat semua QR
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
@@ -221,35 +372,61 @@ function StockScanPage() {
                   <Th>Time</Th>
                   <Th>Part Name</Th>
                   <Th>Factory Origin</Th>
-                  <Th>Material</Th>
-                  <Th>Value</Th>
-                  <Th className="text-right">QR Thumbnail</Th>
+                  <Th>Units</Th>
+                  <Th>Status</Th>
+                  <Th className="text-right">QR</Th>
                 </tr>
               </thead>
               <tbody>
-                {history.map((row, i) => (
-                  <tr
-                    key={i}
-                    className="group transition-smooth hover:bg-card-elevated/40"
-                  >
-                    <Td>{row.time}</Td>
-                    <Td className="text-foreground">{row.partName}</Td>
-                    <Td>{row.factory}</Td>
-                    <Td>{row.material}</Td>
-                    <Td>{row.units} units</Td>
-                    <Td className="text-right">
-                      <div className="inline-flex items-center gap-2">
-                        <QrPlaceholder />
-                        <button
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-smooth hover:bg-accent hover:text-foreground"
-                          aria-label="Open"
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </Td>
+                {isLoading ? (
+                  <tr>
+                    <Td colSpan={6} className="text-center">Loading history...</Td>
                   </tr>
-                ))}
+                ) : history.length === 0 ? (
+                  <tr>
+                    <Td colSpan={6} className="text-center">No history yet.</Td>
+                  </tr>
+                ) : (
+                  history.slice(0, 5).map((row, i) => {
+                    const dateObj = new Date(row.created_at);
+                    const formattedDate = dateObj.toLocaleDateString("en-CA");
+
+                    return (
+                      <tr
+                        key={row.id || i}
+                        className="group transition-smooth hover:bg-card-elevated/40"
+                      >
+                        <Td>{formattedDate}</Td>
+                        <Td className="text-foreground">{row.part_name}</Td>
+                        <Td>{row.factory}</Td>
+                        <Td>{row.units} units</Td>
+                        <Td>
+                          <span
+                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${row.status === "in"
+                              ? "bg-emerald-500/10 text-emerald-400"
+                              : "bg-red-500/10 text-red-400"
+                              }`}
+                          >
+                            {row.status || "in"}
+                          </span>
+                        </Td>
+                        <Td className="text-right">
+                          <div className="inline-flex items-center gap-2">
+                            {row.qr_image_base64 ? (
+                              <img
+                                src={row.qr_image_base64}
+                                alt="QR"
+                                className="h-8 w-8 rounded object-contain bg-white"
+                              />
+                            ) : (
+                              <QrPlaceholder />
+                            )}
+                          </div>
+                        </Td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>
@@ -261,9 +438,17 @@ function StockScanPage() {
 
 /* ---------- subcomponents ---------- */
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+  className = "",
+}: {
+  label: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <label className="flex flex-col gap-1.5">
+    <label className={`flex flex-col gap-1.5 ${className}`}>
       <span className="text-[11px] font-medium uppercase tracking-[0.1em] text-muted-foreground">
         {label}
       </span>
@@ -273,11 +458,13 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function TextInput({
+  id,
   value,
   onChange,
   placeholder,
   type = "text",
 }: {
+  id?: string;
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
@@ -285,21 +472,24 @@ function TextInput({
 }) {
   return (
     <input
+      id={id}
       type={type}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="h-11 w-full rounded-xl border border-transparent bg-card-elevated px-4 text-sm text-foreground placeholder:text-muted-foreground/70 outline-none transition-smooth focus:border-primary/60 focus:bg-card-elevated"
+      className="h-11 w-full rounded-xl border border-border-surface bg-card-elevated px-4 text-sm text-foreground placeholder:text-muted-foreground/70 outline-none transition-smooth focus:border-[#C05C30] focus:bg-card-elevated"
     />
   );
 }
 
 function SelectInput({
+  id,
   value,
   onChange,
   placeholder,
   options,
 }: {
+  id?: string;
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
@@ -308,11 +498,11 @@ function SelectInput({
   return (
     <div className="relative">
       <select
+        id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={`h-11 w-full appearance-none rounded-xl border border-transparent bg-card-elevated px-4 pr-10 text-sm outline-none transition-smooth focus:border-primary/60 ${
-          value ? "text-foreground" : "text-muted-foreground/70"
-        }`}
+        className={`h-11 w-full appearance-none rounded-xl border border-border-surface bg-card-elevated px-4 pr-10 text-sm outline-none transition-smooth focus:border-[#C05C30] ${value ? "text-foreground" : "text-muted-foreground/70"
+          }`}
       >
         <option value="" disabled>
           {placeholder}
@@ -347,24 +537,26 @@ function Th({
 function Td({
   children,
   className = "",
+  colSpan,
 }: {
   children: React.ReactNode;
   className?: string;
+  colSpan?: number;
 }) {
   return (
-    <td className={`border-b border-border/60 px-3 py-3.5 text-muted-foreground ${className}`}>
+    <td
+      colSpan={colSpan}
+      className={`border-b border-border/60 px-3 py-3.5 text-muted-foreground ${className}`}
+    >
       {children}
     </td>
   );
 }
 
-function QrPlaceholder({ large = false }: { large?: boolean }) {
-  const size = large ? "h-28 w-28" : "h-8 w-8";
+function QrPlaceholder() {
   return (
-    <div
-      className={`${size} flex items-center justify-center rounded-md bg-foreground/90 text-background`}
-    >
-      <QrCode className={large ? "h-20 w-20" : "h-5 w-5"} strokeWidth={1.6} />
+    <div className="h-8 w-8 flex items-center justify-center rounded-md bg-foreground/90 text-background">
+      <QrCode className="h-5 w-5" strokeWidth={1.6} />
     </div>
   );
 }

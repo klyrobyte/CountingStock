@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STOCK MONITORING | Multi-Theme Industrial UI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* --- 1. Dynamic Color System --- */
+        :root {
+            /* DARK THEME (Original - Untouched) */
+            --color-bg-base: #0A0B0D;
+            --color-bg-surface: #111318;
+            --color-bg-border: #2A2D35;
+            --color-text-primary: #F0F2F5;
+            --color-text-secondary: #8B90A0;
+            --color-text-muted: #555A68;
+            --color-critical: #E84545;
+            --color-critical-bg: #2A1515;
+            --color-critical-dim: #5C1F1F;
+            --color-critical-text: #993333;
+            --color-warning: #F5A623;
+            --color-warning-bg: #2A1E0A;
+            --color-warning-dim: #5C3D10;
+            --color-warning-text: #9A6010;
+            --color-safe: #22C55E;
+            --color-safe-bg: #0F2A1A;
+            --color-safe-dim: #1A5C35;
+            --color-safe-text: #1A7A40;
+            --color-accent: #3B82F6;
+            --chart-grid: rgba(255, 255, 255, 0.04);
+        }
+
+        /* WHITE THEME OVERRIDES */
+        [data-theme="light"] {
+            --color-bg-base: #F8F9FA;
+            --color-bg-surface: #FFFFFF;
+            --color-bg-border: #DDE2E5;
+            --color-text-primary: #111318;
+            --color-text-secondary: #495057;
+            --color-text-muted: #ADB5BD;
+            --color-critical-bg: #FFF5F5;
+            --color-critical-dim: #FFE3E3;
+            --color-warning-bg: #FFF9DB;
+            --color-warning-dim: #FFF3BF;
+            --color-safe-bg: #EBFBEE;
+            --color-safe-dim: #D3F9D8;
+            --chart-grid: rgba(0, 0, 0, 0.06);
+        }
+
+        /* --- 2. Structural CSS --- */
+        html, body { 
+            height: 100%; 
+            margin: 0; 
+            padding: 0; 
+            overflow: hidden; 
+            background-color: var(--color-bg-base);
+            color: var(--color-text-primary);
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        #app-shell {
+            display: flex;
+            flex-direction: column;
+            height: 100dvh;
+            width: 100vw;
+            overflow: hidden;
+        }
+
+        header {
+            height: 44px;
+            background: var(--color-bg-base);
+            border-bottom: 1px solid var(--color-bg-border);
+            padding: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .header-title { font-size: 15px; font-weight: 700; }
+        .header-time { font-size: 13px; color: var(--color-text-secondary); }
+        .header-right { display: flex; align-items: center; gap: 12px; }
+        .live-badge { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--color-safe); }
+        .live-dot { width: 8px; height: 8px; background: var(--color-safe); border-radius: 50%; animation: pulse-green 1.5s ease-in-out infinite; }
+        
+        @keyframes pulse-green {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+        }
+
+        .btn-tv {
+            border: 1px solid var(--color-bg-border);
+            border-radius: 6px;
+            padding: 5px 12px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            background: transparent;
+            cursor: pointer;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: row;
+            overflow: hidden;
+        }
+
+        .left-col {
+            flex: 1;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow: hidden;
+        }
+
+        .right-col {
+            width: 280px;
+            flex-shrink: 0;
+            background: var(--color-bg-surface);
+            border-left: 1px solid var(--color-bg-border);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .top-row { display: flex; gap: 12px; height: 140px; flex-shrink: 0; }
+        .gauge-container { width: 140px; height: 140px; position: relative; flex-shrink: 0; }
+        .gauge-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
+        .gauge-val { font-size: 28px; font-weight: 700; line-height: 1; }
+        .gauge-label { font-size: 9px; color: var(--color-text-muted); letter-spacing: 0.12em; }
+
+        .kpi-container { flex: 1; display: flex; gap: 8px; }
+        .kpi-card {
+            flex: 1; border-radius: 0 8px 8px 0; padding: 12px 14px;
+            display: flex; flex-direction: column; justify-content: space-between;
+            transition: background-color 0.2s ease;
+        }
+        .kpi-card.critical { background: var(--color-critical-bg); border: 1px solid var(--color-critical-dim); border-left: 3px solid var(--color-critical); }
+        .kpi-card.warning { background: var(--color-warning-bg); border: 1px solid var(--color-warning-dim); border-left: 3px solid var(--color-warning); }
+        .kpi-card.safe { background: var(--color-safe-bg); border: 1px solid var(--color-safe-dim); border-left: 3px solid var(--color-safe); }
+        .kpi-number { font-size: 56px; font-weight: 700; line-height: 1; margin: auto 0; }
+
+        .section-label { font-size: 11px; font-weight: 600; color: var(--color-text-muted); letter-spacing: 0.1em; text-transform: uppercase; flex-shrink: 0; }
+
+        .machine-grid { 
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); 
+            grid-auto-rows: minmax(80px, 90px); 
+            gap: 8px; 
+            flex-shrink: 0; 
+        }
+
+        .mc-card {
+            background: var(--color-bg-surface); border-radius: 0 8px 8px 0; padding: 10px 12px;
+            display: grid; grid-template-areas: "id icon" "val icon"; grid-template-columns: 1fr auto; grid-template-rows: auto 1fr;
+            border: 1px solid var(--color-bg-border);
+            transition: background-color 0.2s ease;
+        }
+        .mc-id { grid-area: id; font-size: 12px; font-weight: 500; color: var(--color-text-muted); }
+        .mc-icon { grid-area: icon; font-size: 28px; align-self: center; }
+        .mc-val { grid-area: val; font-size: 40px; font-weight: 700; line-height: 1; align-self: end; }
+
+        .mc-card.critical { border: 1px solid var(--color-critical-dim); border-left: 3px solid var(--color-critical); }
+        .mc-card.warning { border: 1px solid var(--color-warning-dim); border-left: 3px solid var(--color-warning); }
+        .mc-card.safe { border: 1px solid var(--color-safe-dim); border-left: 3px solid var(--color-safe); }
+
+        .chart-wrapper { flex: 1; min-height: 0; display: flex; flex-direction: column; position: relative; }
+        #stockChart { width: 100% !important; height: 100% !important; }
+
+        @media (min-width: 1920px) { .mc-val { font-size: 52px; } .kpi-number { font-size: 72px; } .gauge-val { font-size: 36px; } }
+        @media (min-width: 2560px) { .mc-val { font-size: 64px; } .kpi-number { font-size: 88px; } .gauge-val { font-size: 44px; } }
+
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--color-text-muted); padding-bottom: 60px; }
+    </style>
+</head>
+<body>
+
+    <div id="app-shell">
+        <header>
+            <div class="header-title">STOCK MONITORING</div>
+            <div class="header-time" id="clock">Sun 24 May 2026 — 08:41:33 WIB</div>
+            <div class="header-right">
+                <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+                <button class="btn-tv" onclick="document.documentElement.requestFullscreen()">TV MODE</button>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="left-col">
+                <section class="top-row">
+                    <div class="gauge-container">
+                        <svg viewBox="0 0 140 140" width="140" height="140">
+                            <circle cx="70" cy="70" r="54" stroke="var(--color-bg-border)" stroke-width="10" fill="none" />
+                            <circle id="gauge-arc" cx="70" cy="70" r="54" stroke="var(--color-safe)" stroke-width="10" fill="none" stroke-dasharray="339.3" stroke-dashoffset="60" stroke-linecap="round" transform="rotate(-90 70 70)" style="transition: stroke-dashoffset 800ms ease;" />
+                        </svg>
+                        <div class="gauge-text">
+                            <div class="gauge-val" id="gauge-display">82.1%</div>
+                            <div class="gauge-label">AVAILABILITY</div>
+                        </div>
+                    </div>
+                    <div class="kpi-container">
+                        <div class="kpi-card critical">
+                            <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:600; color:var(--color-critical); text-transform:uppercase;">Critical <span style="color:var(--color-critical-text);">&lt; 2JAM</span></div>
+                            <div class="kpi-number">1</div>
+                            <div style="font-size:11px; color:var(--color-text-muted);">PARTS</div>
+                        </div>
+                        <div class="kpi-card warning">
+                            <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:600; color:var(--color-warning); text-transform:uppercase;">Warning <span style="color:var(--color-warning-text);">2-4JAM</span></div>
+                            <div class="kpi-number">3</div>
+                            <div style="font-size:11px; color:var(--color-text-muted);">PARTS</div>
+                        </div>
+                        <div class="kpi-card safe">
+                            <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:600; color:var(--color-safe); text-transform:uppercase;">Safe <span style="color:var(--color-safe-text);">&gt; 4JAM</span></div>
+                            <div class="kpi-number">3</div>
+                            <div style="font-size:11px; color:var(--color-text-muted);">PARTS</div>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="section-label">Minimum Stock / Machine</div>
+                <section class="machine-grid" id="m-grid"></section>
+
+                <div class="section-label" style="margin-top: 4px;">Ratio Stock Part by Part</div>
+                <section class="chart-wrapper">
+                    <canvas id="stockChart"></canvas>
+                </section>
+            </div>
+
+            <aside class="right-col">
+                <div class="panel-header">
+                    <span style="font-size:12px; font-weight:600; color:var(--color-text-secondary); letter-spacing:0.1em;">PRIORITY PRODUCTION</span>
+                    <span style="background:var(--color-warning-bg); border:1px solid var(--color-warning-dim); border-radius:4px; padding:3px 8px; font-size:10px; font-weight:700; color:var(--color-warning);">&lt; 4H</span>
+                </div>
+                <div class="empty-state">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--color-bg-border)" stroke-width="1.5"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+                    <div style="font-size:13px;">No active priorities</div>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <script>
+        // --- THEME ENGINE ---
+        function applyTheme() {
+            const params = new URLSearchParams(window.location.search);
+            const theme = params.get('theme');
+            let isDark = true;
+
+            if (theme === 'white') {
+                isDark = false;
+            } else if (theme === 'dark') {
+                isDark = true;
+            } else {
+                // Default: Follow System
+                isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            }
+
+            document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+            return isDark;
+        }
+
+        const isDarkMode = applyTheme();
+
+        // --- UI LOGIC ---
+        const state = {
+            machines: [
+                { id: 'MC#1', val: 0, status: 'none', sub: 'Running / Reset' },
+                { id: 'MC#2', val: 2.4, status: 'warning' },
+                { id: 'MC#3', val: 2.8, status: 'warning' },
+                { id: 'MC#4', val: 5.5, status: 'safe' },
+                { id: 'MC#5', val: 1.4, status: 'critical' },
+                { id: 'MC#6', val: 2.6, status: 'warning' },
+                { id: 'MC#7', val: 4.0, status: 'safe' },
+                { id: 'MC#8', val: 4.7, status: 'safe' }
+            ]
+        };
+
+        function renderMachines() {
+            const container = document.getElementById('m-grid');
+            container.innerHTML = '';
+            state.machines.forEach(m => {
+                const card = document.createElement('div');
+                card.className = `mc-card ${m.status}`;
+                let icon = m.status === 'critical' ? '💔' : m.status === 'warning' ? '⚠️' : m.status === 'safe' ? '💚' : '—';
+                let val = m.status === 'none' ? 'N/A' : m.val.toFixed(1);
+                card.innerHTML = `
+                    <div class="mc-id">${m.id}</div>
+                    <div class="mc-icon">${icon}</div>
+                    <div class="mc-val">${val}${m.sub ? `<span style="font-size:10px; color:var(--color-text-muted); display:block; margin-top:2px;">${m.sub}</span>` : ''}</div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('stockChart').getContext('2d');
+            const style = getComputedStyle(document.documentElement);
+            const gridColor = style.getPropertyValue('--chart-grid').trim();
+            const textColor = style.getPropertyValue('--color-text-muted').trim();
+
+            const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+            gradient.addColorStop(0, 'rgba(59, 130, 246, 0.15)');
+            gradient.addColorStop(1, 'transparent');
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['AX-200', 'BY-450', 'CZ-100', 'DV-900', 'ER-300', 'FT-550', 'GH-120', 'JK-880', 'LM-400', 'NP-220'],
+                    datasets: [{
+                        data: [13, 3, 13, 14, 5, 14, 11, 4, 3, 1],
+                        borderColor: '#3B82F6',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true,
+                        backgroundColor: gradient,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: textColor, font: { size: 10 } } },
+                        y: { min: 0, max: 16, grid: { color: gridColor }, ticks: { color: textColor, stepSize: 4 } }
+                    }
+                }
+            });
+        }
+
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toLocaleString('en-GB', { 
+                weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', 
+                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false 
+            }) + ' WIB';
+        }
+
+        setInterval(updateClock, 1000);
+        updateClock();
+        renderMachines();
+        initChart();
+    </script>
+</body>
+</html>

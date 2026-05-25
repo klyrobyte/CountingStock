@@ -10,14 +10,38 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ViewStockRouteImport } from './routes/view-stock'
+import { Route as TvRouteImport } from './routes/tv'
 import { Route as TaskHistoryRouteImport } from './routes/task-history'
+import { Route as ShikakeRouteImport } from './routes/shikake'
+import { Route as ScanRouteImport } from './routes/scan'
+import { Route as QrViewerRouteImport } from './routes/qr-viewer'
+import { Route as QrPrivilegesRouteImport } from './routes/qr-privileges'
+import { Route as ModelRouteImport } from './routes/model'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as FactoryRouteImport } from './routes/factory'
 import { Route as DevicesRouteImport } from './routes/devices'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as CustomerRouteImport } from './routes/customer'
+import { Route as CategoryRouteImport } from './routes/category'
 import { Route as AllQrRouteImport } from './routes/all-qr'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as UsersIndexRouteImport } from './routes/users/index'
+import { Route as MesinIndexRouteImport } from './routes/mesin/index'
+import { Route as MasterDataIndexRouteImport } from './routes/master-data/index'
+import { Route as UsersCreateRouteImport } from './routes/users/create'
+import { Route as StationLoginRouteImport } from './routes/station/login'
+import { Route as StationDashboardRouteImport } from './routes/station/dashboard'
+import { Route as MesinCreateRouteImport } from './routes/mesin/create'
+import { Route as MasterDataCreateRouteImport } from './routes/master-data/create'
 
 const ViewStockRoute = ViewStockRouteImport.update({
   id: '/view-stock',
   path: '/view-stock',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TvRoute = TvRouteImport.update({
+  id: '/tv',
+  path: '/tv',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TaskHistoryRoute = TaskHistoryRouteImport.update({
@@ -25,9 +49,59 @@ const TaskHistoryRoute = TaskHistoryRouteImport.update({
   path: '/task-history',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ShikakeRoute = ShikakeRouteImport.update({
+  id: '/shikake',
+  path: '/shikake',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ScanRoute = ScanRouteImport.update({
+  id: '/scan',
+  path: '/scan',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QrViewerRoute = QrViewerRouteImport.update({
+  id: '/qr-viewer',
+  path: '/qr-viewer',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const QrPrivilegesRoute = QrPrivilegesRouteImport.update({
+  id: '/qr-privileges',
+  path: '/qr-privileges',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ModelRoute = ModelRouteImport.update({
+  id: '/model',
+  path: '/model',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FactoryRoute = FactoryRouteImport.update({
+  id: '/factory',
+  path: '/factory',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DevicesRoute = DevicesRouteImport.update({
   id: '/devices',
   path: '/devices',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CustomerRoute = CustomerRouteImport.update({
+  id: '/customer',
+  path: '/customer',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CategoryRoute = CategoryRouteImport.update({
+  id: '/category',
+  path: '/category',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AllQrRoute = AllQrRouteImport.update({
@@ -40,49 +114,232 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const UsersIndexRoute = UsersIndexRouteImport.update({
+  id: '/users/',
+  path: '/users/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MesinIndexRoute = MesinIndexRouteImport.update({
+  id: '/mesin/',
+  path: '/mesin/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MasterDataIndexRoute = MasterDataIndexRouteImport.update({
+  id: '/master-data/',
+  path: '/master-data/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UsersCreateRoute = UsersCreateRouteImport.update({
+  id: '/users/create',
+  path: '/users/create',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StationLoginRoute = StationLoginRouteImport.update({
+  id: '/station/login',
+  path: '/station/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StationDashboardRoute = StationDashboardRouteImport.update({
+  id: '/station/dashboard',
+  path: '/station/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MesinCreateRoute = MesinCreateRouteImport.update({
+  id: '/mesin/create',
+  path: '/mesin/create',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MasterDataCreateRoute = MasterDataCreateRouteImport.update({
+  id: '/master-data/create',
+  path: '/master-data/create',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/all-qr': typeof AllQrRoute
+  '/category': typeof CategoryRoute
+  '/customer': typeof CustomerRoute
+  '/dashboard': typeof DashboardRoute
   '/devices': typeof DevicesRoute
+  '/factory': typeof FactoryRoute
+  '/login': typeof LoginRoute
+  '/model': typeof ModelRoute
+  '/qr-privileges': typeof QrPrivilegesRoute
+  '/qr-viewer': typeof QrViewerRoute
+  '/scan': typeof ScanRoute
+  '/shikake': typeof ShikakeRoute
   '/task-history': typeof TaskHistoryRoute
+  '/tv': typeof TvRoute
   '/view-stock': typeof ViewStockRoute
+  '/master-data/create': typeof MasterDataCreateRoute
+  '/mesin/create': typeof MesinCreateRoute
+  '/station/dashboard': typeof StationDashboardRoute
+  '/station/login': typeof StationLoginRoute
+  '/users/create': typeof UsersCreateRoute
+  '/master-data/': typeof MasterDataIndexRoute
+  '/mesin/': typeof MesinIndexRoute
+  '/users/': typeof UsersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/all-qr': typeof AllQrRoute
+  '/category': typeof CategoryRoute
+  '/customer': typeof CustomerRoute
+  '/dashboard': typeof DashboardRoute
   '/devices': typeof DevicesRoute
+  '/factory': typeof FactoryRoute
+  '/login': typeof LoginRoute
+  '/model': typeof ModelRoute
+  '/qr-privileges': typeof QrPrivilegesRoute
+  '/qr-viewer': typeof QrViewerRoute
+  '/scan': typeof ScanRoute
+  '/shikake': typeof ShikakeRoute
   '/task-history': typeof TaskHistoryRoute
+  '/tv': typeof TvRoute
   '/view-stock': typeof ViewStockRoute
+  '/master-data/create': typeof MasterDataCreateRoute
+  '/mesin/create': typeof MesinCreateRoute
+  '/station/dashboard': typeof StationDashboardRoute
+  '/station/login': typeof StationLoginRoute
+  '/users/create': typeof UsersCreateRoute
+  '/master-data': typeof MasterDataIndexRoute
+  '/mesin': typeof MesinIndexRoute
+  '/users': typeof UsersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/all-qr': typeof AllQrRoute
+  '/category': typeof CategoryRoute
+  '/customer': typeof CustomerRoute
+  '/dashboard': typeof DashboardRoute
   '/devices': typeof DevicesRoute
+  '/factory': typeof FactoryRoute
+  '/login': typeof LoginRoute
+  '/model': typeof ModelRoute
+  '/qr-privileges': typeof QrPrivilegesRoute
+  '/qr-viewer': typeof QrViewerRoute
+  '/scan': typeof ScanRoute
+  '/shikake': typeof ShikakeRoute
   '/task-history': typeof TaskHistoryRoute
+  '/tv': typeof TvRoute
   '/view-stock': typeof ViewStockRoute
+  '/master-data/create': typeof MasterDataCreateRoute
+  '/mesin/create': typeof MesinCreateRoute
+  '/station/dashboard': typeof StationDashboardRoute
+  '/station/login': typeof StationLoginRoute
+  '/users/create': typeof UsersCreateRoute
+  '/master-data/': typeof MasterDataIndexRoute
+  '/mesin/': typeof MesinIndexRoute
+  '/users/': typeof UsersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/all-qr' | '/devices' | '/task-history' | '/view-stock'
+  fullPaths:
+    | '/'
+    | '/all-qr'
+    | '/category'
+    | '/customer'
+    | '/dashboard'
+    | '/devices'
+    | '/factory'
+    | '/login'
+    | '/model'
+    | '/qr-privileges'
+    | '/qr-viewer'
+    | '/scan'
+    | '/shikake'
+    | '/task-history'
+    | '/tv'
+    | '/view-stock'
+    | '/master-data/create'
+    | '/mesin/create'
+    | '/station/dashboard'
+    | '/station/login'
+    | '/users/create'
+    | '/master-data/'
+    | '/mesin/'
+    | '/users/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/all-qr' | '/devices' | '/task-history' | '/view-stock'
+  to:
+    | '/'
+    | '/all-qr'
+    | '/category'
+    | '/customer'
+    | '/dashboard'
+    | '/devices'
+    | '/factory'
+    | '/login'
+    | '/model'
+    | '/qr-privileges'
+    | '/qr-viewer'
+    | '/scan'
+    | '/shikake'
+    | '/task-history'
+    | '/tv'
+    | '/view-stock'
+    | '/master-data/create'
+    | '/mesin/create'
+    | '/station/dashboard'
+    | '/station/login'
+    | '/users/create'
+    | '/master-data'
+    | '/mesin'
+    | '/users'
   id:
     | '__root__'
     | '/'
     | '/all-qr'
+    | '/category'
+    | '/customer'
+    | '/dashboard'
     | '/devices'
+    | '/factory'
+    | '/login'
+    | '/model'
+    | '/qr-privileges'
+    | '/qr-viewer'
+    | '/scan'
+    | '/shikake'
     | '/task-history'
+    | '/tv'
     | '/view-stock'
+    | '/master-data/create'
+    | '/mesin/create'
+    | '/station/dashboard'
+    | '/station/login'
+    | '/users/create'
+    | '/master-data/'
+    | '/mesin/'
+    | '/users/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AllQrRoute: typeof AllQrRoute
+  CategoryRoute: typeof CategoryRoute
+  CustomerRoute: typeof CustomerRoute
+  DashboardRoute: typeof DashboardRoute
   DevicesRoute: typeof DevicesRoute
+  FactoryRoute: typeof FactoryRoute
+  LoginRoute: typeof LoginRoute
+  ModelRoute: typeof ModelRoute
+  QrPrivilegesRoute: typeof QrPrivilegesRoute
+  QrViewerRoute: typeof QrViewerRoute
+  ScanRoute: typeof ScanRoute
+  ShikakeRoute: typeof ShikakeRoute
   TaskHistoryRoute: typeof TaskHistoryRoute
+  TvRoute: typeof TvRoute
   ViewStockRoute: typeof ViewStockRoute
+  MasterDataCreateRoute: typeof MasterDataCreateRoute
+  MesinCreateRoute: typeof MesinCreateRoute
+  StationDashboardRoute: typeof StationDashboardRoute
+  StationLoginRoute: typeof StationLoginRoute
+  UsersCreateRoute: typeof UsersCreateRoute
+  MasterDataIndexRoute: typeof MasterDataIndexRoute
+  MesinIndexRoute: typeof MesinIndexRoute
+  UsersIndexRoute: typeof UsersIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -94,6 +351,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ViewStockRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tv': {
+      id: '/tv'
+      path: '/tv'
+      fullPath: '/tv'
+      preLoaderRoute: typeof TvRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/task-history': {
       id: '/task-history'
       path: '/task-history'
@@ -101,11 +365,81 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TaskHistoryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/shikake': {
+      id: '/shikake'
+      path: '/shikake'
+      fullPath: '/shikake'
+      preLoaderRoute: typeof ShikakeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/scan': {
+      id: '/scan'
+      path: '/scan'
+      fullPath: '/scan'
+      preLoaderRoute: typeof ScanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/qr-viewer': {
+      id: '/qr-viewer'
+      path: '/qr-viewer'
+      fullPath: '/qr-viewer'
+      preLoaderRoute: typeof QrViewerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/qr-privileges': {
+      id: '/qr-privileges'
+      path: '/qr-privileges'
+      fullPath: '/qr-privileges'
+      preLoaderRoute: typeof QrPrivilegesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/model': {
+      id: '/model'
+      path: '/model'
+      fullPath: '/model'
+      preLoaderRoute: typeof ModelRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/factory': {
+      id: '/factory'
+      path: '/factory'
+      fullPath: '/factory'
+      preLoaderRoute: typeof FactoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/devices': {
       id: '/devices'
       path: '/devices'
       fullPath: '/devices'
       preLoaderRoute: typeof DevicesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/customer': {
+      id: '/customer'
+      path: '/customer'
+      fullPath: '/customer'
+      preLoaderRoute: typeof CustomerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/category': {
+      id: '/category'
+      path: '/category'
+      fullPath: '/category'
+      preLoaderRoute: typeof CategoryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/all-qr': {
@@ -122,16 +456,100 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/users/': {
+      id: '/users/'
+      path: '/users'
+      fullPath: '/users/'
+      preLoaderRoute: typeof UsersIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mesin/': {
+      id: '/mesin/'
+      path: '/mesin'
+      fullPath: '/mesin/'
+      preLoaderRoute: typeof MesinIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/master-data/': {
+      id: '/master-data/'
+      path: '/master-data'
+      fullPath: '/master-data/'
+      preLoaderRoute: typeof MasterDataIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/users/create': {
+      id: '/users/create'
+      path: '/users/create'
+      fullPath: '/users/create'
+      preLoaderRoute: typeof UsersCreateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/station/login': {
+      id: '/station/login'
+      path: '/station/login'
+      fullPath: '/station/login'
+      preLoaderRoute: typeof StationLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/station/dashboard': {
+      id: '/station/dashboard'
+      path: '/station/dashboard'
+      fullPath: '/station/dashboard'
+      preLoaderRoute: typeof StationDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mesin/create': {
+      id: '/mesin/create'
+      path: '/mesin/create'
+      fullPath: '/mesin/create'
+      preLoaderRoute: typeof MesinCreateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/master-data/create': {
+      id: '/master-data/create'
+      path: '/master-data/create'
+      fullPath: '/master-data/create'
+      preLoaderRoute: typeof MasterDataCreateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AllQrRoute: AllQrRoute,
+  CategoryRoute: CategoryRoute,
+  CustomerRoute: CustomerRoute,
+  DashboardRoute: DashboardRoute,
   DevicesRoute: DevicesRoute,
+  FactoryRoute: FactoryRoute,
+  LoginRoute: LoginRoute,
+  ModelRoute: ModelRoute,
+  QrPrivilegesRoute: QrPrivilegesRoute,
+  QrViewerRoute: QrViewerRoute,
+  ScanRoute: ScanRoute,
+  ShikakeRoute: ShikakeRoute,
   TaskHistoryRoute: TaskHistoryRoute,
+  TvRoute: TvRoute,
   ViewStockRoute: ViewStockRoute,
+  MasterDataCreateRoute: MasterDataCreateRoute,
+  MesinCreateRoute: MesinCreateRoute,
+  StationDashboardRoute: StationDashboardRoute,
+  StationLoginRoute: StationLoginRoute,
+  UsersCreateRoute: UsersCreateRoute,
+  MasterDataIndexRoute: MasterDataIndexRoute,
+  MesinIndexRoute: MesinIndexRoute,
+  UsersIndexRoute: UsersIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}

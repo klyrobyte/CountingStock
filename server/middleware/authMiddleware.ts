@@ -1,0 +1,43 @@
+import { Request, Response, NextFunction } from "express";
+import jwt from "jsonwebtoken";
+
+const SECRET_KEY = process.env.JWT_SECRET || "pixel-scan-secret-key-2026";
+
+// Extend Express Request type to include the decoded user info
+declare global {
+  namespace Express {
+    interface Request {
+      user?: any;
+    }
+  }
+}
+
+export function requireAuth(req: Request, res: Response, next: NextFunction) {
+  // We want to skip auth for some public routes
+  const publicPaths = [
+    "/api/auth/login",
+    "/api/devices/station-login",
+    "/api/health",
+    "/api/qr/info" // Need this for public hardware scanning
+  ];
+
+  if (publicPaths.some(path => req.path.startsWith(path))) {
+    return next();
+  }
+
+  // Expect token in the form: "Bearer <token>"
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ success: false, error: "Unauthorized: Token missing or invalid format" });
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  try {
+    const decoded = jwt.verify(token, SECRET_KEY);
+    req.user = decoded; // Attach decoded payload to request
+    next();
+  } catch (err) {
+    return res.status(403).json({ success: false, error: "Forbidden: Invalid or expired token" });
+  }
+}
