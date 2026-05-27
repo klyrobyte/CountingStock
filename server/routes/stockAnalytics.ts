@@ -3,19 +3,13 @@ import pool from "../db.js";
 import type { RowDataPacket, ResultSetHeader } from "mysql2";
 import {
   computeStockAnalytics,
-  classifyStokJam,
+  classifyStockJam,
 } from "../lib/stockAnalyticsCalc.js";
+import { persistComputedFields } from "../lib/stockAnalyticsService.js";
 
 const router = Router();
 
 function rowToPayload(row: RowDataPacket) {
-  const computed = computeStockAnalytics({
-    qtyPerDay: Number(row.qty_per_day),
-    stockActual: Number(row.stock_actual),
-    shikake: Number(row.shikake) || 1,
-    minPlaceholder: Number(row.min_val),
-  });
-
   return {
     id: row.id,
     machine: row.machine,
@@ -24,37 +18,19 @@ function rowToPayload(row: RowDataPacket) {
     partName: row.part_name,
     qtyPerDay: Number(row.qty_per_day),
     stockActual: Number(row.stock_actual),
-    stokJam: computed.stokJam,
-    judge: computed.judge,
+    stockJam: Number(row.stok_jam),
+    stokJam: Number(row.stok_jam),
+    judge: row.judge,
     problem: row.problem,
     shikake: Number(row.shikake),
-    qtyPerHour: computed.qtyPerHour,
-    min: computed.min,
-    max: computed.max,
+    qtyPerHour: Number(row.qty_per_hour),
+    min: Number(row.min_val),
+    max: Number(row.max_val),
     jamUpdate: row.jam_update,
     pic: row.pic,
     keterangan: row.keterangan,
     factory: row.factory,
   };
-}
-
-async function upsertComputedFields(id: number) {
-  const [rows] = await pool.query<RowDataPacket[]>(
-    "SELECT * FROM stock_analytics WHERE id = ?",
-    [id]
-  );
-  if (!rows.length) return;
-  const row = rows[0];
-  const computed = computeStockAnalytics({
-    qtyPerDay: Number(row.qty_per_day),
-    stockActual: Number(row.stock_actual),
-    shikake: Number(row.shikake) || 1,
-    minPlaceholder: Number(row.min_val),
-  });
-  await pool.query(
-    `UPDATE stock_analytics SET stok_jam = ?, judge = ?, qty_per_hour = ?, max_val = ?, jam_update = NOW() WHERE id = ?`,
-    [computed.stokJam, computed.judge, computed.qtyPerHour, computed.max, id]
-  );
 }
 
 // GET /api/stock-analytics
@@ -103,9 +79,48 @@ router.get("/tv", async (req, res) => {
       analyticsQuery,
       analyticsParams
     );
-    const analyticsByMachine = new Map<string, RowDataPacket>();
+
+    const analyticsByMachine = new Map<string, RowDataPacket[]>();
     for (const a of analyticsRows) {
-      analyticsByMachine.set(String(a.machine).toUpperCase(), a);
+      const key = String(a.machine).toUpperCase();
+      const list = analyticsByMachine.get(key) ?? [];
+      list.push(a);
+      analyticsByMachine.set(key, list);
+    }
+
+    let partsQuery = `SELECT mp.part_name, mp.part_number, mp.machine,
+        sa.stok_jam, sa.judge
+      FROM master_parts mp
+      LEFT JOIN stock_analytics sa
+        ON UPPER(sa.part_number) = UPPER(mp.part_number)
+        AND UPPER(sa.machine) = UPPER(mp.machine)
+      WHERE mp.machine IS NOT NULL AND mp.machine != ''`;
+    const partsParams: string[] = [];
+    if (factory) {
+      partsQuery += ` AND UPPER(mp.machine) IN (
+        SELECT UPPER(machine_code) FROM mesin WHERE factory = ?
+      )`;
+      partsParams.push(factory);
+    }
+    partsQuery += " ORDER BY mp.machine, mp.part_name";
+    const [partRows] = await pool.query<RowDataPacket[]>(
+      partsQuery,
+      partsParams
+    );
+
+    const partsByMachine = new Map<
+      string,
+      { part: string; pn: string; jam: number }[]
+    >();
+    for (const p of partRows) {
+      const key = String(p.machine).toUpperCase();
+      const list = partsByMachine.get(key) ?? [];
+      list.push({
+        part: p.part_name as string,
+        pn: (p.judge as string) || "O",
+        jam: Number(p.stok_jam) || 0,
+      });
+      partsByMachine.set(key, list);
     }
 
     let stockQuery = "SELECT * FROM stock WHERE 1=1";
@@ -122,26 +137,15 @@ router.get("/tv", async (req, res) => {
 
     const machines = mesinRows.map((m) => {
       const isActive = m.status === "active";
-      const analytics = analyticsByMachine.get(
-        String(m.machine_code).toUpperCase()
-      );
-      let stokJam = 0;
-      let partName = "";
-      let partNumber = "";
+      const machineKey = String(m.machine_code).toUpperCase();
+      const rowsForMachine = analyticsByMachine.get(machineKey) ?? [];
 
-      if (analytics) {
-        const computed = computeStockAnalytics({
-          qtyPerDay: Number(analytics.qty_per_day),
-          stockActual: Number(analytics.stock_actual),
-          shikake: Number(analytics.shikake) || 1,
-          minPlaceholder: Number(analytics.min_val),
-        });
-        stokJam = computed.stokJam;
-        partName = analytics.part_name || "";
-        partNumber = analytics.part_number || "";
-      }
+      const stockJamValues = rowsForMachine.map((r) => Number(r.stok_jam) || 0);
+      const stokJam =
+        stockJamValues.length > 0 ? Math.min(...stockJamValues) : 0;
 
-      const cardStatus = classifyStokJam(stokJam, isActive);
+      const cardStatus = classifyStockJam(stokJam, isActive);
+      const partTable = partsByMachine.get(machineKey) ?? [];
 
       return {
         id: m.id,
@@ -150,9 +154,9 @@ router.get("/tv", async (req, res) => {
         status: m.status,
         isActive,
         stokJam,
+        stockJam: stokJam,
         cardStatus,
-        partName,
-        partNumber,
+        partRows: partTable,
       };
     });
 
@@ -177,13 +181,17 @@ router.get("/tv", async (req, res) => {
           priorityOrder[a.cardStatus] - priorityOrder[b.cardStatus] ||
           a.stokJam - b.stokJam
       )
-      .map((m) => ({
-        machine: m.machineCode,
-        partName: m.partName || "—",
-        partNumber: m.partNumber || "—",
-        stokJam: m.stokJam,
-        status: m.cardStatus,
-      }));
+      .flatMap((m) =>
+        (m.partRows.length > 0 ? m.partRows : [{ part: "—", pn: "—", jam: m.stokJam }]).map(
+          (row) => ({
+            machine: m.machineCode,
+            partName: row.part,
+            partNumber: row.pn,
+            stokJam: row.jam,
+            status: m.cardStatus,
+          })
+        )
+      );
 
     res.json({
       success: true,
@@ -225,18 +233,11 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ success: false, error: "Machine wajib diisi." });
     }
 
-    const computed = computeStockAnalytics({
-      qtyPerDay: Number(qtyPerDay),
-      stockActual: Number(stockActual),
-      shikake: Number(shikake) || 1,
-      minPlaceholder: Number(minVal),
-    });
-
     const [result] = await pool.query<ResultSetHeader>(
       `INSERT INTO stock_analytics
         (machine, model, part_number, part_name, qty_per_day, stock_actual, stok_jam, judge,
          problem, shikake, qty_per_hour, min_val, max_val, jam_update, pic, keterangan, factory)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, 0, 'O', ?, ?, 0, ?, 0, '0:00:00', ?, ?, ?)`,
       [
         String(machine).trim().toUpperCase(),
         model,
@@ -244,14 +245,10 @@ router.post("/", async (req, res) => {
         partName,
         qtyPerDay,
         stockActual,
-        computed.stokJam,
-        computed.judge,
         problem,
         shikake,
-        computed.qtyPerHour,
-        computed.min,
-        computed.max,
-        pic,
+        minVal,
+        pic || "unknown",
         keterangan,
         factory,
       ]
@@ -261,7 +258,12 @@ router.post("/", async (req, res) => {
       "SELECT * FROM stock_analytics WHERE id = ?",
       [result.insertId]
     );
-    res.status(201).json({ success: true, data: rowToPayload(newRow[0]) });
+    if (newRow[0]) await persistComputedFields(newRow[0]);
+    const [fresh] = await pool.query<RowDataPacket[]>(
+      "SELECT * FROM stock_analytics WHERE id = ?",
+      [result.insertId]
+    );
+    res.status(201).json({ success: true, data: rowToPayload(fresh[0]) });
   } catch (err: unknown) {
     res.status(500).json({ success: false, error: (err as Error).message });
   }
@@ -286,19 +288,11 @@ router.put("/:id", async (req, res) => {
       factory = "",
     } = req.body;
 
-    const computed = computeStockAnalytics({
-      qtyPerDay: Number(qtyPerDay),
-      stockActual: Number(stockActual),
-      shikake: Number(shikake) || 1,
-      minPlaceholder: Number(minVal),
-    });
-
     await pool.query(
       `UPDATE stock_analytics SET
         machine = ?, model = ?, part_number = ?, part_name = ?,
-        qty_per_day = ?, stock_actual = ?, stok_jam = ?, judge = ?,
-        problem = ?, shikake = ?, qty_per_hour = ?, min_val = ?, max_val = ?,
-        jam_update = NOW(), pic = ?, keterangan = ?, factory = ?
+        qty_per_day = ?, stock_actual = ?,
+        problem = ?, shikake = ?, min_val = ?, keterangan = ?, factory = ?
        WHERE id = ?`,
       [
         String(machine).trim().toUpperCase(),
@@ -307,21 +301,20 @@ router.put("/:id", async (req, res) => {
         partName,
         qtyPerDay,
         stockActual,
-        computed.stokJam,
-        computed.judge,
         problem,
         shikake,
-        computed.qtyPerHour,
-        computed.min,
-        computed.max,
-        pic,
+        minVal,
         keterangan,
         factory,
         id,
       ]
     );
 
-    await upsertComputedFields(Number(id));
+    const [beforePersist] = await pool.query<RowDataPacket[]>(
+      "SELECT * FROM stock_analytics WHERE id = ?",
+      [id]
+    );
+    if (beforePersist[0]) await persistComputedFields(beforePersist[0]);
     const [row] = await pool.query<RowDataPacket[]>(
       "SELECT * FROM stock_analytics WHERE id = ?",
       [id]

@@ -12,6 +12,7 @@ export type MasterPart = {
   unit: string;
   status: "active" | "inactive";
   factory_origin: string;
+  machine?: string | null;
   image_base64: string | null;
   created_at: string;
   updated_at: string;
@@ -27,6 +28,7 @@ export type CreatePartPayload = {
   unit?: string;
   status: "active" | "inactive";
   factoryOrigin?: string;
+  machine?: string;
   imageBase64?: string | null;
 };
 

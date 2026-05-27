@@ -80,9 +80,9 @@ export const MANAGEMENT_ITEMS: NavItem[] = [
     icon: Database,
   },
   {
-    label: "Shikake Management",
-    description: "Kelola nilai shikake per part",
-    to: "/shikake",
+    label: "Teitei Management",
+    description: "Kelola nilai teitei per part",
+    to: "/teitei",
     icon: Database,
   },
   {

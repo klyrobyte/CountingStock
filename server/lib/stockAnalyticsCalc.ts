@@ -1,4 +1,4 @@
-/** Stock analytics calculated fields (spec §13). */
+/** Stock analytics calculated fields (V2 spec §3b). */
 
 export type StockAnalyticsInput = {
   qtyPerDay: number;
@@ -8,51 +8,51 @@ export type StockAnalyticsInput = {
 };
 
 export type StockAnalyticsComputed = {
-  stokJam: number;
-  judge: "OK" | "NG / ✖";
+  stockJam: number;
+  judge: "O" | "X";
   qtyPerHour: number;
   min: number;
   max: number;
 };
 
+/** Format jam_update as HH:MM:SS */
+export function formatJamUpdateTime(date: Date = new Date()): string {
+  return date.toTimeString().slice(0, 8);
+}
+
 export function computeStockAnalytics(
   input: StockAnalyticsInput
 ): StockAnalyticsComputed {
-  const qtyPerDay = Math.max(input.qtyPerDay, 0);
-  const stockActual = Math.max(input.stockActual, 0);
-  const shikake = Math.max(input.shikake, 0.0001);
+  const qtyPerDay = Math.max(Number(input.qtyPerDay) || 0, 0);
+  const stockActual = Math.max(Number(input.stockActual) || 0, 0);
+  const shikake = Number(input.shikake) || 0;
+  const min = Number(input.minPlaceholder) || 0;
 
   const qtyPerHour = qtyPerDay > 0 ? qtyPerDay / 8 : 0;
 
-  // G — Stok Jam = Stock Actual / Qty Per Day * 8 (smallest value when multiple)
-  const stokJam =
-    qtyPerDay > 0 ? Math.min((stockActual / qtyPerDay) * 8, stockActual) : 0;
+  const stockJam =
+    qtyPerDay > 0 ? (stockActual / qtyPerDay) * 8 : 0;
 
-  // H — Judge
-  const judge: "OK" | "NG / ✖" = stokJam < 4 ? "NG / ✖" : "OK";
+  const judge: "O" | "X" = stockJam < 4 ? "X" : "O";
 
-  // L — Min (configurable placeholder)
-  const min = input.minPlaceholder ?? 0;
-
-  // M — Max = (Qty Per Day / Shikake / Qty Per Hour) + Min + 2
   const max =
-    qtyPerHour > 0
-      ? qtyPerDay / shikake / qtyPerHour + min + 2
-      : min + 2;
+    shikake > 0 && qtyPerHour > 0
+      ? (qtyPerDay / shikake) / qtyPerHour + min + 2
+      : 0;
 
-  return { stokJam, judge, qtyPerHour, min, max };
+  return { stockJam, judge, qtyPerHour, min, max };
 }
 
 export type StockHourStatus = "none" | "critical" | "warning" | "safe";
 
-/** Classify Stok Jam for TV / mc-card (spec §7–8). */
-export function classifyStokJam(
-  stokJam: number,
+/** Classify stock_jam for TV / mc-card status styling. */
+export function classifyStockJam(
+  stockJam: number,
   isActive: boolean
 ): StockHourStatus {
   if (!isActive) return "none";
-  if (stokJam <= 2) return "critical";
-  if (stokJam <= 4) return "warning";
+  if (stockJam <= 2) return "critical";
+  if (stockJam <= 4) return "warning";
   return "safe";
 }
 
@@ -68,3 +68,6 @@ export function statusIcon(status: StockHourStatus): string {
       return "—";
   }
 }
+
+/** @deprecated Use classifyStockJam */
+export const classifyStokJam = classifyStockJam;

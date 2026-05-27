@@ -13,7 +13,8 @@
     "format": "prettier --write .",
     "server": "tsx server/index.ts",
     "migrate": "tsx server/migrate.ts",
-    "migrate:big-update": "tsx server/migrate-big-update.ts"
+    "migrate:big-update": "tsx server/migrate-big-update.ts",
+    "migrate:v2": "tsx server/migrate-v2.ts"
   },
   "dependencies": {
     "@cloudflare/vite-plugin": "^1.25.5",

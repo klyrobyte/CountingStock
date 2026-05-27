@@ -11,8 +11,36 @@ import {
   Tooltip,
 } from "recharts";
 import { useTvDashboard } from "@/hooks/use-tv-dashboard";
+import type { TvMachine } from "@/hooks/use-tv-dashboard";
 import { MinimumStockGrid } from "@/components/mesin/MinimumStockGrid";
 import "./tv.css";
+
+// ─── PRIORITY LOGIC (plan.md) ──────────────────────────────────────────────
+// Single source of truth for status derivation — never read raw status strings.
+// Thresholds: < 3.0 → critical | 3.0–3.99 → warning | ≥ 4.0 → safe
+function getStatus(jam: number): "critical" | "warning" | "safe" {
+  if (jam < 3.0) return "critical";
+  if (jam < 4.0) return "warning";
+  return "safe";
+}
+
+// Bug #1 fix: compute the true minimum JAM per machine by excluding JAM === 0
+// (which means "no data / not started"). Falls back to 0 only if ALL parts are 0.
+function computeMinJam(partRows: TvMachine["partRows"]): number {
+  const active = partRows.filter((r) => r.jam !== 0);
+  if (active.length === 0) return 0;
+  return Math.min(...active.map((r) => r.jam));
+}
+
+// Rewrite each machine's stokJam + cardStatus using the corrected minJAM logic.
+function fixMachineStatuses(machines: TvMachine[]): TvMachine[] {
+  return machines.map((m) => {
+    if (!m.isActive) return m; // inactive machines keep their "none" card status
+    const minJam = computeMinJam(m.partRows ?? []);
+    const cardStatus = getStatus(minJam);
+    return { ...m, stokJam: minJam, stockJam: minJam, cardStatus };
+  });
+}
 
 const searchSchema = z.object({
   fac: z.string().optional().catch(""),
@@ -47,6 +75,8 @@ function resolveTheme(
 function TvPage() {
   const { fac = "", shift = "A", theme = "default" } = Route.useSearch();
   const [clock, setClock] = useState("");
+  // Change #3: expand/collapse state for safe rows in PRIORITY PRODUCTION
+  const [isExpanded, setIsExpanded] = useState(false);
   const visualTheme = resolveTheme(theme);
 
   const { data, isLoading } = useTvDashboard(fac, shift, !!fac);
@@ -73,11 +103,31 @@ function TvPage() {
   }, []);
 
   const gaugeArc = useMemo(() => {
-    const pct = data?.gaugePercent ?? 0;
+    // Determine the percentage based on the number of non-critical machines over total active machines
+    const machines = data?.machines ?? [];
+    const activeMachines = machines.filter(m => m.isActive);
+    let pct = 0;
+    
+    if (activeMachines.length > 0) {
+      // Fix #1 guarantees that cardStatus reflects the real minimum JAM for each machine
+      // and getStatus() has set it properly. So we just count safe/warning vs critical.
+      // Availability = percentage of active machines that are NOT critical.
+      // (Using the newly fixed fixMachineStatuses function logic)
+      const fixedMachines = fixMachineStatuses(machines);
+      const nonCriticalCount = fixedMachines.filter(
+        m => m.isActive && m.cardStatus !== "critical"
+      ).length;
+      
+      pct = Math.round((nonCriticalCount / activeMachines.length) * 100);
+    }
+    
+    // Normalize percentage (clamp 0-100)
+    pct = Math.min(100, Math.max(0, pct));
+    
     const circumference = 339.3;
     const offset = circumference - (pct / 100) * circumference;
     return { offset, pct };
-  }, [data?.gaugePercent]);
+  }, [data?.machines]);
 
   const chartPoints = useMemo(() => {
     if (!data) return [];
@@ -92,7 +142,35 @@ function TvPage() {
     return Math.ceil(max / 4) * 4 || 16;
   }, [data?.chartData]);
 
-  const counts = data?.counts ?? { critical: 0, warning: 0, safe: 0 };
+  // Bug #3 fix: recompute KPI counts client-side from priorities grouped by
+  // machine, using non-zero minJAM per MC group → getStatus(minJAM).
+  // This runs AFTER Bug #1 & #2 fixes so counts are always consistent.
+  const counts = useMemo(() => {
+    const priorities = data?.priorities ?? [];
+    if (priorities.length === 0) return { critical: 0, warning: 0, safe: 0 };
+
+    // [1] Group rows by machine identifier
+    const groups = new Map<string, number[]>();
+    for (const p of priorities) {
+      const key = p.machine;
+      if (!groups.has(key)) groups.set(key, []);
+      // [2] Collect only non-zero JAM values per group
+      if (p.stokJam !== 0) groups.get(key)!.push(p.stokJam);
+    }
+
+    let critical = 0, warning = 0, safe = 0;
+    // [5] For each MC group, compute minJAM then apply getStatus()
+    groups.forEach((jams, _key) => {
+      const minJam = jams.length > 0 ? Math.min(...jams) : 0;
+      const st = getStatus(minJam);
+      if (st === "safe")     safe++;
+      else if (st === "warning") warning++;
+      else                   critical++;
+    });
+
+    // [6] Return tallied counts
+    return { critical, warning, safe };
+  }, [data?.priorities]);
 
   return (
     <div
@@ -175,7 +253,7 @@ function TvPage() {
                   >
                     Critical{" "}
                     <span style={{ color: "var(--color-critical-text)" }}>
-                      &lt; 2JAM
+                      &lt; 3JAM
                     </span>
                   </div>
                   <div className="tv-kpi-number">{counts.critical}</div>
@@ -201,7 +279,7 @@ function TvPage() {
                   >
                     Warning{" "}
                     <span style={{ color: "var(--color-warning-text)" }}>
-                      2-4JAM
+                      3–4JAM
                     </span>
                   </div>
                   <div className="tv-kpi-number">{counts.warning}</div>
@@ -249,7 +327,11 @@ function TvPage() {
                 Loading…
               </p>
             ) : (
-              <MinimumStockGrid machines={data?.machines ?? []} />
+              <MinimumStockGrid
+                // Bug #1 fix: pass machines with corrected stokJam + cardStatus
+                machines={fixMachineStatuses(data?.machines ?? [])}
+                showPartTable
+              />
             )}
 
             <div className="tv-section-label" style={{ marginTop: 4 }}>
@@ -349,31 +431,45 @@ function TvPage() {
                     <th>Machine</th>
                     <th>Part</th>
                     <th>PN</th>
-                    <th>Jam</th>
+                    <th>JAM</th>
                     <th>St</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {data!.priorities.map((p, i) => (
-                    <tr key={`${p.machine}-${i}`}>
-                      <td>{p.machine}</td>
-                      <td>{p.partName}</td>
-                      <td>{p.partNumber}</td>
-                      <td>{p.stokJam.toFixed(1)}</td>
-                      <td
-                        style={{
-                          color:
-                            p.status === "critical"
-                              ? "var(--color-critical)"
-                              : "var(--color-warning)",
-                          fontWeight: 700,
-                          textTransform: "uppercase",
-                        }}
+                  {data!.priorities.map((p, i) => {
+                    // Bug #2 fix: derive ST status from JAM value via getStatus();
+                    // never use the raw p.status string from the server.
+                    const rowStatus = getStatus(p.stokJam);
+                    const stColor =
+                      rowStatus === "critical"
+                        ? "var(--color-critical)"
+                        : rowStatus === "warning"
+                        ? "var(--color-warning)"
+                        : "var(--color-safe)";
+                    // Change #2: tag safe rows; hide them when not expanded
+                    const isSafeRow = rowStatus === "safe";
+                    return (
+                      <tr
+                        key={`${p.machine}-${i}`}
+                        className={isSafeRow ? "tv-row-safe" : undefined}
+                        style={isSafeRow && !isExpanded ? { display: "none" } : undefined}
                       >
-                        {p.status}
-                      </td>
-                    </tr>
-                  ))}
+                        <td>{p.machine}</td>
+                        <td>{p.partName}</td>
+                        <td>{p.partNumber}</td>
+                        <td>{p.stokJam.toFixed(1)}</td>
+                        <td
+                          style={{
+                            color: stColor,
+                            fontWeight: 700,
+                            textTransform: "uppercase",
+                          }}
+                        >
+                          {rowStatus}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             ) : (
@@ -391,6 +487,30 @@ function TvPage() {
                 </svg>
                 <div>No active priorities</div>
               </div>
+            )}
+
+            {/* Change #3: Show All / Show Less toggle — only toggles safe row visibility */}
+            {(data?.priorities?.length ?? 0) > 0 && (
+              <button
+                type="button"
+                onClick={() => setIsExpanded((prev) => !prev)}
+                style={{
+                  marginTop: 10,
+                  width: "100%",
+                  padding: "5px 0",
+                  fontSize: 10,
+                  fontWeight: 600,
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
+                  color: "var(--color-text-muted)",
+                  background: "transparent",
+                  border: "1px solid var(--color-bg-border)",
+                  borderRadius: 4,
+                  cursor: "pointer",
+                }}
+              >
+                {isExpanded ? "Show Less" : "Show All"}
+              </button>
             )}
           </aside>
         </main>

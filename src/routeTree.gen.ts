@@ -11,8 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ViewStockRouteImport } from './routes/view-stock'
 import { Route as TvRouteImport } from './routes/tv'
+import { Route as TeiteiRouteImport } from './routes/teitei'
 import { Route as TaskHistoryRouteImport } from './routes/task-history'
-import { Route as ShikakeRouteImport } from './routes/shikake'
 import { Route as ScanRouteImport } from './routes/scan'
 import { Route as QrViewerRouteImport } from './routes/qr-viewer'
 import { Route as QrPrivilegesRouteImport } from './routes/qr-privileges'
@@ -44,14 +44,14 @@ const TvRoute = TvRouteImport.update({
   path: '/tv',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TeiteiRoute = TeiteiRouteImport.update({
+  id: '/teitei',
+  path: '/teitei',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TaskHistoryRoute = TaskHistoryRouteImport.update({
   id: '/task-history',
   path: '/task-history',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ShikakeRoute = ShikakeRouteImport.update({
-  id: '/shikake',
-  path: '/shikake',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ScanRoute = ScanRouteImport.update({
@@ -168,8 +168,8 @@ export interface FileRoutesByFullPath {
   '/qr-privileges': typeof QrPrivilegesRoute
   '/qr-viewer': typeof QrViewerRoute
   '/scan': typeof ScanRoute
-  '/shikake': typeof ShikakeRoute
   '/task-history': typeof TaskHistoryRoute
+  '/teitei': typeof TeiteiRoute
   '/tv': typeof TvRoute
   '/view-stock': typeof ViewStockRoute
   '/master-data/create': typeof MasterDataCreateRoute
@@ -194,8 +194,8 @@ export interface FileRoutesByTo {
   '/qr-privileges': typeof QrPrivilegesRoute
   '/qr-viewer': typeof QrViewerRoute
   '/scan': typeof ScanRoute
-  '/shikake': typeof ShikakeRoute
   '/task-history': typeof TaskHistoryRoute
+  '/teitei': typeof TeiteiRoute
   '/tv': typeof TvRoute
   '/view-stock': typeof ViewStockRoute
   '/master-data/create': typeof MasterDataCreateRoute
@@ -221,8 +221,8 @@ export interface FileRoutesById {
   '/qr-privileges': typeof QrPrivilegesRoute
   '/qr-viewer': typeof QrViewerRoute
   '/scan': typeof ScanRoute
-  '/shikake': typeof ShikakeRoute
   '/task-history': typeof TaskHistoryRoute
+  '/teitei': typeof TeiteiRoute
   '/tv': typeof TvRoute
   '/view-stock': typeof ViewStockRoute
   '/master-data/create': typeof MasterDataCreateRoute
@@ -249,8 +249,8 @@ export interface FileRouteTypes {
     | '/qr-privileges'
     | '/qr-viewer'
     | '/scan'
-    | '/shikake'
     | '/task-history'
+    | '/teitei'
     | '/tv'
     | '/view-stock'
     | '/master-data/create'
@@ -275,8 +275,8 @@ export interface FileRouteTypes {
     | '/qr-privileges'
     | '/qr-viewer'
     | '/scan'
-    | '/shikake'
     | '/task-history'
+    | '/teitei'
     | '/tv'
     | '/view-stock'
     | '/master-data/create'
@@ -301,8 +301,8 @@ export interface FileRouteTypes {
     | '/qr-privileges'
     | '/qr-viewer'
     | '/scan'
-    | '/shikake'
     | '/task-history'
+    | '/teitei'
     | '/tv'
     | '/view-stock'
     | '/master-data/create'
@@ -328,8 +328,8 @@ export interface RootRouteChildren {
   QrPrivilegesRoute: typeof QrPrivilegesRoute
   QrViewerRoute: typeof QrViewerRoute
   ScanRoute: typeof ScanRoute
-  ShikakeRoute: typeof ShikakeRoute
   TaskHistoryRoute: typeof TaskHistoryRoute
+  TeiteiRoute: typeof TeiteiRoute
   TvRoute: typeof TvRoute
   ViewStockRoute: typeof ViewStockRoute
   MasterDataCreateRoute: typeof MasterDataCreateRoute
@@ -358,18 +358,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TvRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/teitei': {
+      id: '/teitei'
+      path: '/teitei'
+      fullPath: '/teitei'
+      preLoaderRoute: typeof TeiteiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/task-history': {
       id: '/task-history'
       path: '/task-history'
       fullPath: '/task-history'
       preLoaderRoute: typeof TaskHistoryRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/shikake': {
-      id: '/shikake'
-      path: '/shikake'
-      fullPath: '/shikake'
-      preLoaderRoute: typeof ShikakeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/scan': {
@@ -528,8 +528,8 @@ const rootRouteChildren: RootRouteChildren = {
   QrPrivilegesRoute: QrPrivilegesRoute,
   QrViewerRoute: QrViewerRoute,
   ScanRoute: ScanRoute,
-  ShikakeRoute: ShikakeRoute,
   TaskHistoryRoute: TaskHistoryRoute,
+  TeiteiRoute: TeiteiRoute,
   TvRoute: TvRoute,
   ViewStockRoute: ViewStockRoute,
   MasterDataCreateRoute: MasterDataCreateRoute,

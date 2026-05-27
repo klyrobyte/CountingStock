@@ -1,6 +1,7 @@
 import { Router } from "express";
 import pool from "../db.js";
 import type { RowDataPacket, ResultSetHeader } from "mysql2";
+import { upsertStockAnalyticsFromMasterPart } from "../lib/stockAnalyticsService.js";
 
 const router = Router();
 
@@ -11,7 +12,7 @@ router.get("/", async (req, res) => {
   try {
     const search = (req.query.search as string) || "";
     let query =
-      "SELECT id, part_number, part_name, category, model, customer, qty_per_pallet, unit, status, factory_origin, image_base64, created_at, updated_at FROM master_parts";
+      "SELECT id, part_number, part_name, category, model, customer, qty_per_pallet, unit, status, factory_origin, machine, image_base64, created_at, updated_at FROM master_parts";
     const params: string[] = [];
 
     if (search) {
@@ -45,6 +46,7 @@ router.post("/", async (req, res) => {
       unit = "PCS",
       status = "active",
       factoryOrigin = "",
+      machine = "",
       imageBase64 = null,
     } = req.body;
 
@@ -55,10 +57,12 @@ router.post("/", async (req, res) => {
       });
     }
 
+    const machineVal = machine ? String(machine).trim().toUpperCase() : null;
+
     const [result] = await pool.query<ResultSetHeader>(
       `INSERT INTO master_parts
-        (part_number, part_name, category, model, customer, qty_per_pallet, unit, status, factory_origin, image_base64)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (part_number, part_name, category, model, customer, qty_per_pallet, unit, status, factory_origin, machine, image_base64)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         partNumber.trim().toUpperCase(),
         partName.trim().toUpperCase(),
@@ -69,6 +73,7 @@ router.post("/", async (req, res) => {
         unit.trim().toUpperCase(),
         status,
         factoryOrigin,
+        machineVal,
         imageBase64,
       ]
     );
@@ -77,6 +82,15 @@ router.post("/", async (req, res) => {
       "SELECT * FROM master_parts WHERE id = ?",
       [result.insertId]
     );
+
+    if (machineVal) {
+      await upsertStockAnalyticsFromMasterPart({
+        part_number: newRow[0].part_number as string,
+        part_name: newRow[0].part_name as string,
+        model: newRow[0].model as string,
+        machine: machineVal,
+      });
+    }
 
     res.status(201).json({ success: true, data: newRow[0] });
   } catch (err: unknown) {
@@ -107,6 +121,7 @@ router.put("/:id", async (req, res) => {
       unit = "PCS",
       status = "active",
       factoryOrigin = "",
+      machine = "",
       imageBase64,
     } = req.body;
 
@@ -127,7 +142,9 @@ router.put("/:id", async (req, res) => {
       "unit = ?",
       "status = ?",
       "factory_origin = ?",
+      "machine = ?",
     ];
+    const machineVal = machine ? String(machine).trim().toUpperCase() : null;
     const values: unknown[] = [
       partNumber.trim().toUpperCase(),
       partName.trim().toUpperCase(),
@@ -138,6 +155,7 @@ router.put("/:id", async (req, res) => {
       unit.trim().toUpperCase(),
       status,
       factoryOrigin,
+      machineVal,
     ];
 
     // Only update image if a new one is provided
@@ -157,6 +175,15 @@ router.put("/:id", async (req, res) => {
       "SELECT * FROM master_parts WHERE id = ?",
       [id]
     );
+
+    if (machineVal) {
+      await upsertStockAnalyticsFromMasterPart({
+        part_number: updatedRow[0].part_number as string,
+        part_name: updatedRow[0].part_name as string,
+        model: updatedRow[0].model as string,
+        machine: machineVal,
+      });
+    }
 
     res.json({ success: true, data: updatedRow[0] });
   } catch (err: unknown) {

@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import QRCode from "qrcode";
 import pool from "../db.js";
 import type { RowDataPacket, ResultSetHeader } from "mysql2";
+import { syncStockAnalyticsOnScan } from "../lib/stockAnalyticsService.js";
 
 const router = Router();
 
@@ -248,7 +249,9 @@ router.post("/process", async (req, res) => {
     // Logic:
     //   - No privilege rows for this station → open access, continue normally.
     //   - Has privilege rows → restricted; reject if this QR is not in the list.
-    const requestUser = req.user as { device_id?: number; type?: string } | undefined;
+    const requestUser = req.user as
+      | { device_id?: number; type?: string; username?: string }
+      | undefined;
     if (requestUser?.type === "station" && requestUser?.device_id) {
       const deviceId = requestUser.device_id;
 
@@ -368,18 +371,29 @@ router.post("/process", async (req, res) => {
     // ── Update stock table ────────────────────────────────────────────────────
     await updateStock(batchId, action, value);
 
+    const scannerUsername =
+      requestUser?.username?.trim() ||
+      (requestUser?.type === "station" ? "Scanner" : "unknown");
+
+    await syncStockAnalyticsOnScan(partName, scannerUsername, batchId);
+
     // Log scan record
     await pool.query(
       "INSERT INTO scan_records (batch_id, qr_id, label, factory, action, scanned_by, partstats) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      [batchId, qrId, partName, factoryOrigin, action, "Scanner", partstats]
+      [batchId, qrId, partName, factoryOrigin, action, scannerUsername, partstats]
     );
 
     // Log task
     const taskId = await nextTaskId();
     const taskType = action === "SCAN_IN" ? "Scan In" : "Scan Out";
     await pool.query(
-      "INSERT INTO tasks (task_id, title, type, status, user) VALUES (?, ?, ?, 'completed', 'Scanner')",
-      [taskId, `${action === "SCAN_IN" ? "IN" : "OUT"}: ${partName} (×${value})`, taskType]
+      "INSERT INTO tasks (task_id, title, type, status, user) VALUES (?, ?, ?, 'completed', ?)",
+      [
+        taskId,
+        `${action === "SCAN_IN" ? "IN" : "OUT"}: ${partName} (×${value})`,
+        taskType,
+        scannerUsername,
+      ]
     );
 
     res.json({

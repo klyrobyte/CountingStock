@@ -9,6 +9,7 @@ import {
   useMasterParts,
 } from "@/hooks/use-master-parts";
 import { CategoryApi, ModelApi, CustomerApi, FactoryApi } from "@/hooks/use-master-data";
+import { useMesin } from "@/hooks/use-mesin";
 import { ChevronDown } from "lucide-react";
 
 // Optional search param: editId for editing an existing part
@@ -75,8 +76,10 @@ function CreateMasterPartPage() {
   const [model, setModel] = useState("");
   const [customer, setCustomer] = useState("");
   const [factoryOrigin, setFactoryOrigin] = useState("");
+  const [machine, setMachine] = useState("");
   const [status, setStatus] = useState<"active" | "inactive">("active");
 
+  const { data: mesinList = [] } = useMesin();
   const { data: categories = [] } = CategoryApi.useGetAll();
   const { data: models = [] } = ModelApi.useGetAll();
   const { data: customers = [] } = CustomerApi.useGetAll();
@@ -98,6 +101,7 @@ function CreateMasterPartPage() {
       setModel(editPart.model ?? "");
       setCustomer(editPart.customer ?? "");
       setFactoryOrigin(editPart.factory_origin ?? "");
+      setMachine(editPart.machine ?? "");
       setStatus(editPart.status);
       if (editPart.image_base64) {
         setImagePreview(editPart.image_base64);
@@ -154,6 +158,7 @@ function CreateMasterPartPage() {
         model: model.trim(),
         customer: customer.trim(),
         factoryOrigin: factoryOrigin.trim(),
+        machine: machine.trim() || undefined,
         qtyPerPallet: 1,
         unit: "PCS",
         status,
@@ -182,7 +187,7 @@ function CreateMasterPartPage() {
       }
     },
     [
-      partNumber, partName, category, model, customer, factoryOrigin,
+      partNumber, partName, category, model, customer, factoryOrigin, machine,
       status, imageBase64,
       isEdit, editId, createPart, updatePart, navigate,
     ]
@@ -288,6 +293,26 @@ function CreateMasterPartPage() {
                 >
                   <option value="" disabled>Pilih Customer</option>
                   {customers.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              </div>
+            </Field>
+
+            {/* Machine Origin */}
+            <Field label="Machine Origin">
+              <div className="relative">
+                <select
+                  id="input-machine-origin"
+                  value={machine}
+                  onChange={(e) => setMachine(e.target.value)}
+                  className={SELECT}
+                >
+                  <option value="">— Tidak ada —</option>
+                  {mesinList.map((m) => (
+                    <option key={m.id} value={m.machine_code}>
+                      {m.machine_code} — {m.machine_name}
+                    </option>
+                  ))}
                 </select>
                 <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               </div>

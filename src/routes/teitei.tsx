@@ -13,58 +13,74 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  useShikakeList,
-  useShikakeParts,
-  useCreateShikake,
-  useUpdateShikake,
-  useDeleteShikake,
-  type ShikakeItem,
-} from "@/hooks/use-shikake";
+  useTeiteiList,
+  useTeiteiParts,
+  useCreateTeitei,
+  useUpdateTeitei,
+  useDeleteTeitei,
+  type TeiteiItem,
+} from "@/hooks/use-teitei";
 
-export const Route = createFileRoute("/shikake")({
+export const Route = createFileRoute("/teitei")({
   head: () => ({
     meta: [
-      { title: "Shikake Management — Sugity Creatives" },
-      { name: "description", content: "Kelola nilai shikake per master part" },
+      { title: "Teitei Management — Sugity Creatives" },
+      { name: "description", content: "Kelola nilai teitei per master part" },
     ],
   }),
-  component: ShikakePage,
+  component: TeiteiPage,
 });
 
-function ShikakePage() {
-  const { data: items = [], isLoading } = useShikakeList();
-  const { data: parts = [] } = useShikakeParts();
-  const createShikake = useCreateShikake();
-  const updateShikake = useUpdateShikake();
-  const deleteShikake = useDeleteShikake();
+function TeiteiPage() {
+  const { data: items = [], isLoading } = useTeiteiList();
+  const { data: parts = [] } = useTeiteiParts();
+  const createTeitei = useCreateTeitei();
+  const updateTeitei = useUpdateTeitei();
+  const deleteTeitei = useDeleteTeitei();
 
   const [isAdding, setIsAdding] = useState(false);
   const [newPartId, setNewPartId] = useState("");
   const [newValue, setNewValue] = useState("1");
+  const [newMin, setNewMin] = useState("0");
+  const [newQtyDay, setNewQtyDay] = useState("0");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editValue, setEditValue] = useState("");
-  const [deleting, setDeleting] = useState<ShikakeItem | null>(null);
+  const [editMin, setEditMin] = useState("");
+  const [editQtyDay, setEditQtyDay] = useState("");
+  const [deleting, setDeleting] = useState<TeiteiItem | null>(null);
 
   const usedPartIds = new Set(items.map((i) => i.masterPartId));
   const availableParts = parts.filter((p) => !usedPartIds.has(p.id));
 
   const handleAdd = () => {
     if (!newPartId || !newValue) return;
-    createShikake.mutate(
-      { masterPartId: Number(newPartId), shikakeValue: Number(newValue) },
+    createTeitei.mutate(
+      {
+        masterPartId: Number(newPartId),
+        teiteiValue: Number(newValue),
+        minVal: Number(newMin),
+        qtyPerDay: Number(newQtyDay),
+      },
       {
         onSuccess: () => {
           setIsAdding(false);
           setNewPartId("");
           setNewValue("1");
+          setNewMin("0");
+          setNewQtyDay("0");
         },
       }
     );
   };
 
   const handleUpdate = (id: number) => {
-    updateShikake.mutate(
-      { id, shikakeValue: Number(editValue) },
+    updateTeitei.mutate(
+      {
+        id,
+        teiteiValue: Number(editValue),
+        minVal: Number(editMin),
+        qtyPerDay: Number(editQtyDay),
+      },
       { onSuccess: () => setEditingId(null) }
     );
   };
@@ -77,17 +93,17 @@ function ShikakePage() {
             Management
           </span>
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            Shikake Management
+            Teitei Management
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Atur nilai shikake untuk setiap master part (digunakan dalam perhitungan stock analytics).
+            Atur nilai teitei untuk setiap master part (digunakan dalam perhitungan stock analytics).
           </p>
         </div>
 
         <section className="rounded-3xl border border-border-surface bg-surface-section p-5 sm:p-7">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-base font-semibold text-foreground">
-              Daftar Shikake
+              Daftar Teitei
             </h2>
             {!isAdding && (
               <button
@@ -116,7 +132,13 @@ function ShikakePage() {
                     Model
                   </th>
                   <th className="border-b border-border px-3 py-3 font-medium">
-                    Shikake
+                    Teitei
+                  </th>
+                  <th className="border-b border-border px-3 py-3 font-medium">
+                    Min
+                  </th>
+                  <th className="border-b border-border px-3 py-3 font-medium">
+                    Qty/Day
                   </th>
                   <th className="border-b border-border px-3 py-3 font-medium text-right">
                     Aksi
@@ -151,15 +173,35 @@ function ShikakePage() {
                         className="h-9 w-24 rounded-lg border border-border bg-card px-3 text-sm"
                       />
                     </td>
+                    <td className="border-b border-border/60 px-3 py-3">
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={newMin}
+                        onChange={(e) => setNewMin(e.target.value)}
+                        className="h-9 w-24 rounded-lg border border-border bg-card px-3 text-sm"
+                      />
+                    </td>
+                    <td className="border-b border-border/60 px-3 py-3">
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={newQtyDay}
+                        onChange={(e) => setNewQtyDay(e.target.value)}
+                        className="h-9 w-24 rounded-lg border border-border bg-card px-3 text-sm"
+                      />
+                    </td>
                     <td className="border-b border-border/60 px-3 py-3 text-right">
                       <div className="inline-flex gap-2">
                         <button
                           type="button"
                           onClick={handleAdd}
-                          disabled={createShikake.isPending || !newPartId}
+                          disabled={createTeitei.isPending || !newPartId}
                           className="rounded-lg bg-emerald-500/10 p-2 text-emerald-600"
                         >
-                          {createShikake.isPending ? (
+                          {createTeitei.isPending ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
                             <Save className="h-4 w-4" />
@@ -183,7 +225,7 @@ function ShikakePage() {
                 {isLoading ? (
                   <tr>
                     <td
-                      colSpan={5}
+                      colSpan={7}
                       className="py-8 text-center text-muted-foreground"
                     >
                       Loading…
@@ -192,10 +234,10 @@ function ShikakePage() {
                 ) : items.length === 0 && !isAdding ? (
                   <tr>
                     <td
-                      colSpan={5}
+                      colSpan={7}
                       className="py-8 text-center text-muted-foreground"
                     >
-                      Belum ada data shikake.
+                      Belum ada data teitei.
                     </td>
                   </tr>
                 ) : (
@@ -223,7 +265,35 @@ function ShikakePage() {
                             className="h-9 w-24 rounded-lg border border-border bg-card px-3 text-sm"
                           />
                         ) : (
-                          item.shikakeValue
+                          item.teiteiValue
+                        )}
+                      </td>
+                      <td className="border-b border-border/60 px-3 py-3.5">
+                        {editingId === item.id ? (
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={editMin}
+                            onChange={(e) => setEditMin(e.target.value)}
+                            className="h-9 w-24 rounded-lg border border-border bg-card px-3 text-sm"
+                          />
+                        ) : (
+                          item.minVal ?? 0
+                        )}
+                      </td>
+                      <td className="border-b border-border/60 px-3 py-3.5">
+                        {editingId === item.id ? (
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={editQtyDay}
+                            onChange={(e) => setEditQtyDay(e.target.value)}
+                            className="h-9 w-24 rounded-lg border border-border bg-card px-3 text-sm"
+                          />
+                        ) : (
+                          item.qtyPerDay ?? 0
                         )}
                       </td>
                       <td className="border-b border-border/60 px-3 py-3.5 text-right">
@@ -232,7 +302,7 @@ function ShikakePage() {
                             <button
                               type="button"
                               onClick={() => handleUpdate(item.id)}
-                              disabled={updateShikake.isPending}
+                              disabled={updateTeitei.isPending}
                               className="rounded-lg bg-emerald-500/10 p-2 text-emerald-600"
                             >
                               <Save className="h-4 w-4" />
@@ -251,7 +321,9 @@ function ShikakePage() {
                               type="button"
                               onClick={() => {
                                 setEditingId(item.id);
-                                setEditValue(String(item.shikakeValue));
+                                setEditValue(String(item.teiteiValue));
+                                setEditMin(String(item.minVal ?? 0));
+                                setEditQtyDay(String(item.qtyPerDay ?? 0));
                               }}
                               className="rounded-lg p-2 text-muted-foreground hover:bg-accent"
                             >
@@ -278,9 +350,9 @@ function ShikakePage() {
         <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Hapus Shikake</AlertDialogTitle>
+              <AlertDialogTitle>Hapus Teitei</AlertDialogTitle>
               <AlertDialogDescription>
-                Hapus shikake untuk <strong>{deleting?.partNumber}</strong>?
+                Hapus teitei untuk <strong>{deleting?.partNumber}</strong>?
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -289,7 +361,7 @@ function ShikakePage() {
                 onClick={(e) => {
                   e.preventDefault();
                   if (deleting) {
-                    deleteShikake.mutate(deleting.id, {
+                    deleteTeitei.mutate(deleting.id, {
                       onSuccess: () => setDeleting(null),
                     });
                   }

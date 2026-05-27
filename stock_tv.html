@@ -121,35 +121,43 @@
         }
 
         .right-col {
-            width: 280px;
+            width: 300px;
             flex-shrink: 0;
             background: var(--color-bg-surface);
             border-left: 1px solid var(--color-bg-border);
             padding: 16px;
             display: flex;
             flex-direction: column;
-            overflow-y: auto;
+            overflow: hidden;
         }
 
+        /* --- KPI ROW (tv-kpi-row) --- */
         .top-row { display: flex; gap: 12px; height: 140px; flex-shrink: 0; }
         .gauge-container { width: 140px; height: 140px; position: relative; flex-shrink: 0; }
         .gauge-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
         .gauge-val { font-size: 28px; font-weight: 700; line-height: 1; }
         .gauge-label { font-size: 9px; color: var(--color-text-muted); letter-spacing: 0.12em; }
 
-        .kpi-container { flex: 1; display: flex; gap: 8px; }
+        /* tv-kpi-row: the KPI card container */
+        tv-kpi-row {
+            flex: 1;
+            display: flex;
+            gap: 8px;
+        }
+
         .kpi-card {
             flex: 1; border-radius: 0 8px 8px 0; padding: 12px 14px;
             display: flex; flex-direction: column; justify-content: space-between;
             transition: background-color 0.2s ease;
         }
         .kpi-card.critical { background: var(--color-critical-bg); border: 1px solid var(--color-critical-dim); border-left: 3px solid var(--color-critical); }
-        .kpi-card.warning { background: var(--color-warning-bg); border: 1px solid var(--color-warning-dim); border-left: 3px solid var(--color-warning); }
-        .kpi-card.safe { background: var(--color-safe-bg); border: 1px solid var(--color-safe-dim); border-left: 3px solid var(--color-safe); }
-        .kpi-number { font-size: 56px; font-weight: 700; line-height: 1; margin: auto 0; }
+        .kpi-card.warning  { background: var(--color-warning-bg);  border: 1px solid var(--color-warning-dim);  border-left: 3px solid var(--color-warning); }
+        .kpi-card.safe     { background: var(--color-safe-bg);     border: 1px solid var(--color-safe-dim);     border-left: 3px solid var(--color-safe); }
+        .kpi-number { font-size: 56px; font-weight: 700; line-height: 1; margin: auto 0; transition: all 0.3s ease; }
 
         .section-label { font-size: 11px; font-weight: 600; color: var(--color-text-muted); letter-spacing: 0.1em; text-transform: uppercase; flex-shrink: 0; }
 
+        /* --- MACHINE GRID (tv-mc-val) --- */
         .machine-grid { 
             display: grid; 
             grid-template-columns: repeat(4, 1fr); 
@@ -162,24 +170,96 @@
             background: var(--color-bg-surface); border-radius: 0 8px 8px 0; padding: 10px 12px;
             display: grid; grid-template-areas: "id icon" "val icon"; grid-template-columns: 1fr auto; grid-template-rows: auto 1fr;
             border: 1px solid var(--color-bg-border);
-            transition: background-color 0.2s ease;
+            transition: background-color 0.2s ease, border-color 0.3s ease;
         }
-        .mc-id { grid-area: id; font-size: 12px; font-weight: 500; color: var(--color-text-muted); }
+        .mc-id   { grid-area: id;   font-size: 12px; font-weight: 500; color: var(--color-text-muted); }
         .mc-icon { grid-area: icon; font-size: 28px; align-self: center; }
-        .mc-val { grid-area: val; font-size: 40px; font-weight: 700; line-height: 1; align-self: end; }
+
+        /* tv-mc-val: the value inside each MC card */
+        tv-mc-val { grid-area: val; font-size: 40px; font-weight: 700; line-height: 1; align-self: end; display: block; transition: all 0.3s ease; }
 
         .mc-card.critical { border: 1px solid var(--color-critical-dim); border-left: 3px solid var(--color-critical); }
-        .mc-card.warning { border: 1px solid var(--color-warning-dim); border-left: 3px solid var(--color-warning); }
-        .mc-card.safe { border: 1px solid var(--color-safe-dim); border-left: 3px solid var(--color-safe); }
+        .mc-card.warning  { border: 1px solid var(--color-warning-dim);  border-left: 3px solid var(--color-warning); }
+        .mc-card.safe     { border: 1px solid var(--color-safe-dim);     border-left: 3px solid var(--color-safe); }
 
         .chart-wrapper { flex: 1; min-height: 0; display: flex; flex-direction: column; position: relative; }
         #stockChart { width: 100% !important; height: 100% !important; }
 
-        @media (min-width: 1920px) { .mc-val { font-size: 52px; } .kpi-number { font-size: 72px; } .gauge-val { font-size: 36px; } }
-        @media (min-width: 2560px) { .mc-val { font-size: 64px; } .kpi-number { font-size: 88px; } .gauge-val { font-size: 44px; } }
+        @media (min-width: 1920px) { tv-mc-val { font-size: 52px; } .kpi-number { font-size: 72px; } .gauge-val { font-size: 36px; } }
+        @media (min-width: 2560px) { tv-mc-val { font-size: 64px; } .kpi-number { font-size: 88px; } .gauge-val { font-size: 44px; } }
 
-        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        /* --- RIGHT PANEL: PRIORITY PRODUCTION --- */
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-shrink: 0; }
         .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--color-text-muted); padding-bottom: 60px; }
+
+        /* tv-priority-table: the scrollable priority table */
+        tv-priority-table {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            overflow-y: auto;
+            gap: 6px;
+            /* thin scrollbar */
+            scrollbar-width: thin;
+            scrollbar-color: var(--color-bg-border) transparent;
+        }
+        tv-priority-table::-webkit-scrollbar { width: 4px; }
+        tv-priority-table::-webkit-scrollbar-thumb { background: var(--color-bg-border); border-radius: 2px; }
+
+        /* MC Group block inside priority table */
+        .priority-mc-group {
+            background: var(--color-bg-base);
+            border-radius: 6px;
+            border: 1px solid var(--color-bg-border);
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .priority-mc-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 7px 10px;
+            border-bottom: 1px solid var(--color-bg-border);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+
+        .priority-mc-header.critical { background: var(--color-critical-bg); color: var(--color-critical); }
+        .priority-mc-header.warning  { background: var(--color-warning-bg);  color: var(--color-warning); }
+        .priority-mc-header.safe     { background: var(--color-safe-bg);     color: var(--color-safe); }
+
+        /* Status badge for the ST column */
+        .badge-st {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 7px;
+            border-radius: 4px;
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+        .badge-critical { background: var(--color-critical-bg); color: var(--color-critical); border: 1px solid var(--color-critical-dim); }
+        .badge-warning  { background: var(--color-warning-bg);  color: var(--color-warning);  border: 1px solid var(--color-warning-dim); }
+        .badge-safe     { background: var(--color-safe-bg);     color: var(--color-safe);     border: 1px solid var(--color-safe-dim); }
+
+        /* Part rows inside a MC group */
+        .priority-part-row {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            align-items: center;
+            padding: 5px 10px;
+            gap: 8px;
+            font-size: 11px;
+            border-bottom: 1px solid var(--color-bg-border);
+        }
+        .priority-part-row:last-child { border-bottom: none; }
+        .priority-part-name { color: var(--color-text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .priority-part-jam  { font-weight: 600; font-size: 12px; color: var(--color-text-primary); min-width: 36px; text-align: right; }
+        .priority-part-st   { min-width: 54px; text-align: right; }
     </style>
 </head>
 <body>
@@ -207,23 +287,25 @@
                             <div class="gauge-label">AVAILABILITY</div>
                         </div>
                     </div>
-                    <div class="kpi-container">
-                        <div class="kpi-card critical">
-                            <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:600; color:var(--color-critical); text-transform:uppercase;">Critical <span style="color:var(--color-critical-text);">&lt; 2JAM</span></div>
-                            <div class="kpi-number">1</div>
-                            <div style="font-size:11px; color:var(--color-text-muted);">PARTS</div>
+
+                    <!-- tv-kpi-row: KPI cards auto-counted from PRIORITY PRODUCTION MC groups -->
+                    <tv-kpi-row id="tv-kpi-row">
+                        <div class="kpi-card critical" id="kpi-critical">
+                            <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:600; color:var(--color-critical); text-transform:uppercase;">Critical <span style="color:var(--color-critical-text);">&lt; 3JAM</span></div>
+                            <div class="kpi-number" id="kpi-critical-count">0</div>
+                            <div style="font-size:11px; color:var(--color-text-muted);">MC GROUPS</div>
                         </div>
-                        <div class="kpi-card warning">
-                            <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:600; color:var(--color-warning); text-transform:uppercase;">Warning <span style="color:var(--color-warning-text);">2-4JAM</span></div>
-                            <div class="kpi-number">3</div>
-                            <div style="font-size:11px; color:var(--color-text-muted);">PARTS</div>
+                        <div class="kpi-card warning" id="kpi-warning">
+                            <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:600; color:var(--color-warning); text-transform:uppercase;">Warning <span style="color:var(--color-warning-text);">3–4JAM</span></div>
+                            <div class="kpi-number" id="kpi-warning-count">0</div>
+                            <div style="font-size:11px; color:var(--color-text-muted);">MC GROUPS</div>
                         </div>
-                        <div class="kpi-card safe">
+                        <div class="kpi-card safe" id="kpi-safe">
                             <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:600; color:var(--color-safe); text-transform:uppercase;">Safe <span style="color:var(--color-safe-text);">&gt; 4JAM</span></div>
-                            <div class="kpi-number">3</div>
-                            <div style="font-size:11px; color:var(--color-text-muted);">PARTS</div>
+                            <div class="kpi-number" id="kpi-safe-count">0</div>
+                            <div style="font-size:11px; color:var(--color-text-muted);">MC GROUPS</div>
                         </div>
-                    </div>
+                    </tv-kpi-row>
                 </section>
 
                 <div class="section-label">Minimum Stock / Machine</div>
@@ -240,16 +322,19 @@
                     <span style="font-size:12px; font-weight:600; color:var(--color-text-secondary); letter-spacing:0.1em;">PRIORITY PRODUCTION</span>
                     <span style="background:var(--color-warning-bg); border:1px solid var(--color-warning-dim); border-radius:4px; padding:3px 8px; font-size:10px; font-weight:700; color:var(--color-warning);">&lt; 4H</span>
                 </div>
-                <div class="empty-state">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--color-bg-border)" stroke-width="1.5"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
-                    <div style="font-size:13px;">No active priorities</div>
-                </div>
+
+                <!-- tv-priority-table: grouped MC blocks with ST column derived from JAM -->
+                <tv-priority-table id="tv-priority-table">
+                    <!-- Rendered by JS -->
+                </tv-priority-table>
             </aside>
         </main>
     </div>
 
     <script>
-        // --- THEME ENGINE ---
+        // =========================================================
+        // THEME ENGINE
+        // =========================================================
         function applyTheme() {
             const params = new URLSearchParams(window.location.search);
             const theme = params.get('theme');
@@ -260,7 +345,6 @@
             } else if (theme === 'dark') {
                 isDark = true;
             } else {
-                // Default: Follow System
                 isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
             }
 
@@ -270,37 +354,194 @@
 
         const isDarkMode = applyTheme();
 
-        // --- UI LOGIC ---
-        const state = {
-            machines: [
-                { id: 'MC#1', val: 0, status: 'none', sub: 'Running / Reset' },
-                { id: 'MC#2', val: 2.4, status: 'warning' },
-                { id: 'MC#3', val: 2.8, status: 'warning' },
-                { id: 'MC#4', val: 5.5, status: 'safe' },
-                { id: 'MC#5', val: 1.4, status: 'critical' },
-                { id: 'MC#6', val: 2.6, status: 'warning' },
-                { id: 'MC#7', val: 4.0, status: 'safe' },
-                { id: 'MC#8', val: 4.7, status: 'safe' }
-            ]
-        };
+        // =========================================================
+        // PRIORITY LOGIC — Section 1
+        // JAM thresholds:  < 3.0 → critical | 3.0–3.99 → warning | ≥ 4.0 → safe
+        // =========================================================
+        function jamStatus(jam) {
+            const v = parseFloat(jam);
+            if (isNaN(v))       return 'critical'; // unknown → treat as critical
+            if (v < 3.0)        return 'critical';
+            if (v < 4.0)        return 'warning';
+            return 'safe';
+        }
 
-        function renderMachines() {
+        function jamBadgeClass(status) {
+            return `badge-st badge-${status}`;
+        }
+
+        const STATUS_ICON = { critical: '🔴', warning: '🟡', safe: '🟢' };
+        const STATUS_LABEL = { critical: 'critical', warning: 'warning', safe: 'safe' };
+
+        // =========================================================
+        // DATA — PRIORITY PRODUCTION (raw parts with JAM)
+        // Each row: { mc, part, jam }
+        // =========================================================
+        const priorityRows = [
+            { mc: 'MC#2', part: 'DAPPY',        jam: 0.0   },
+            { mc: 'MC#2', part: 'DUMMY PART',   jam: 0.0   },
+            { mc: 'MC#2', part: 'PANEL QTR LH', jam: 106.7 },
+            { mc: 'MC#2', part: 'RIZKY DAFFY',  jam: 40.0  },
+            { mc: 'MC#3', part: 'PART-A',        jam: 3.5   },
+            { mc: 'MC#3', part: 'PART-B',        jam: 3.8   },
+            { mc: 'MC#5', part: 'COWL TOP',      jam: 1.2   },
+            { mc: 'MC#5', part: 'HOOD ASSY',     jam: 2.6   },
+            { mc: 'MC#7', part: 'FENDER RH',     jam: 4.1   },
+            { mc: 'MC#7', part: 'FENDER LH',     jam: 5.3   },
+        ];
+
+        // =========================================================
+        // SECTION 2 — Group rows by MC, compute min JAM per MC
+        // =========================================================
+        function groupByMC(rows) {
+            const groups = {};
+            rows.forEach(row => {
+                if (!groups[row.mc]) groups[row.mc] = { mc: row.mc, parts: [] };
+                groups[row.mc].parts.push({ part: row.part, jam: parseFloat(row.jam) });
+            });
+
+            // Compute minJAM and status for each group
+            Object.values(groups).forEach(g => {
+                g.minJAM = Math.min(...g.parts.map(p => p.jam));
+                g.status = jamStatus(g.minJAM);
+            });
+
+            return groups;
+        }
+
+        // =========================================================
+        // SECTION 2 — Render tv-mc-val in the machine grid
+        // =========================================================
+        function renderMachineGrid(mcGroups) {
             const container = document.getElementById('m-grid');
             container.innerHTML = '';
-            state.machines.forEach(m => {
+
+            // All MC slots (some may not be in priority data → show as 'none')
+            const allMCs = ['MC#1','MC#2','MC#3','MC#4','MC#5','MC#6','MC#7','MC#8'];
+            const overrides = {
+                'MC#1': { val: null, status: 'none', sub: 'Running / Reset' },
+                'MC#4': { val: 5.5,  status: 'safe'   },
+                'MC#6': { val: 2.6,  status: 'warning' },
+            };
+
+            allMCs.forEach(mcId => {
                 const card = document.createElement('div');
-                card.className = `mc-card ${m.status}`;
-                let icon = m.status === 'critical' ? '💔' : m.status === 'warning' ? '⚠️' : m.status === 'safe' ? '💚' : '—';
-                let val = m.status === 'none' ? 'N/A' : m.val.toFixed(1);
+                let status, displayVal, sub;
+
+                if (mcGroups[mcId]) {
+                    // Driven by PRIORITY PRODUCTION data
+                    const g = mcGroups[mcId];
+                    status     = g.status;
+                    displayVal = g.minJAM.toFixed(1);
+                    sub        = null;
+                } else if (overrides[mcId]) {
+                    const o = overrides[mcId];
+                    status     = o.status;
+                    displayVal = o.val !== null ? o.val.toFixed(1) : null;
+                    sub        = o.sub || null;
+                } else {
+                    // Default: not in priority, show static safe placeholder
+                    status     = 'safe';
+                    displayVal = '—';
+                    sub        = null;
+                }
+
+                card.className = `mc-card ${status}`;
+                const icon = status === 'critical' ? '💔' : status === 'warning' ? '⚠️' : status === 'safe' ? '💚' : '—';
+                const valStr = displayVal !== null ? displayVal : 'N/A';
+
                 card.innerHTML = `
-                    <div class="mc-id">${m.id}</div>
+                    <div class="mc-id">${mcId}</div>
                     <div class="mc-icon">${icon}</div>
-                    <div class="mc-val">${val}${m.sub ? `<span style="font-size:10px; color:var(--color-text-muted); display:block; margin-top:2px;">${m.sub}</span>` : ''}</div>
+                    <tv-mc-val data-mc="${mcId}">${valStr}${sub ? `<span style="font-size:10px; color:var(--color-text-muted); display:block; margin-top:2px;">${sub}</span>` : ''}</tv-mc-val>
                 `;
                 container.appendChild(card);
             });
         }
 
+        // =========================================================
+        // SECTION 1 — Render tv-priority-table (grouped MC blocks)
+        //             ST badge per row is derived from that row's JAM
+        // =========================================================
+        function renderPriorityTable(mcGroups) {
+            const table = document.getElementById('tv-priority-table');
+
+            if (Object.keys(mcGroups).length === 0) {
+                table.innerHTML = `
+                    <div class="empty-state">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--color-bg-border)" stroke-width="1.5"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+                        <div style="font-size:13px;">No active priorities</div>
+                    </div>`;
+                return;
+            }
+
+            table.innerHTML = '';
+
+            // Sort groups: critical first, then warning, then safe
+            const sortOrder = { critical: 0, warning: 1, safe: 2 };
+            const sorted = Object.values(mcGroups).sort((a, b) => sortOrder[a.status] - sortOrder[b.status]);
+
+            sorted.forEach(group => {
+                const groupEl = document.createElement('div');
+                groupEl.className = 'priority-mc-group';
+
+                // MC group header showing MC id, min JAM badge, and ST status
+                const minStatus = group.status;
+                const minBadgeHtml = `<span class="${jamBadgeClass(minStatus)}">${STATUS_ICON[minStatus]} ${group.minJAM.toFixed(1)}h</span>`;
+
+                groupEl.innerHTML = `
+                    <div class="priority-mc-header ${minStatus}">
+                        <span>${group.mc}</span>
+                        ${minBadgeHtml}
+                    </div>
+                `;
+
+                // Part rows: each row shows part name, JAM value, and ST badge (from that row's JAM)
+                group.parts.forEach(p => {
+                    const rowStatus = jamStatus(p.jam);
+                    const rowEl = document.createElement('div');
+                    rowEl.className = 'priority-part-row';
+                    rowEl.innerHTML = `
+                        <span class="priority-part-name" title="${p.part}">${p.part}</span>
+                        <span class="priority-part-jam">${p.jam.toFixed(1)}</span>
+                        <span class="priority-part-st">
+                            <span class="${jamBadgeClass(rowStatus)}">${STATUS_ICON[rowStatus]} ${STATUS_LABEL[rowStatus]}</span>
+                        </span>
+                    `;
+                    groupEl.appendChild(rowEl);
+                });
+
+                table.appendChild(groupEl);
+            });
+        }
+
+        // =========================================================
+        // SECTION 3 — Update tv-kpi-row counts from MC group statuses
+        // =========================================================
+        function updateKpiRow(mcGroups) {
+            const tally = { critical: 0, warning: 0, safe: 0 };
+            Object.values(mcGroups).forEach(g => {
+                tally[g.status] = (tally[g.status] || 0) + 1;
+            });
+
+            document.getElementById('kpi-critical-count').textContent = tally.critical;
+            document.getElementById('kpi-warning-count').textContent  = tally.warning;
+            document.getElementById('kpi-safe-count').textContent      = tally.safe;
+        }
+
+        // =========================================================
+        // MAIN RENDER — single entry point, call whenever data changes
+        // =========================================================
+        function render() {
+            const mcGroups = groupByMC(priorityRows);
+            renderMachineGrid(mcGroups);
+            renderPriorityTable(mcGroups);
+            updateKpiRow(mcGroups);
+        }
+
+        // =========================================================
+        // CHART
+        // =========================================================
         function initChart() {
             const ctx = document.getElementById('stockChart').getContext('2d');
             const style = getComputedStyle(document.documentElement);
@@ -337,6 +578,9 @@
             });
         }
 
+        // =========================================================
+        // CLOCK
+        // =========================================================
         function updateClock() {
             const now = new Date();
             document.getElementById('clock').innerText = now.toLocaleString('en-GB', { 
@@ -347,7 +591,7 @@
 
         setInterval(updateClock, 1000);
         updateClock();
-        renderMachines();
+        render();       // initial render — reactive: call render() again whenever priorityRows changes
         initChart();
     </script>
 </body>

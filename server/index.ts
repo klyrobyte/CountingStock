@@ -17,7 +17,7 @@ import customersRoutes from "./routes/customers.js";
 import factoriesRoutes from "./routes/factories.js";
 import privilegesRoutes from "./routes/privileges.js";
 import stockAnalyticsRoutes from "./routes/stockAnalytics.js";
-import shikakeRoutes from "./routes/shikake.js";
+import teiteiRoutes from "./routes/teitei.js";
 import { requireAuth } from "./middleware/authMiddleware.js";
 
 
@@ -55,7 +55,7 @@ app.use("/api/customers", customersRoutes);
 app.use("/api/factories", factoriesRoutes);
 app.use("/api/privileges", privilegesRoutes); //API: QR Privilege Handler (internal-key protected)
 app.use("/api/stock-analytics", stockAnalyticsRoutes);
-app.use("/api/shikake", shikakeRoutes);
+app.use("/api/teitei", teiteiRoutes);
 
 
 app.listen(PORT, () => {

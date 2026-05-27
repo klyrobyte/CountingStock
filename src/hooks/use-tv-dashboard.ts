@@ -1,6 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchApi } from "@/lib/api";
 
+export type TvMachinePartRow = {
+  part: string;
+  pn: string;
+  jam: number;
+};
+
 export type TvMachine = {
   id: number;
   machineCode: string;
@@ -8,9 +14,9 @@ export type TvMachine = {
   status: string;
   isActive: boolean;
   stokJam: number;
+  stockJam?: number;
   cardStatus: "none" | "critical" | "warning" | "safe";
-  partName: string;
-  partNumber: string;
+  partRows: TvMachinePartRow[];
 };
 
 export type TvPriority = {

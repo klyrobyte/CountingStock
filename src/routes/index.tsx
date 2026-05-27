@@ -90,6 +90,14 @@ function StockScanPage() {
   const { data: history = [], isLoading } = useQrCodes();
   const generateQrCode = useGenerateQrCode();
 
+  // Build a Set of part names already claimed by an active QR record.
+  // When a QR is deleted, react-query invalidates 'qr-codes' → Set rebuilds
+  // → the part reappears in the dropdown automatically.
+  const claimedPartNames = useMemo(
+    () => new Set(history.map((qr) => qr.part_name)),
+    [history]
+  );
+
   const canSubmit = useMemo(
     () => partName.trim() && factoryOrigin && value && Number(value) > 0 && machineOrigin,
     [partName, factoryOrigin, value, machineOrigin]
@@ -98,8 +106,20 @@ function StockScanPage() {
   const handlePartChange = (val: string) => {
     setPartName(val);
     const selectedPart = masterParts.find((p) => p.part_name === val);
-    if (selectedPart && selectedPart.factory_origin) {
-      setFactoryOrigin(selectedPart.factory_origin);
+    if (selectedPart) {
+      if (selectedPart.factory_origin) {
+        setFactoryOrigin(selectedPart.factory_origin);
+      }
+      if (selectedPart.machine) {
+        // Find the full machine string from mesinList to match the SelectInput options
+        const machineObj = mesinList.find(m => m.machine_code === selectedPart.machine);
+        if (machineObj) {
+          setMachineOrigin(`${machineObj.machine_code} — ${machineObj.machine_name}`);
+        } else {
+          // Fallback if not found in list, but we have the code
+          setMachineOrigin(selectedPart.machine);
+        }
+      }
     }
   };
 
@@ -169,7 +189,9 @@ function StockScanPage() {
                     </SelectTrigger>
                     <SelectContent className="max-h-60 rounded-xl border-border bg-card shadow-2xl">
                       <div className="p-1">
-                        {masterParts.filter(p => p.status === "active").map((part) => (
+                        {masterParts
+                          .filter(p => p.status === "active" && !claimedPartNames.has(p.part_name))
+                          .map((part) => (
                           <SelectItem
                             key={part.id}
                             value={part.part_name}
