@@ -299,7 +299,7 @@ function CreateMasterPartPage() {
             </Field>
 
             {/* Machine Origin */}
-            <Field label="Machine Origin">
+            <Field label="Homelane Machine">
               <div className="relative">
                 <select
                   id="input-machine-origin"
@@ -319,7 +319,7 @@ function CreateMasterPartPage() {
             </Field>
 
             {/* Factory Origin */}
-            <Field label="Factory Origin">
+            <Field label="Homelane Factory">
               <div className="relative">
                 <select
                   id="input-factory"

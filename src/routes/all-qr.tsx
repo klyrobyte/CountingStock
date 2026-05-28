@@ -3,6 +3,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Download, ExternalLink, QrCode, Search } from "lucide-react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { useQrCodes, useDeleteQrCode, type QrItem } from "@/hooks/use-qr-codes";
+import { useMasterParts } from "@/hooks/use-master-parts";
 import { Trash2 } from "lucide-react";
 import {
   AlertDialog,
@@ -46,6 +47,7 @@ function AllQrPage() {
 
   const { data: filtered = [], isLoading } = useQrCodes(query);
   const deleteQr = useDeleteQrCode();
+  const { data: masterParts = [] } = useMasterParts();
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -72,12 +74,21 @@ function AllQrPage() {
   const handleOpen = useCallback(
     (item: QrItem) => {
       if (!item.qr_image_base64) return;
+      const part = masterParts.find(p => p.part_name === item.part_name);
       navigate({
         to: "/qr-viewer",
-        search: { img: item.qr_image_base64, label: item.part_name },
+        search: { 
+          img: item.qr_image_base64, 
+          label: item.part_name,
+          partname: item.part_name,
+          partnum: part?.part_number || "",
+          partmodel: part?.model || "",
+          machineOrigin: part?.machine || "",
+          factoryOrigin: item.factory || "",
+        },
       });
     },
-    [navigate]
+    [navigate, masterParts]
   );
 
   return (

@@ -20,9 +20,14 @@ export const Route = createFileRoute("/station/dashboard")({
   component: StationDashboardPage,
 });
 
-// ── Extract JWT token from raw QR value or full URL (same logic as scan.tsx) ──
+// ── Extract token from raw QR value ──────────────────────────────────────────
+// Handles three formats:
+//  1. Full URL with ?token= param (legacy)
+//  2. Direct JWT (3 dot-separated base64url segments, legacy)
+//  3. Short opaque token: ≤16 URL-safe alphanumeric chars (new QR format)
 function extractToken(rawValue: string): string | null {
   const trimmed = rawValue.trim();
+  // Format 1: URL containing ?token=
   try {
     if (trimmed.includes("token=")) {
       const url = new URL(
@@ -32,7 +37,10 @@ function extractToken(rawValue: string): string | null {
       if (t) return t;
     }
   } catch { /* not a URL */ }
+  // Format 2: Direct JWT (three dot-separated parts)
   if (trimmed.split(".").length === 3) return trimmed;
+  // Format 3: Short opaque token (new system) — ≤16 URL-safe alphanumeric chars
+  if (/^[A-Za-z0-9_-]{1,16}$/.test(trimmed)) return trimmed;
   return null;
 }
 

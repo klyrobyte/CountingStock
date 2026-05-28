@@ -1,6 +1,7 @@
 import { Router } from "express";
 import jwt from "jsonwebtoken";
 import QRCode from "qrcode";
+import crypto from "crypto";
 import pool from "../db.js";
 import type { RowDataPacket, ResultSetHeader } from "mysql2";
 import { syncStockAnalyticsOnScan } from "../lib/stockAnalyticsService.js";
@@ -12,7 +13,21 @@ const router = Router();
 const sessionCache = new Map<string, { metadata: Record<string, unknown>; scannedInAt: Date }>();
 
 const SECRET_KEY = process.env.JWT_SECRET || "pixel-scan-secret-key-2026"; //change with sha1 encrypt
-const BASE_URL = process.env.API_BASE_URL || "http://localhost:3001"; //Deploy: change with domain without ports 
+// BASE_URL is kept for any future use but is no longer embedded in QR payloads
+const _BASE_URL = process.env.API_BASE_URL || "http://localhost:3001";
+void _BASE_URL; // intentionally unused — QR now stores only a short token
+
+// ─── Helper: generate a short opaque token (8 URL-safe chars) ────────────────
+// Uses crypto.randomBytes for unpredictability. Charset is base62 (no +/= padding).
+function generateShortToken(): string {
+  const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  const bytes = crypto.randomBytes(8);
+  let token = "";
+  for (const byte of bytes) {
+    token += charset[byte % charset.length];
+  }
+  return token;
+}
 
 // ─── Helper: next sequential QR ID ───────────────────────────────────────────
 async function nextQrId(): Promise<string> {
@@ -110,27 +125,38 @@ router.post("/generate", async (req, res) => {
     const qrId = await nextQrId();
     const unitValue = Number(value);
 
-    // Sign JWT token (no expiry — static QR principle)
+    // Sign full JWT — stored server-side only, never embedded in the QR image
     const token = jwt.sign(
       { batchId, partName, factoryOrigin, value: unitValue, machineOrigin: machineOrigin ?? "" },
       SECRET_KEY
     );
 
-    // QR image points to /api/qr/info?token=... so any scanner opens it
-    const qrContentUrl = `${BASE_URL}/api/qr/info?token=${token}`;
+    // Generate a short opaque token — this is all the QR image encodes
+    // Collision probability at current scale is negligible; retry once on duplicate
+    let shortToken = generateShortToken();
+    try {
+      // Pre-check for collision (extremely rare but safe to guard)
+      const [existing] = await pool.query<RowDataPacket[]>(
+        "SELECT id FROM qr_codes WHERE short_token = ? LIMIT 1",
+        [shortToken]
+      );
+      if (existing.length > 0) shortToken = generateShortToken();
+    } catch {
+      // short_token column may not exist yet — migration not run; fall through
+    }
 
-    // Generate QR code as base64 PNG
-    const qrImageBase64 = await QRCode.toDataURL(qrContentUrl, {
+    // QR encodes only the short token — no URL, no IP, no JWT
+    const qrImageBase64 = await QRCode.toDataURL(shortToken, {
       width: 400,
       margin: 2,
       color: { dark: "#000000", light: "#ffffff" },
     });
 
-    // Save to qr_codes
+    // Save to qr_codes (short_token stored alongside the full JWT)
     const [result] = await pool.query<ResultSetHeader>(
-      `INSERT INTO qr_codes (qr_id, batch_id, part_name, factory, material, qr_value, units, token, qr_image_base64, status)
-       VALUES (?, ?, ?, ?, '', ?, ?, ?, ?, 'out')`,
-      [qrId, batchId, partName, factoryOrigin, String(unitValue), unitValue, token, qrImageBase64]
+      `INSERT INTO qr_codes (qr_id, batch_id, part_name, factory, material, qr_value, units, token, short_token, qr_image_base64, status)
+       VALUES (?, ?, ?, ?, '', ?, ?, ?, ?, ?, 'out')`,
+      [qrId, batchId, partName, factoryOrigin, String(unitValue), unitValue, token, shortToken, qrImageBase64]
     );
 
     // ── Save to stock with current_stock = 0 (starts empty) ──────────────────
@@ -158,7 +184,7 @@ router.post("/generate", async (req, res) => {
       data: {
         batchId,
         qrId,
-        qrContentUrl,
+        shortToken,
         qrImageBase64,
         partName,
         factoryOrigin,
@@ -173,9 +199,12 @@ router.post("/generate", async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// [3] GET /api/qr/info?token=... — show QR info and current status
+// [3] GET /api/qr/info?token=<shortToken> — resolve short token → batch data
+// The QR image now encodes only the short token (8 chars).
+// This endpoint looks up the full JWT from qr_codes, verifies it, and returns
+// the same response shape as before so all clients remain compatible.
 // ═══════════════════════════════════════════════════════════════════════════
-router.get("/info", (req, res) => {
+router.get("/info", async (req, res) => {
   try {
     const { token } = req.query as { token: string };
 
@@ -183,7 +212,19 @@ router.get("/info", (req, res) => {
       return res.status(400).json({ success: false, error: "Hmmm... Token hilang nih" });
     }
 
-    const decoded = jwt.verify(token, SECRET_KEY) as {
+    // Resolve short token → full JWT from DB
+    const [rows] = await pool.query<RowDataPacket[]>(
+      "SELECT token FROM qr_codes WHERE short_token = ? LIMIT 1",
+      [token]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, error: "QR tidak dikenali — token tidak ditemukan" });
+    }
+
+    const fullJwt: string = rows[0].token;
+
+    const decoded = jwt.verify(fullJwt, SECRET_KEY) as {
       batchId: string;
       partName: string;
       factoryOrigin: string;
@@ -207,11 +248,14 @@ router.get("/info", (req, res) => {
         message: isIn
           ? `${partName} is currently IN (active). Scanning will mark it OUT.`
           : `${partName} is currently OUT (idle). Scanning will mark it IN.`,
-        token,
+        token, // returns the short token back (clients use it for /process calls)
       },
     });
   } catch (err: unknown) {
-    res.status(401).json({ success: false, error: "Invalid or tampered QR token" });
+    if ((err as Error).name === "JsonWebTokenError" || (err as Error).name === "TokenExpiredError") {
+      return res.status(401).json({ success: false, error: "Invalid or tampered QR token" });
+    }
+    res.status(500).json({ success: false, error: (err as Error).message });
   }
 });
 
@@ -235,7 +279,21 @@ router.post("/process", async (req, res) => {
       return res.status(400).json({ success: false, error: "Token required" });
     }
 
-    const decoded = jwt.verify(token, SECRET_KEY) as {
+    // Resolve token: if it's a short token (≤16 chars) look up the full JWT from DB;
+    // otherwise treat it as a direct JWT (backward compatibility for older QR codes).
+    let fullJwt = token;
+    if (token.length <= 16) {
+      const [rows] = await pool.query<RowDataPacket[]>(
+        "SELECT token FROM qr_codes WHERE short_token = ? LIMIT 1",
+        [token]
+      );
+      if (rows.length === 0) {
+        return res.status(404).json({ success: false, error: "QR tidak dikenali — token tidak ditemukan" });
+      }
+      fullJwt = rows[0].token;
+    }
+
+    const decoded = jwt.verify(fullJwt, SECRET_KEY) as {
       batchId: string;
       partName: string;
       factoryOrigin: string;

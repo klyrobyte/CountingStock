@@ -73,6 +73,9 @@ export const MANAGEMENT_ITEMS: NavItem[] = [
     to: "/qr-privileges",
     icon: ShieldCheck,
   },
+];
+
+export const MASTER_DATA_ITEMS: NavItem[] = [
   {
     label: "Master Data",
     description: "Management Master Data",
@@ -229,6 +232,68 @@ export function SidebarContent({ collapsed, onToggle, onNavigate }: Props) {
         </div>
         <ul className={`space-y-1.5 pb-4 ${collapsed ? "flex flex-col items-center" : ""}`}>
           {MANAGEMENT_ITEMS.map((item) => {
+            const Icon = item.icon;
+            const active = pathname === item.to;
+
+            if (collapsed) {
+              return (
+                <li key={item.to}>
+                  <Link
+                    to={item.to}
+                    onClick={onNavigate}
+                    title={item.label}
+                    className={`flex h-10 w-10 items-center justify-center rounded-full transition-smooth ${active
+                      ? "bg-[#c05c30] text-white"
+                      : "text-foreground/80 hover:bg-sidebar-hover hover:text-foreground"
+                      }`}
+                  >
+                    <Icon className="h-5 w-5" strokeWidth={1.75} />
+                  </Link>
+                </li>
+              );
+            }
+
+            return (
+              <li key={item.to}>
+                <Link
+                  to={item.to}
+                  onClick={onNavigate}
+                  className={`group flex items-center gap-4 rounded-full px-4 py-3 transition-smooth ${active
+                    ? "bg-[#c05c30] text-white"
+                    : "text-foreground/90 hover:bg-sidebar-hover"
+                    }`}
+                >
+                  <Icon
+                    className={`h-5 w-5 shrink-0 transition-smooth ${active ? "text-white" : "text-foreground/80"
+                      }`}
+                    strokeWidth={1.75}
+                  />
+                  <span className="min-w-0 flex-1 overflow-hidden">
+                    <span className="block truncate text-[14px] font-semibold">
+                      {item.label}
+                    </span>
+                    <span
+                      className={`block truncate text-[11.5px] ${active ? "text-[#f1e7db]" : "text-muted-foreground"
+                        }`}
+                    >
+                      {item.description}
+                    </span>
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+
+        {/* Master Data Group */}
+        <div className={`mt-6 mb-2 ${collapsed ? "px-0 text-center" : "px-4"}`}>
+          <span className={`text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70 ${collapsed ? "hidden" : "block"}`}>
+            MASTER DATA
+          </span>
+          {collapsed && <div className="mx-auto h-px w-8 bg-border-surface my-2" />}
+        </div>
+        <ul className={`space-y-1.5 pb-4 ${collapsed ? "flex flex-col items-center" : ""}`}>
+          {MASTER_DATA_ITEMS.map((item) => {
             const Icon = item.icon;
             const active = pathname === item.to;
 

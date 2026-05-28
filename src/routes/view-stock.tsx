@@ -215,14 +215,14 @@ function StockCard({ row }: { row: StockRow }) {
         </div>
       </div>
 
-      {/* Progress bar */}
+      {/* Progress bar, feat: {unitValue} units*/}
       <div className="mt-3">
         <div className="flex items-center justify-between mb-1.5">
           <span className="text-[11.5px] text-muted-foreground">
             <span className={`font-semibold ${isStocked ? "text-foreground" : "text-muted-foreground"}`}>
               {currentStock}
             </span>
-            {" "}/ {unitValue} units
+            {" "} Total Stock
           </span>
           <span className="text-[11.5px] font-medium text-foreground">
             {isUntouched ? "—" : `${percentage.toFixed(1)}%`}

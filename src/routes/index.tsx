@@ -192,22 +192,22 @@ function StockScanPage() {
                         {masterParts
                           .filter(p => p.status === "active" && !claimedPartNames.has(p.part_name))
                           .map((part) => (
-                          <SelectItem
-                            key={part.id}
-                            value={part.part_name}
-                            className="rounded-md focus:bg-accent focus:text-accent-foreground cursor-pointer"
-                          >
-                            <div className="flex flex-col">
-                              <span className="font-medium text-foreground">{part.part_name}</span>
-                              <span className="text-[10px] text-muted-foreground">{part.part_number}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
+                            <SelectItem
+                              key={part.id}
+                              value={part.part_name}
+                              className="rounded-md focus:bg-accent focus:text-accent-foreground cursor-pointer"
+                            >
+                              <div className="flex flex-col">
+                                <span className="font-medium text-foreground">{part.part_name}</span>
+                                <span className="text-[10px] text-muted-foreground">{part.part_number}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
                       </div>
                     </SelectContent>
                   </Select>
                 </Field>
-                <Field label="Factory Origin">
+                <Field label="Homelane Factory">
                   <Select value={factoryOrigin} onValueChange={setFactoryOrigin}>
                     <SelectTrigger className="h-11 w-full rounded-xl border border-border-surface bg-card-elevated px-4 text-sm focus:border-[#C05C30]">
                       <SelectValue placeholder="Pilih Asal Factory" />
@@ -227,7 +227,7 @@ function StockScanPage() {
                     </SelectContent>
                   </Select>
                 </Field>
-                <Field label="Machine Origin" className="sm:col-span-2">
+                <Field label="Homeline Machine" className="sm:col-span-2">
                   <SelectInput
                     id="field-machine-origin"
                     value={machineOrigin}
@@ -352,7 +352,15 @@ function StockScanPage() {
                 {createdQr?.qrImageBase64 && (
                   <Link
                     to="/qr-viewer"
-                    search={{ img: createdQr.qrImageBase64, label: createdQr.partName }}
+                    search={{
+                      img: createdQr.qrImageBase64,
+                      label: createdQr.partName,
+                      partname: createdQr.partName,
+                      partnum: masterParts.find(p => p.part_name === createdQr.partName)?.part_number || "",
+                      partmodel: masterParts.find(p => p.part_name === createdQr.partName)?.model || "",
+                      machineOrigin: createdQr.machineOrigin || "",
+                      factoryOrigin: createdQr.factoryOrigin || "",
+                    }}
                     className="inline-flex items-center justify-center gap-2 rounded-full border border-border px-4 py-2.5 text-sm font-medium text-foreground transition-smooth hover:bg-accent"
                     title="View full screen"
                   >
@@ -393,7 +401,7 @@ function StockScanPage() {
                 <tr className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
                   <Th>Time</Th>
                   <Th>Part Name</Th>
-                  <Th>Factory Origin</Th>
+                  <Th>Homelane Factory</Th>
                   <Th>Units</Th>
                   <Th>Status</Th>
                   <Th className="text-right">QR</Th>
