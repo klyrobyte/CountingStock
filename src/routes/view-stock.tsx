@@ -222,7 +222,7 @@ function StockCard({ row }: { row: StockRow }) {
             <span className={`font-semibold ${isStocked ? "text-foreground" : "text-muted-foreground"}`}>
               {currentStock}
             </span>
-            {" "} Total Stock
+            {" "} Total PCs
           </span>
           <span className="text-[11.5px] font-medium text-foreground">
             {isUntouched ? "—" : `${percentage.toFixed(1)}%`}

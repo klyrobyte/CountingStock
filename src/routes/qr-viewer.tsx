@@ -11,6 +11,7 @@ export const Route = createFileRoute("/qr-viewer")({
     partmodel: (search.partmodel as string) || "",
     machineOrigin: (search.machineOrigin as string) || "",
     factoryOrigin: (search.factoryOrigin as string) || "",
+    updatedAt: (search.updatedAt as string) || "",
   }),
   head: () => ({
     meta: [
@@ -22,7 +23,7 @@ export const Route = createFileRoute("/qr-viewer")({
 });
 
 function QrViewerPage() {
-  const { img, label, partname, partnum, partmodel, machineOrigin, factoryOrigin } = Route.useSearch();
+  const { img, label, partname, partnum, partmodel, machineOrigin, factoryOrigin, updatedAt } = Route.useSearch();
 
   const handleDownload = useCallback(() => {
     if (!img) return;
@@ -100,9 +101,21 @@ function QrViewerPage() {
             <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Homelane Factory</div>
             <div className="mt-0.5 text-xs font-medium text-foreground print:text-black truncate">{factoryOrigin || "—"}</div>
           </div>
-          <div className="col-span-2">
+          <div>
             <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Homelane Machine</div>
             <div className="mt-0.5 text-xs font-medium text-foreground print:text-black truncate">{machineOrigin || "—"}</div>
+          </div>
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Terakhir Di Update</div>
+            <div className="mt-0.5 text-xs font-medium text-foreground print:text-black truncate">
+              {updatedAt ? new Intl.DateTimeFormat("id-ID", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              }).format(new Date(updatedAt)) : "—"}
+            </div>
           </div>
         </div>
 

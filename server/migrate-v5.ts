@@ -1,0 +1,82 @@
+/**
+ * V5 additive migration: machine_origin column on qr_codes.
+ * Needed so the field survives as a proper column (not buried in JWT)
+ * and is returned by SELECT * without decoding tokens.
+ * Run: npx tsx server/migrate-v5.ts
+ */
+import mysql from "mysql2/promise";
+import jwt from "jsonwebtoken";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+async function columnExists(
+  conn: mysql.Connection,
+  table: string,
+  column: string
+): Promise<boolean> {
+  const [rows] = await conn.query<mysql.RowDataPacket[]>(
+    `SELECT COUNT(*) AS cnt FROM information_schema.COLUMNS
+     WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?`,
+    [table, column]
+  );
+  return (rows[0]?.cnt as number) > 0;
+}
+
+async function migrate() {
+  const conn = await mysql.createConnection({
+    host: process.env.DB_HOST || "localhost",
+    port: Number(process.env.DB_PORT) || 3306,
+    user: process.env.DB_USER || "root",
+    password: process.env.DB_PASSWORD || "",
+    database: process.env.DB_NAME || "pixel_scan_dashboard",
+  });
+
+  const SECRET_KEY = process.env.JWT_SECRET || "pixel-scan-secret-key-2026";
+
+  console.log("🔄 Running V5 migration...\n");
+
+  // 1. Add machine_origin column if missing
+  if (!(await columnExists(conn, "qr_codes", "machine_origin"))) {
+    await conn.query(
+      `ALTER TABLE qr_codes ADD COLUMN machine_origin VARCHAR(255) NOT NULL DEFAULT ''`
+    );
+    console.log("✅ Added qr_codes.machine_origin");
+
+    // 2. Backfill from JWT tokens already in the table
+    const [rows] = await conn.query<mysql.RowDataPacket[]>(
+      "SELECT id, token FROM qr_codes WHERE token IS NOT NULL AND token != ''"
+    );
+
+    let backfilled = 0;
+    for (const row of rows) {
+      try {
+        const decoded = jwt.verify(row.token, SECRET_KEY) as {
+          machineOrigin?: string;
+        };
+        const mo = decoded.machineOrigin ?? "";
+        if (mo) {
+          await conn.query(
+            "UPDATE qr_codes SET machine_origin = ? WHERE id = ?",
+            [mo, row.id]
+          );
+          backfilled++;
+        }
+      } catch {
+        // Invalid/expired token — leave machine_origin as ''
+      }
+    }
+    console.log(`✅ Backfilled machine_origin for ${backfilled} rows`);
+  } else {
+    console.log("✅ qr_codes.machine_origin already exists");
+  }
+
+  console.log("\n🎉 V5 migration selesai!");
+  await conn.end();
+  process.exit(0);
+}
+
+migrate().catch((err) => {
+  console.error("❌ V5 migration gagal:", err);
+  process.exit(1);
+});

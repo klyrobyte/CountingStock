@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { useProcessQr, useQrHistory, type ProcessQrResult } from "@/hooks/use-qr-process";
+import { useScanSound } from "@/hooks/use-scan-sound";
 
 export const Route = createFileRoute("/scan")({
   head: () => ({
@@ -76,6 +77,7 @@ function ScanPage() {
 
   const processQr = useProcessQr();
   const { data: history = [] } = useQrHistory();
+  const { playInfo, playSuccess, playWarning } = useScanSound();
 
   // ── Extract token from raw QR value ──────────────────────────────────────
   // Handles three formats:
@@ -121,12 +123,16 @@ function ScanPage() {
 
       const token = extractToken(rawValue);
       if (!token) {
+        // Invalid token — play warning immediately
+        playWarning();
         setScanError("QR detected but does not contain a valid inventory token.");
         lastScannedRef.current = "";
         processingRef.current = false;
         return;
       }
 
+      // Valid token — play info sound immediately on detection
+      playInfo();
       setScanError(null);
       setIsProcessing(true);
       setScanResult(null);
@@ -141,6 +147,8 @@ function ScanPage() {
 
       processQr.mutate({ token, forceAction }, {
         onSuccess: (result) => {
+          // Success — play success sound immediately when server responds
+          playSuccess();
           setScanResult(result);
           setIsProcessing(false);
           processingRef.current = false;
@@ -153,6 +161,8 @@ function ScanPage() {
           }, cooldownMs);
         },
         onError: (err) => {
+          // Error — play warning sound immediately when server responds
+          playWarning();
           setScanError(err.message || "Failed to process QR code.");
           setIsProcessing(false);
           processingRef.current = false;
@@ -160,7 +170,7 @@ function ScanPage() {
         },
       });
     },
-    [extractToken, processQr]
+    [extractToken, processQr, playInfo, playSuccess, playWarning]
   );
 
   // ── Clear dedup lock whenever the user switches IN ↔ OUT ──────────────────
@@ -277,6 +287,8 @@ function ScanPage() {
         const decoded = await scanner.scanFile(file, /* showImage: */ false);
         handleDetected(decoded);
       } catch {
+        // File decode failed — play warning immediately
+        playWarning();
         setScanError(
           "Could not decode a QR code from this image. Make sure the QR is clear and well-lit, then try again."
         );
@@ -285,7 +297,7 @@ function ScanPage() {
         if (e.target) e.target.value = "";
       }
     },
-    [handleDetected]
+    [handleDetected, playWarning]
   );
 
   // ── Manual URL / token paste ──────────────────────────────────────────────

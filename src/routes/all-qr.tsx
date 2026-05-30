@@ -83,8 +83,9 @@ function AllQrPage() {
           partname: item.part_name,
           partnum: part?.part_number || "",
           partmodel: part?.model || "",
-          machineOrigin: part?.machine || "",
+          machineOrigin: item.machine_origin || part?.machine || "",
           factoryOrigin: item.factory || "",
+          updatedAt: item.updated_at || "",
         },
       });
     },

@@ -358,8 +358,9 @@ function StockScanPage() {
                       partname: createdQr.partName,
                       partnum: masterParts.find(p => p.part_name === createdQr.partName)?.part_number || "",
                       partmodel: masterParts.find(p => p.part_name === createdQr.partName)?.model || "",
-                      machineOrigin: createdQr.machineOrigin || "",
+                      machineOrigin: createdQr.row?.machine_origin || createdQr.machineOrigin || "",
                       factoryOrigin: createdQr.factoryOrigin || "",
+                      updatedAt: createdQr.row?.updated_at || "",
                     }}
                     className="inline-flex items-center justify-center gap-2 rounded-full border border-border px-4 py-2.5 text-sm font-medium text-foreground transition-smooth hover:bg-accent"
                     title="View full screen"

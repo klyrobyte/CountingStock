@@ -112,7 +112,7 @@ router.get("/", async (req, res) => {
 // ═══════════════════════════════════════════════════════════════════════════
 router.post("/generate", async (req, res) => {
   try {
-    const { partName, factoryOrigin, value, machineOrigin } = req.body;
+    const { partName, factoryOrigin, value, machineOrigin, partId } = req.body;
 
     if (!partName || !factoryOrigin || value === undefined) {
       return res.status(400).json({
@@ -153,16 +153,20 @@ router.post("/generate", async (req, res) => {
     });
 
     // Save to qr_codes (short_token stored alongside the full JWT)
+    // part_id links this QR to a master_parts row for stable edit-mode lookups
+    const partIdValue = partId ? Number(partId) : null;
     const [result] = await pool.query<ResultSetHeader>(
-      `INSERT INTO qr_codes (qr_id, batch_id, part_name, factory, material, qr_value, units, token, short_token, qr_image_base64, status)
-       VALUES (?, ?, ?, ?, '', ?, ?, ?, ?, ?, 'out')`,
-      [qrId, batchId, partName, factoryOrigin, String(unitValue), unitValue, token, shortToken, qrImageBase64]
+      `INSERT INTO qr_codes (qr_id, batch_id, part_name, factory, material, qr_value, units, token, short_token, qr_image_base64, status, part_id)
+       VALUES (?, ?, ?, ?, '', ?, ?, ?, ?, ?, 'out', ?)`,
+      [qrId, batchId, partName, factoryOrigin, String(unitValue), unitValue, token, shortToken, qrImageBase64, partIdValue]
     );
 
     // ── Save to stock with current_stock = 0 (starts empty) ──────────────────
+    // Use ON DUPLICATE KEY UPDATE to prevent duplicate stock rows for the same batch_id
     await pool.query(
       `INSERT INTO stock (batch_id, qr_id, part_name, factory, unit_value, current_stock, trend, percentage)
-       VALUES (?, ?, ?, ?, ?, 0, 'none', 0.00)`,
+       VALUES (?, ?, ?, ?, ?, 0, 'none', 0.00)
+       ON DUPLICATE KEY UPDATE part_name = VALUES(part_name), factory = VALUES(factory), unit_value = VALUES(unit_value)`,
       [batchId, qrId, partName, factoryOrigin, unitValue]
     );
 
@@ -199,6 +203,137 @@ router.post("/generate", async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
+// [NEW] POST /api/qr/regenerate — Replace a QR code, keeping stock/history
+// ═══════════════════════════════════════════════════════════════════════════
+router.post("/regenerate", async (req, res) => {
+  try {
+    const { oldShortToken, partName, factoryOrigin, value, machineOrigin, partId } = req.body;
+
+    if (!oldShortToken || !partName || !factoryOrigin || value === undefined) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing required fields for regeneration",
+      });
+    }
+
+    // 1. Find existing QR
+    const [existingQr] = await pool.query<RowDataPacket[]>(
+      "SELECT id, batch_id, qr_id FROM qr_codes WHERE short_token = ? LIMIT 1",
+      [oldShortToken]
+    );
+
+    if (existingQr.length === 0) {
+      return res.status(404).json({ success: false, error: "Old QR not found." });
+    }
+
+    const { id: dbId, batch_id: batchId, qr_id: qrId } = existingQr[0];
+    const unitValue = Number(value);
+
+    // 2. Generate new token and image
+    const newToken = jwt.sign(
+      { batchId, partName, factoryOrigin, value: unitValue, machineOrigin: machineOrigin ?? "" },
+      SECRET_KEY
+    );
+
+    let newShortToken = generateShortToken();
+    try {
+      const [collide] = await pool.query<RowDataPacket[]>(
+        "SELECT id FROM qr_codes WHERE short_token = ? LIMIT 1", [newShortToken]
+      );
+      if (collide.length > 0) newShortToken = generateShortToken();
+    } catch {}
+
+    const qrImageBase64 = await QRCode.toDataURL(newShortToken, {
+      width: 400,
+      margin: 2,
+      color: { dark: "#000000", light: "#ffffff" },
+    });
+
+    // 3. Update qr_codes (preserve batch_id/qr_id, update metadata and part_id)
+    const partIdValue = partId ? Number(partId) : null;
+    await pool.query(
+      `UPDATE qr_codes 
+       SET part_name = ?, factory = ?, qr_value = ?, units = ?, token = ?, short_token = ?, qr_image_base64 = ?,
+           part_id = COALESCE(?, part_id)
+       WHERE id = ?`,
+      [partName, factoryOrigin, String(unitValue), unitValue, newToken, newShortToken, qrImageBase64, partIdValue, dbId]
+    );
+
+    // 4. Record the alias
+    await pool.query(
+      "INSERT INTO qr_aliases (old_short_token, new_short_token) VALUES (?, ?) ON DUPLICATE KEY UPDATE new_short_token = ?",
+      [oldShortToken, newShortToken, newShortToken]
+    );
+
+    // 5. Update stock metadata (preserves current_stock)
+    // Use INSERT ... ON DUPLICATE KEY UPDATE as a guard in case stock row is missing
+    await pool.query(
+      `INSERT INTO stock (batch_id, qr_id, part_name, factory, unit_value, current_stock, trend, percentage)
+       VALUES (?, ?, ?, ?, ?, 0, 'none', 0.00)
+       ON DUPLICATE KEY UPDATE part_name = VALUES(part_name), factory = VALUES(factory), unit_value = VALUES(unit_value)`,
+      [batchId, qrId, partName, factoryOrigin, unitValue]
+    );
+
+    // 6. Log task
+    const taskId = await nextTaskId();
+    await pool.query(
+      "INSERT INTO tasks (task_id, title, type, status, user) VALUES (?, ?, 'QR Created', 'completed', 'System')",
+      [taskId, `QR Regenerated for ${partName}`]
+    );
+
+    const [newRow] = await pool.query<RowDataPacket[]>(
+      "SELECT * FROM qr_codes WHERE id = ?", [dbId]
+    );
+
+    res.json({
+      success: true,
+      message: "QR Code berhasil diregenerate",
+      data: {
+        batchId,
+        qrId,
+        shortToken: newShortToken,
+        qrImageBase64,
+        partName,
+        factoryOrigin,
+        value: unitValue,
+        status: newRow[0].status,
+        row: newRow[0],
+      },
+    });
+  } catch (err: unknown) {
+    res.status(500).json({ success: false, error: (err as Error).message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// [NEW] GET /api/qr/by-part/:partId — find latest active QR for a master part
+// Used by edit mode in /master-data/create?editId to do a stable ID-based lookup
+// instead of fragile part_name string matching.
+// ═══════════════════════════════════════════════════════════════════════════
+router.get("/by-part/:partId", async (req, res) => {
+  try {
+    const partId = Number(req.params.partId);
+    if (!partId || isNaN(partId)) {
+      return res.status(400).json({ success: false, error: "Invalid partId" });
+    }
+
+    const [rows] = await pool.query<RowDataPacket[]>(
+      `SELECT * FROM qr_codes WHERE part_id = ? ORDER BY created_at DESC LIMIT 1`,
+      [partId]
+    );
+
+    if (rows.length === 0) {
+      // No QR yet — not an error, part just hasn't been assigned a QR
+      return res.json({ success: true, data: null });
+    }
+
+    res.json({ success: true, data: rows[0] });
+  } catch (err: unknown) {
+    res.status(500).json({ success: false, error: (err as Error).message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
 // [3] GET /api/qr/info?token=<shortToken> — resolve short token → batch data
 // The QR image now encodes only the short token (8 chars).
 // This endpoint looks up the full JWT from qr_codes, verifies it, and returns
@@ -213,25 +348,55 @@ router.get("/info", async (req, res) => {
     }
 
     // Resolve short token → full JWT from DB
-    const [rows] = await pool.query<RowDataPacket[]>(
-      "SELECT token FROM qr_codes WHERE short_token = ? LIMIT 1",
+    let [rows] = await pool.query<RowDataPacket[]>(
+      "SELECT token, updated_at, machine_origin FROM qr_codes WHERE short_token = ? LIMIT 1",
       [token]
     );
+
+    let actualToken = token;
+
+    if (rows.length === 0) {
+      // Fallback: check qr_aliases
+      let currentToken = token;
+      let depth = 0;
+      while (depth < 5) {
+        const [aliasRows] = await pool.query<RowDataPacket[]>(
+          "SELECT new_short_token FROM qr_aliases WHERE old_short_token = ? LIMIT 1",
+          [currentToken]
+        );
+        if (aliasRows.length === 0) break;
+        currentToken = aliasRows[0].new_short_token;
+        depth++;
+      }
+      
+      actualToken = currentToken;
+      const [finalRows] = await pool.query<RowDataPacket[]>(
+        "SELECT token, updated_at, machine_origin FROM qr_codes WHERE short_token = ? LIMIT 1",
+        [actualToken]
+      );
+      if (finalRows.length > 0) {
+        rows = finalRows;
+      }
+    }
 
     if (rows.length === 0) {
       return res.status(404).json({ success: false, error: "QR tidak dikenali — token tidak ditemukan" });
     }
 
     const fullJwt: string = rows[0].token;
+    const updatedAt = rows[0].updated_at;
+    const machineOrigin = rows[0].machine_origin;
 
     const decoded = jwt.verify(fullJwt, SECRET_KEY) as {
       batchId: string;
       partName: string;
       factoryOrigin: string;
       value: number;
+      machineOrigin?: string; // fallback if needed
     };
 
     const { batchId, partName, factoryOrigin, value } = decoded;
+    const resolvedMachineOrigin = machineOrigin || decoded.machineOrigin || "";
     const isIn = sessionCache.has(batchId);
     const currentStatus = isIn ? "in" : "out";
     const nextAction = isIn ? "SCAN_OUT" : "SCAN_IN";
@@ -243,6 +408,8 @@ router.get("/info", async (req, res) => {
         partName,
         factoryOrigin,
         value,
+        machineOrigin: resolvedMachineOrigin,
+        updatedAt,
         currentStatus,
         nextAction,
         message: isIn
@@ -283,10 +450,36 @@ router.post("/process", async (req, res) => {
     // otherwise treat it as a direct JWT (backward compatibility for older QR codes).
     let fullJwt = token;
     if (token.length <= 16) {
-      const [rows] = await pool.query<RowDataPacket[]>(
+      let [rows] = await pool.query<RowDataPacket[]>(
         "SELECT token FROM qr_codes WHERE short_token = ? LIMIT 1",
         [token]
       );
+
+      let actualToken = token;
+      
+      if (rows.length === 0) {
+        let currentToken = token;
+        let depth = 0;
+        while (depth < 5) {
+          const [aliasRows] = await pool.query<RowDataPacket[]>(
+            "SELECT new_short_token FROM qr_aliases WHERE old_short_token = ? LIMIT 1",
+            [currentToken]
+          );
+          if (aliasRows.length === 0) break;
+          currentToken = aliasRows[0].new_short_token;
+          depth++;
+        }
+        
+        actualToken = currentToken;
+        const [finalRows] = await pool.query<RowDataPacket[]>(
+          "SELECT token FROM qr_codes WHERE short_token = ? LIMIT 1",
+          [actualToken]
+        );
+        if (finalRows.length > 0) {
+          rows = finalRows;
+        }
+      }
+
       if (rows.length === 0) {
         return res.status(404).json({ success: false, error: "QR tidak dikenali — token tidak ditemukan" });
       }

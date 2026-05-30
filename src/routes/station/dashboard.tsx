@@ -8,6 +8,7 @@ import {
   type StationDevice,
 } from "@/lib/auth";
 import { useStationScan } from "@/hooks/use-station-scan";
+import { useScanSound } from "@/hooks/use-scan-sound";
 import type { ProcessQrResult } from "@/hooks/use-qr-process";
 
 export const Route = createFileRoute("/station/dashboard")({
@@ -61,6 +62,7 @@ function StationDashboardPage() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const stationScan = useStationScan();
+  const { playInfo, playSuccess, playWarning } = useScanSound();
 
   useEffect(() => {
     setMounted(true);
@@ -85,11 +87,15 @@ function StationDashboardPage() {
     (raw: string) => {
       const token = extractToken(raw);
       if (!token) {
+        // Invalid QR — play warning immediately
+        playWarning();
         setScanError("QR tidak valid — tidak mengandung token inventori yang dikenali.");
         setScanInput("");
         return;
       }
 
+      // Valid token detected — play info sound immediately on scan attempt
+      playInfo();
       setScanError(null);
       const forceAction: "SCAN_IN" | "SCAN_OUT" =
         device?.device_role === "OUT" ? "SCAN_OUT" : "SCAN_IN";
@@ -98,6 +104,8 @@ function StationDashboardPage() {
         { token, forceAction, partstats },
         {
           onSuccess: (result) => {
+            // Success — play success sound immediately when server responds
+            playSuccess();
             setHistory((prev) => [
               {
                 id: `${Date.now()}-${Math.random()}`,
@@ -111,6 +119,8 @@ function StationDashboardPage() {
             setTimeout(() => inputRef.current?.focus(), 100);
           },
           onError: (err) => {
+            // Error — play warning sound immediately when server responds
+            playWarning();
             // ── Privilege validation error (server returns QR_NOT_ALLOWED) ──────
             if (err.message === "QR_NOT_ALLOWED") {
               setPrivilegeError(true);
@@ -127,7 +137,7 @@ function StationDashboardPage() {
         }
       );
     },
-    [device, stationScan]
+    [device, stationScan, playInfo, playSuccess, playWarning]
   );
 
   const handleKeyDown = useCallback(

@@ -1,123 +1,70 @@
-Fix three interconnected bugs in the TV dashboard (tv.tsx) PRIORITY PRODUCTION section.
-Run fixes in the exact order listed — each step feeds into the next.
+**Prompt untuk AI Coding Agent:**
 
-BUG #1 │ tv-mc-val shows wrong value instead of true minimum
-════════════════════════════════════════════════════════
+---
 
-SYMPTOM:
-  Given MC#2 with these parts:
+## Bug Report: Edit Part Creates Duplicate Stock Instead of Updating Existing
 
-    MC#2  DAPPY             O   0.0    critical
-    MC#2  DUMMY PART        O   0.0    critical
-    MC#2  PANEL, QTR LH     O   106.7  critical
-    MC#2  RIZKY DAFFY       X   2.7    critical
+### What's Happening
+When a user edits a Master Part at `/master-data/create?editId=[id]` and changes the part name (e.g. `"Daffy Alfajr"` → `"DAFFY ALFAJRi"`), the system creates a **brand new stock entry** (QR-1005) instead of updating the existing one (QR-1003).
 
-  Expected  →  tv-mc-val displays: 2.7
-  Actual    →  tv-mc-val displays: 0.0 ❌ wrong value
+**Result at `/view-stock` after edit:**
+```
+Daffy Alfajr   | QR-1003 | Factory 2 | 20 Total Stock | Unit: 10/scan  ← orphaned, old
+DAFFY ALFAJRi  | QR-1005 | Factory 2 | 0 Total Stock  | Unit: 10/scan  ← new, empty
+```
 
-ROOT CAUSE:
-  JAM = 0.0 means "no data / not started" and must be EXCLUDED before
-  finding the minimum. Current code includes 0.0, so it always resolves
-  to 0.0 instead of the real smallest active value.
+**Expected result:**
+```
+DAFFY ALFAJRi  | QR-1003 | Factory 2 | 20 Total Stock | Unit: 10/scan  ← same record, updated name
+```
 
-FIX:
-  const activeParts = mcGroup.filter(row => parseFloat(row.JAM) !== 0.0);
-  const minJAM = activeParts.length > 0
-    ? Math.min(...activeParts.map(r => parseFloat(r.JAM)))
-    : 0.0; // fallback only if every part is 0.0
+---
 
-  → Render minJAM inside the tv-mc-val element for that MC card.
+### Root Cause to Investigate
+The stock record is most likely being **looked up or created using `part_name` as the key** instead of `batch_id` or `qr_id`. When the name changes, the system doesn't find the old record by name, so it inserts a new one instead of updating.
 
-  MC#2 result after fix:
-    Active parts (non-zero): 106.7, 2.7
-    minJAM = 2.7  ✅  → tv-mc-val shows "2.7"
+**Check these locations:**
+1. `POST /api/qr/regenerate` — verify that the stock `UPDATE` is using `WHERE batch_id = ?`, not `WHERE part_name = ?`
+2. Any stock initialization logic triggered after QR generation — confirm it checks for existing stock by `batch_id` before doing an `INSERT`
+3. The `generateQrCode` mutation on the frontend — in edit mode, confirm it is calling `regenerateQrCode` (not `generateQrCode` which creates a new record from scratch)
 
+---
 
-════════════════════════════════════════════════════════
-BUG #2 │ ST column still shows "critical" even when JAM ≥ 4.0
-════════════════════════════════════════════════════════
+### What Needs to Be Fixed
 
-SYMPTOM:
-  MC#2  PANEL, QTR TRIM LH  O  106.7  ❌ critical
-  Should be:
-  MC#2  PANEL, QTR TRIM LH  O  106.7  ✅ safe
+**Rule: Stock identity must be tied to `batch_id`, never to `part_name`**
 
-ROOT CAUSE:
-  The ST badge is rendering the raw status string from the data source
-  (the hardcoded word "critical") instead of computing status from the
-  JAM float value. The raw status field must be completely IGNORED.
+1. **`POST /api/qr/regenerate`**
+   - The `UPDATE stock SET part_name = ?, ... WHERE batch_id = ?` must be the only write to stock
+   - Must **never** `INSERT` a new stock row if one already exists for that `batch_id`
+   - Add a guard: `INSERT INTO stock (...) ... ON CONFLICT (batch_id) DO UPDATE SET part_name = ...` OR check existence before insert
 
-FIX — always derive status by evaluating JAM with this function:
+2. **Edit mode in `/master-data/create?editId=[id]`**
+   - Confirm the submit handler calls `regenerateQrCode.mutateAsync(...)` — not `generateQrCode.mutateAsync(...)`
+   - The condition should be: `if (editId && existingShortToken) → regenerate` else `→ generate new`
+   - Log/throw an explicit error if `editId` is present but `existingShortToken` is not found, so it fails visibly instead of silently creating a new QR
 
-  function getStatus(jam) {
-    const val = parseFloat(jam);
-    if (val < 3.0)               return "critical";  // 0.00 – 2.99
-    if (val >= 3.0 && val < 4.0) return "warning";   // 3.00 – 3.99
-    if (val >= 4.0)              return "safe";       // 4.00 and above
-  }
+3. **Stock initialization after QR generation**
+   - If there's a trigger or post-generation hook that initializes a stock row, it must check:
+     ```sql
+     INSERT INTO stock (batch_id, part_name, ...)
+     VALUES (?, ?, ...)
+     ON CONFLICT (batch_id) DO UPDATE SET part_name = EXCLUDED.part_name, ...
+     ```
+   - Never a plain `INSERT` without conflict handling
 
-  → Apply getStatus() to EVERY row in PRIORITY PRODUCTION.
-  → Re-render each row's ST badge class + label using the computed value only.
-  → Never read or display the raw status string from the data for ST rendering.
+---
 
-  MC#2 rows after fix:
-    DAPPY             JAM 0.0    → getStatus(0.0)   = critical  ✅
-    DUMMY PART        JAM 0.0    → getStatus(0.0)   = critical  ✅
-    PANEL, QTR LH     JAM 106.7  → getStatus(106.7) = safe      ✅
-    RIZKY DAFFY       JAM 2.7    → getStatus(2.7)   = critical  ✅
+### Constraints
+- Do **not** delete or merge the orphaned duplicate stock records automatically — leave data cleanup as a manual admin action
+- Do **not** change the stock `current_stock` value or scan history during this fix
+- Balanced changes only — fix the lookup key and guard logic, do not restructure the QR or stock systems
 
+---
 
-════════════════════════════════════════════════════════
-BUG #3 │ tv-kpi-card.safe counter does not update
-════════════════════════════════════════════════════════
-
-SYMPTOM:
-  After BUG #2 is fixed, PANEL QTR LH (106.7) becomes "safe" per row,
-  but tv-kpi-number inside tv-kpi-card.safe still shows 0 instead of 1.
-
-ROOT CAUSE:
-  KPI counter reads the raw hardcoded status string, or re-aggregates
-  before BUG #1 and BUG #2 fixes have run — so counts are always stale.
-
-FIX:
-  KPI counts must be computed AFTER minJAM and getStatus() are resolved.
-  Count is per-MC-group (not per-part row) using each group's minJAM:
-
-  const groups = groupByMC(priorityProductionRows);
-
-  let safeCnt = 0, warningCnt = 0, criticalCnt = 0;
-
-  groups.forEach(mcGroup => {
-    const activeParts = mcGroup.filter(r => parseFloat(r.JAM) !== 0.0);
-    const minJAM = activeParts.length > 0
-      ? Math.min(...activeParts.map(r => parseFloat(r.JAM)))
-      : 0.0;
-    const status = getStatus(minJAM);
-    if (status === "safe")     safeCnt++;
-    if (status === "warning")  warningCnt++;
-    if (status === "critical") criticalCnt++;
-  });
-
-  document.querySelector('.tv-kpi-card.safe .tv-kpi-number').textContent     = safeCnt;
-  document.querySelector('.tv-kpi-card.warning .tv-kpi-number').textContent  = warningCnt;
-  document.querySelector('.tv-kpi-card.critical .tv-kpi-number').textContent = criticalCnt;
-
-  MC#2 end-to-end result:
-    minJAM of MC#2 = 2.7  →  getStatus(2.7) = "critical"
-    tv-kpi-card.critical  →  count += 1  ✅
-    tv-kpi-card.safe      →  count  = 0  (MC#2 group is critical, not safe)
-
-  NOTE: tv-kpi-card.safe turns to 1 only when an MC GROUP's minJAM >= 4.0,
-  not when a single row inside it has JAM >= 4.0.
-
-
-════════════════════════════════════════════════════════
-EXECUTION ORDER — must run in this exact sequence
-════════════════════════════════════════════════════════
-
-  [1] Group PRIORITY PRODUCTION rows by MC identifier
-  [2] Filter out JAM == 0.0 per group → compute minJAM per MC
-  [3] Re-render tv-mc-val for each MC card with its minJAM
-  [4] Run getStatus(JAM) on every individual row → re-render ST badges
-  [5] Run getStatus(minJAM) per MC group → tally safe/warning/critical
-  [6] Inject tallied counts into tv-kpi-number inside each tv-kpi-card
+### Verification Steps
+1. Create a part `"Daffy Alfajr"` with unit value `10` → scan it until stock = `20`
+2. Go to `/master-data/create?editId=[id]` → change name to `"DAFFY ALFAJRi"` → Save
+3. Go to `/view-stock` → confirm only **one** stock entry exists, with name `"DAFFY ALFAJRi"` and stock = `20`
+4. Confirm the QR token has changed (new QR image) but `batch_id` is the same
+5. Scan the old QR → confirm it resolves via `qr_aliases` to the new token and processes correctly

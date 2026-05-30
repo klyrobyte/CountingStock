@@ -7,9 +7,11 @@ import {
   useCreateMasterPart,
   useUpdateMasterPart,
   useMasterParts,
+  type MasterPart,
 } from "@/hooks/use-master-parts";
 import { CategoryApi, ModelApi, CustomerApi, FactoryApi } from "@/hooks/use-master-data";
 import { useMesin } from "@/hooks/use-mesin";
+import { useGenerateQrCode, useRegenerateQrCode, useQrByPartId, type QrItem } from "@/hooks/use-qr-codes";
 import { ChevronDown } from "lucide-react";
 
 // Optional search param: editId for editing an existing part
@@ -78,6 +80,15 @@ function CreateMasterPartPage() {
   const [factoryOrigin, setFactoryOrigin] = useState("");
   const [machine, setMachine] = useState("");
   const [status, setStatus] = useState<"active" | "inactive">("active");
+  const [unitValue, setUnitValue] = useState("");
+
+  // Stable lookup: fetch the QR linked to this master part by its integer ID.
+  // Returns `null` (not an error) when the part has no QR yet.
+  const { data: existingQrData, isLoading: isLoadingQrs } = useQrByPartId(isEdit ? editId : undefined);
+  const latestQr: QrItem | null = (existingQrData as QrItem | null) ?? null;
+
+  const generateQr = useGenerateQrCode();
+  const regenerateQr = useRegenerateQrCode();
 
   const { data: mesinList = [] } = useMesin();
   const { data: categories = [] } = CategoryApi.useGetAll();
@@ -109,6 +120,12 @@ function CreateMasterPartPage() {
       }
     }
   }, [editPart]);
+
+  useEffect(() => {
+    if (latestQr && !unitValue) {
+      setUnitValue(String(latestQr.units || latestQr.qr_value || ""));
+    }
+  }, [latestQr]);
 
   // Image file handling
   const handleImageChange = useCallback(
@@ -147,9 +164,14 @@ function CreateMasterPartPage() {
 
   // Submit
   const handleSubmit = useCallback(
-    (e: React.FormEvent) => {
+    async (e: React.FormEvent) => {
       e.preventDefault();
       setSubmitError(null);
+
+      if (!unitValue || isNaN(Number(unitValue))) {
+        setSubmitError("Unit Value harus berupa angka valid.");
+        return;
+      }
 
       const payload = {
         partNumber: partNumber.trim(),
@@ -165,35 +187,73 @@ function CreateMasterPartPage() {
         imageBase64,
       };
 
-      if (isEdit && editId) {
-        updatePart.mutate(
-          { id: editId, ...payload },
-          {
-            onSuccess: () => {
-              setSuccess(true);
-              setTimeout(() => navigate({ to: "/master-data" }), 900);
-            },
-            onError: (err) => setSubmitError(err.message),
+      try {
+        if (isEdit && editId) {
+          // Guard: editId must resolve to a known master part
+          if (!editPart) {
+            setSubmitError("Part tidak ditemukan — ID tidak valid.");
+            return;
           }
-        );
-      } else {
-        createPart.mutate(payload, {
-          onSuccess: () => {
-            setSuccess(true);
-            setTimeout(() => navigate({ to: "/master-data" }), 900);
-          },
-          onError: (err) => setSubmitError(err.message),
-        });
+
+          // 1. Update Master Part
+          await updatePart.mutateAsync({ id: editId, ...payload });
+
+          // 2a. If an existing QR exists → regenerate it (preserves batch_id/stock)
+          if (latestQr && latestQr.short_token) {
+            await regenerateQr.mutateAsync({
+              oldShortToken: latestQr.short_token,
+              partName: payload.partName,
+              factoryOrigin: payload.factoryOrigin,
+              value: Number(unitValue),
+              machineOrigin: payload.machine,
+              partId: editId,
+            });
+          } else {
+            // 2b. No QR yet (new part or first-time) — generate fresh
+            await generateQr.mutateAsync({
+              partName: payload.partName,
+              factoryOrigin: payload.factoryOrigin,
+              value: Number(unitValue),
+              machineOrigin: payload.machine,
+              partId: editId,
+            });
+          }
+
+          setSuccess(true);
+          setTimeout(() => navigate({ to: "/master-data" }), 900);
+        } else {
+          // 1. Create Master Part — get the new ID from the response
+          const createdPart: MasterPart = await createPart.mutateAsync(payload);
+
+          // 2. Generate QR linked to the new part ID
+          await generateQr.mutateAsync({
+            partName: payload.partName,
+            factoryOrigin: payload.factoryOrigin,
+            value: Number(unitValue),
+            machineOrigin: payload.machine,
+            partId: createdPart.id,
+          });
+
+          setSuccess(true);
+          setTimeout(() => navigate({ to: "/master-data" }), 900);
+        }
+      } catch (err: unknown) {
+        setSubmitError((err as Error).message);
       }
     },
     [
       partNumber, partName, category, model, customer, factoryOrigin, machine,
-      status, imageBase64,
-      isEdit, editId, createPart, updatePart, navigate,
+      status, imageBase64, unitValue,
+      isEdit, editId, createPart, updatePart, generateQr, regenerateQr, latestQr, navigate,
     ]
   );
 
-  const isPending = createPart.isPending || updatePart.isPending;
+  const isPending =
+    createPart.isPending ||
+    updatePart.isPending ||
+    generateQr.isPending ||
+    regenerateQr.isPending ||
+    (isEdit && isLoadingQrs);
 
   return (
     <DashboardLayout>
@@ -350,6 +410,20 @@ function CreateMasterPartPage() {
                   ▾
                 </div>
               </div>
+            </Field>
+
+            {/* Unit Value (QR Value) */}
+            <Field label="Unit Value (Stock per Batch)" required>
+              <input
+                id="input-unit-value"
+                type="number"
+                min="1"
+                value={unitValue}
+                onChange={(e) => setUnitValue(e.target.value)}
+                placeholder="e.g. 100"
+                required
+                className={INPUT}
+              />
             </Field>
 
           </div>

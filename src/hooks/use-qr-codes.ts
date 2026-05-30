@@ -11,7 +11,9 @@ export type QrItem = {
   qr_value: string;
   units: number;
   token: string | null;
+  short_token: string | null;
   qr_image_base64: string | null;
+  machine_origin: string | null;
   status: "in" | "out";
   created_at: string;
   updated_at: string;
@@ -21,7 +23,8 @@ export type GenerateQrPayload = {
   partName: string;
   factoryOrigin: string;
   value: number;
-  machineOrigin?: string; // [NEW] additive — machine that produced this batch
+  machineOrigin?: string;
+  partId?: number; // Links QR to master_parts.id for stable edit-mode lookups
 };
 
 export type GenerateQrResult = {
@@ -44,6 +47,17 @@ export function useQrCodes(search = "") {
   });
 }
 
+// Stable lookup: fetch the latest QR linked to a master_parts row by its integer ID.
+// Returns null (not an error) when the part has no QR yet.
+export function useQrByPartId(partId: number | undefined) {
+  return useQuery({
+    queryKey: ["qr-by-part", partId],
+    queryFn: () => fetchApi<QrItem | null>(`/qr/by-part/${partId}`),
+    enabled: !!partId,
+    staleTime: 0, // always fresh in edit mode
+  });
+}
+
 export function useGenerateQrCode() {
   const queryClient = useQueryClient();
 
@@ -56,6 +70,27 @@ export function useGenerateQrCode() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["qr-codes"] });
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
+    },
+  });
+}
+
+export type RegenerateQrPayload = GenerateQrPayload & {
+  oldShortToken: string;
+};
+
+export function useRegenerateQrCode() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: RegenerateQrPayload) =>
+      fetchApi<GenerateQrResult>("/qr/regenerate", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["qr-codes"] });
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["stock"] });
     },
   });
 }
