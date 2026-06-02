@@ -516,12 +516,16 @@
         }
 
         // =========================================================
-        // SECTION 3 — Update tv-kpi-row counts from MC group statuses
+        // SECTION 3 — Update tv-kpi-row counts from every individual
+        //             PRIORITY PRODUCTION row (not MC group minJAM).
+        //             ST is computed per-row via jamStatus(row.jam).
+        //             Safe rows and JAM=0 rows are all counted.
         // =========================================================
-        function updateKpiRow(mcGroups) {
+        function updateKpiRow(rows) {
             const tally = { critical: 0, warning: 0, safe: 0 };
-            Object.values(mcGroups).forEach(g => {
-                tally[g.status] = (tally[g.status] || 0) + 1;
+            rows.forEach(row => {
+                const st = jamStatus(row.jam);
+                tally[st] = (tally[st] || 0) + 1;
             });
 
             document.getElementById('kpi-critical-count').textContent = tally.critical;
@@ -536,7 +540,7 @@
             const mcGroups = groupByMC(priorityRows);
             renderMachineGrid(mcGroups);
             renderPriorityTable(mcGroups);
-            updateKpiRow(mcGroups);
+            updateKpiRow(priorityRows); // ← counts each row individually
         }
 
         // =========================================================

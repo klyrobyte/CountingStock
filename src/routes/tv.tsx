@@ -142,33 +142,21 @@ function TvPage() {
     return Math.ceil(max / 4) * 4 || 16;
   }, [data?.chartData]);
 
-  // Bug #3 fix: recompute KPI counts client-side from priorities grouped by
-  // machine, using non-zero minJAM per MC group → getStatus(minJAM).
-  // This runs AFTER Bug #1 & #2 fixes so counts are always consistent.
+  // KPI counts: derived from every individual PRIORITY PRODUCTION row.
+  // Each row's ST is computed via getStatus(row.stokJam) — never from the
+  // raw status string. Safe rows and JAM=0 rows are all included.
   const counts = useMemo(() => {
     const priorities = data?.priorities ?? [];
     if (priorities.length === 0) return { critical: 0, warning: 0, safe: 0 };
 
-    // [1] Group rows by machine identifier
-    const groups = new Map<string, number[]>();
+    let critical = 0, warning = 0, safe = 0;
     for (const p of priorities) {
-      const key = p.machine;
-      if (!groups.has(key)) groups.set(key, []);
-      // [2] Collect only non-zero JAM values per group
-      if (p.stokJam !== 0) groups.get(key)!.push(p.stokJam);
+      const st = getStatus(p.stokJam);
+      if (st === "critical")     critical++;
+      else if (st === "warning") warning++;
+      else                       safe++;
     }
 
-    let critical = 0, warning = 0, safe = 0;
-    // [5] For each MC group, compute minJAM then apply getStatus()
-    groups.forEach((jams, _key) => {
-      const minJam = jams.length > 0 ? Math.min(...jams) : 0;
-      const st = getStatus(minJam);
-      if (st === "safe")     safe++;
-      else if (st === "warning") warning++;
-      else                   critical++;
-    });
-
-    // [6] Return tallied counts
     return { critical, warning, safe };
   }, [data?.priorities]);
 

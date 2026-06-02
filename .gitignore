@@ -8,6 +8,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+plan.md
 dist
 dist-ssr
 .output
