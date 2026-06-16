@@ -528,7 +528,8 @@ html:has(.tv-page) body {
   display: flex;
   flex-direction: column;
   position: relative;
-  overflow: hidden;
+  /* overflow: visible so ratio badges above the tallest bar are not clipped */
+  overflow: visible;
 }
 
 .tv-page .tv-chart-wrap .recharts-responsive-container {
@@ -536,6 +537,7 @@ html:has(.tv-page) body {
   inset: 0 !important;
   width: 100% !important;
   height: 100% !important;
+  overflow: visible !important;
 }
 
 .tv-page .tv-chart-wrap .recharts-wrapper {
@@ -543,11 +545,13 @@ html:has(.tv-page) body {
   inset: 0 !important;
   width: 100% !important;
   height: 100% !important;
+  overflow: visible !important;
 }
 
 .tv-page .tv-chart-wrap .recharts-surface {
   width: 100% !important;
   height: 100% !important;
+  overflow: visible !important;
 }
 
 .tv-page .tv-chart-wrap > p {

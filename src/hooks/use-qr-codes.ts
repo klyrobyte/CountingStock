@@ -54,7 +54,10 @@ export function useQrByPartId(partId: number | undefined) {
     queryKey: ["qr-by-part", partId],
     queryFn: () => fetchApi<QrItem | null>(`/qr/by-part/${partId}`),
     enabled: !!partId,
-    staleTime: 0, // always fresh in edit mode
+    // 5s window prevents rapid-fire refetches within the same open dialog.
+    // Mutations that change QR data already call invalidateQueries() which
+    // bypasses staleTime, so freshness on actual changes is not affected.
+    staleTime: 5_000,
   });
 }
 

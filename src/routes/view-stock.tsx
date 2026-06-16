@@ -55,17 +55,17 @@ function ViewStockPage() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <StatCard
             label="Total Units di Stock"
-            value={loadingStats ? "—" : Number(totalUnits).toLocaleString()}
+            value={loadingStats ? null : Number(totalUnits).toLocaleString()}
             icon={Package}
           />
           <StatCard
             label="Jumlah Parts yang Dipantau"
-            value={loadingStats ? "—" : skuCount.toString()}
+            value={loadingStats ? null : skuCount.toString()}
             icon={Boxes}
           />
           <StatCard
             label="Stock Habis (0 unit)"
-            value={loadingStats ? "—" : emptyStock.toString()}
+            value={loadingStats ? null : emptyStock.toString()}
             icon={TrendingDown}
             accent
           />
@@ -118,9 +118,40 @@ function ViewStockPage() {
 
           <div className="mt-4 space-y-3">
             {isLoading ? (
-              <div className="py-12 text-center text-sm text-muted-foreground">
-                Loading stock data...
-              </div>
+              Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="rounded-2xl border border-border-surface bg-surface-elevated p-4 animate-pulse"
+                >
+                  {/* Top row: name + badge */}
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="min-w-0 space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <div className="h-3.5 w-36 rounded-full bg-card-elevated" />
+                        <div className="h-3 w-16 rounded-full bg-card-elevated/70" />
+                      </div>
+                      <div className="h-2.5 w-20 rounded-full bg-card-elevated/60" />
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <div className="h-8 w-8 rounded-full bg-card-elevated" />
+                      <div className="h-6 w-16 rounded-full bg-card-elevated" />
+                    </div>
+                  </div>
+                  {/* Progress bar */}
+                  <div className="mt-3">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <div className="h-2.5 w-20 rounded-full bg-card-elevated/70" />
+                      <div className="h-2.5 w-10 rounded-full bg-card-elevated/70" />
+                    </div>
+                    <div className="h-2 w-full rounded-full bg-card" />
+                  </div>
+                  {/* Footer */}
+                  <div className="mt-2 flex items-center justify-between">
+                    <div className="h-2 w-28 rounded-full bg-card-elevated/50" />
+                    <div className="h-2 w-24 rounded-full bg-card-elevated/50" />
+                  </div>
+                </div>
+              ))
             ) : stockData.length === 0 ? (
               <div className="py-12 text-center text-sm text-muted-foreground">
                 No stock items match your filters.{" "}
@@ -254,7 +285,7 @@ function StatCard({
   accent,
 }: {
   label: string;
-  value: string;
+  value: string | null; // null triggers shimmer skeleton
   icon: typeof Package;
   accent?: boolean;
 }) {
@@ -265,13 +296,20 @@ function StatCard({
           {label}
         </span>
         <span
-          className={`flex h-9 w-9 items-center justify-center rounded-full ${accent ? "bg-destructive/15 text-destructive" : "bg-card-elevated text-foreground/80"
-            }`}
+          className={`flex h-9 w-9 items-center justify-center rounded-full ${
+            accent ? "bg-destructive/15 text-destructive" : "bg-card-elevated text-foreground/80"
+          }`}
         >
           <Icon className="h-4 w-4" />
         </span>
       </div>
-      <div className="mt-4 text-2xl font-semibold tracking-tight">{value}</div>
+      <div className="mt-4 text-2xl font-semibold tracking-tight">
+        {value === null ? (
+          <div className="h-8 w-24 animate-pulse rounded-lg bg-card-elevated" />
+        ) : (
+          value
+        )}
+      </div>
     </div>
   );
 }

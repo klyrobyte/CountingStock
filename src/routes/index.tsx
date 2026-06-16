@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback, lazy, Suspense, useEffect } from "react";
+import { useMemo, useState, useCallback, lazy, Suspense } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ArrowRight,
@@ -52,14 +52,10 @@ export const Route = createFileRoute("/")({
 
 // ── Dual-page index: unauthenticated → landing, authenticated → QR app ───
 function IndexPage() {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // During SSR/Hydration, wait for mount before deciding which UI to show
-  if (!mounted) {
+  // isTokenValid() reads localStorage synchronously — no useEffect cycle needed.
+  // The mounted/useEffect pattern was rendering a blank black frame on every reload.
+  // Only guard against SSR where window (and localStorage) doesn't exist yet.
+  if (typeof window === "undefined") {
     return <div className="min-h-screen bg-background" />;
   }
 
@@ -410,9 +406,20 @@ function StockScanPage() {
               </thead>
               <tbody>
                 {isLoading ? (
-                  <tr>
-                    <Td colSpan={6} className="text-center">Loading history...</Td>
-                  </tr>
+                  Array.from({ length: 3 }).map((_, i) => (
+                    <tr key={i} className="animate-pulse">
+                      <Td><div className="h-2.5 w-20 rounded-full bg-card-elevated" /></Td>
+                      <Td><div className="h-3 w-32 rounded-full bg-card-elevated" /></Td>
+                      <Td><div className="h-2.5 w-20 rounded-full bg-card-elevated/70" /></Td>
+                      <Td><div className="h-2.5 w-14 rounded-full bg-card-elevated/70" /></Td>
+                      <Td><div className="h-5 w-10 rounded-full bg-card-elevated" /></Td>
+                      <Td className="text-right">
+                        <div className="inline-flex justify-end">
+                          <div className="h-8 w-8 rounded bg-card-elevated" />
+                        </div>
+                      </Td>
+                    </tr>
+                  ))
                 ) : history.length === 0 ? (
                   <tr>
                     <Td colSpan={6} className="text-center">No history yet.</Td>

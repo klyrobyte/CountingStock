@@ -146,9 +146,28 @@ function AllQrPage() {
           {view === "grid" ? (
             <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {isLoading ? (
-                <div className="col-span-full py-16 text-center text-sm text-muted-foreground">
-                  Loading QR codes...
-                </div>
+                Array.from({ length: 8 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="rounded-2xl border border-border-surface bg-card p-4 animate-pulse"
+                  >
+                    {/* QR image placeholder */}
+                    <div className="aspect-square w-full rounded-xl bg-card-elevated" />
+                    <div className="mt-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="h-2.5 w-20 rounded-full bg-card-elevated" />
+                        <div className="h-4 w-8 rounded-full bg-card-elevated" />
+                      </div>
+                      <div className="h-3.5 w-3/4 rounded-full bg-card-elevated" />
+                      <div className="h-2.5 w-1/2 rounded-full bg-card-elevated/70" />
+                      <div className="h-2 w-16 rounded-full bg-card-elevated/50" />
+                    </div>
+                    <div className="mt-3 flex gap-2">
+                      <div className="h-8 flex-1 rounded-full bg-card-elevated" />
+                      <div className="h-8 w-8 rounded-full bg-card-elevated" />
+                    </div>
+                  </div>
+                ))
               ) : filtered.map((item) => {
                 const formattedDate = new Date(item.created_at).toLocaleDateString("en-CA");
                 const hasQrImage = !!item.qr_image_base64;
@@ -267,11 +286,36 @@ function AllQrPage() {
                 </thead>
                 <tbody>
                   {isLoading ? (
-                    <tr>
-                      <td colSpan={7} className="text-center py-8 text-muted-foreground border-b border-border/60">
-                        Loading...
-                      </td>
-                    </tr>
+                    Array.from({ length: 6 }).map((_, i) => (
+                      <tr key={i} className="animate-pulse">
+                        <td className="border-b border-border/60 px-3 py-3.5">
+                          <div className="h-2.5 w-24 rounded-full bg-card-elevated font-mono" />
+                        </td>
+                        <td className="border-b border-border/60 px-3 py-3.5">
+                          <div className="h-3 w-32 rounded-full bg-card-elevated" />
+                        </td>
+                        <td className="border-b border-border/60 px-3 py-3.5">
+                          <div className="h-2.5 w-20 rounded-full bg-card-elevated/70" />
+                        </td>
+                        <td className="border-b border-border/60 px-3 py-3.5">
+                          <div className="h-2.5 w-10 rounded-full bg-card-elevated/70" />
+                        </td>
+                        <td className="border-b border-border/60 px-3 py-3.5">
+                          <div className="h-5 w-10 rounded-full bg-card-elevated" />
+                        </td>
+                        <td className="border-b border-border/60 px-3 py-3.5">
+                          <div className="h-2.5 w-16 rounded-full bg-card-elevated/70" />
+                        </td>
+                        <td className="border-b border-border/60 px-3 py-3.5 text-right">
+                          <div className="inline-flex items-center gap-2">
+                            <div className="h-8 w-8 rounded bg-card-elevated" />
+                            <div className="h-8 w-8 rounded-full bg-card-elevated" />
+                            <div className="h-8 w-8 rounded-full bg-card-elevated" />
+                            <div className="h-8 w-8 rounded-full bg-card-elevated" />
+                          </div>
+                        </td>
+                      </tr>
+                    ))
                   ) : filtered.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="text-center py-8 text-muted-foreground border-b border-border/60">

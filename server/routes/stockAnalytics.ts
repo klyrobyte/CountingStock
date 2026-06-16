@@ -173,6 +173,21 @@ router.get("/tv", async (req, res) => {
     const chartLabels = stockRows.map((s) => s.part_name as string);
     const chartData = stockRows.map((s) => Number(s.current_stock ?? s.units ?? 0));
 
+    // Enrich chart bars with jam-hour and status per part (joined from stock_analytics)
+    const jamByPart = new Map<string, number>();
+    for (const a of analyticsRows) {
+      const key = String(a.part_name).toUpperCase();
+      const existing = jamByPart.get(key);
+      const jam = Number(a.stok_jam) || 0;
+      // take the minimum jam per part name (matches existing getStatus logic)
+      if (existing === undefined || jam < existing) jamByPart.set(key, jam);
+    }
+    const chartStokJam = stockRows.map((s) => {
+      const key = String(s.part_name).toUpperCase();
+      return jamByPart.get(key) ?? 0;
+    });
+    const chartStatus = chartStokJam.map((jam) => classifyStockJam(jam, true));
+
     const priorityOrder = { critical: 0, warning: 1, safe: 2, none: 3 };
     const priorities = [...machines]
       .filter((m) => m.isActive && m.cardStatus !== "safe" && m.cardStatus !== "none")
@@ -203,6 +218,8 @@ router.get("/tv", async (req, res) => {
         machines,
         chartLabels,
         chartData,
+        chartStokJam,
+        chartStatus,
         priorities,
       },
     });

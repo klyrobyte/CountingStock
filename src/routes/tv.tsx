@@ -2,18 +2,21 @@ import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import {
-  LineChart,
-  Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   ResponsiveContainer,
   Tooltip,
+  LabelList,
 } from "recharts";
+import { motion } from "framer-motion";
 import { useTvDashboard } from "@/hooks/use-tv-dashboard";
 import type { TvMachine } from "@/hooks/use-tv-dashboard";
 import { MinimumStockGrid } from "@/components/mesin/MinimumStockGrid";
 import "./tv.css";
+import { NONAME } from "dns";
 
 // ─── PRIORITY LOGIC (plan.md) ──────────────────────────────────────────────
 // Single source of truth for status derivation — never read raw status strings.
@@ -72,6 +75,97 @@ function resolveTheme(
   return "dark";
 }
 
+const STATUS_COLORS = {
+  safe: "#33F140",
+  critical: "#F13333",
+  warning: "#F1CB33",
+  none: "#F1CB33", // fallback
+};
+
+const CustomBar = (props: any) => {
+  const { x, y, width, height, payload } = props;
+  const { status, value, jam } = payload;
+  const color = STATUS_COLORS[status as keyof typeof STATUS_COLORS] || STATUS_COLORS.warning;
+  const rx = 6;
+  
+  if (height <= 0) return null;
+
+  const safeRx = Math.min(rx, width / 2, height / 2);
+
+  const getPath = (currentY: number, currentHeight: number) => {
+    return `M${x},${currentY + currentHeight} L${x},${currentY + safeRx} Q${x},${currentY} ${x + safeRx},${currentY} L${x + width - safeRx},${currentY} Q${x + width},${currentY} ${x + width},${currentY + safeRx} L${x + width},${currentY + currentHeight} Z`;
+  };
+
+  const startPath = getPath(y + height, 0);
+  const endPath = getPath(y, height);
+  
+  const formattedJam = Number(jam).toFixed(1).replace('.', ',');
+  const badgeY = Math.max(y, 22);
+
+  return (
+    <g>
+      <g style={{ filter: "drop-shadow(0px 0px 8px rgba(255, 255, 255, 0.4))" }}>
+        <motion.path
+          initial={{ d: startPath }}
+          animate={{ d: endPath }}
+          transition={{ duration: 0.7, ease: "easeOut" }}
+          fill={color}
+          fillOpacity={0.65}
+          stroke="#FFFFFF"
+          strokeWidth={1.5}
+        />
+      </g>
+      
+      {/* Stock text at the bottom */}
+      <motion.text
+         initial={{ opacity: 0 }}
+         animate={{ opacity: 1 }}
+         transition={{ delay: 0.3, duration: 0.5 }}
+         x={x + width / 2}
+         y={y + height - 15}
+         fill="#FFFFFF"
+         fontSize={12}
+         fontWeight={700}
+         textAnchor="middle"
+      >
+         {`${value} Stock`}
+      </motion.text>
+      
+      {/* Hour Pill */}
+      {jam > 0 && (
+        <motion.g
+          initial={{ opacity: 0, y: y + 20 }}
+          animate={{ opacity: 1, y: badgeY }}
+          transition={{ delay: 0.4, duration: 0.4 }}
+        >
+           {/* Hour Pill */}
+           <rect
+             x={x + width / 2 - 20}
+             y={-22}
+             width={40}
+             height={20}
+             rx={4}
+             fill={color}
+             stroke="#FFFFFF"
+             strokeWidth={1}
+           />
+           <text
+             x={x + width / 2}
+             y={-12}
+             dy="0.3em"
+             fill={status === "warning" ? "#000000" : "#FFFFFF"}
+             fontSize={11}
+             fontWeight={700}
+             textAnchor="middle"
+           >
+             {formattedJam}
+           </text>
+        </motion.g>
+      )}
+    </g>
+  );
+};
+
 function TvPage() {
   const { fac = "", shift = "A", theme = "default" } = Route.useSearch();
   const [clock, setClock] = useState("");
@@ -107,7 +201,7 @@ function TvPage() {
     const machines = data?.machines ?? [];
     const activeMachines = machines.filter(m => m.isActive);
     let pct = 0;
-    
+
     if (activeMachines.length > 0) {
       // Fix #1 guarantees that cardStatus reflects the real minimum JAM for each machine
       // and getStatus() has set it properly. So we just count safe/warning vs critical.
@@ -117,13 +211,13 @@ function TvPage() {
       const nonCriticalCount = fixedMachines.filter(
         m => m.isActive && m.cardStatus !== "critical"
       ).length;
-      
+
       pct = Math.round((nonCriticalCount / activeMachines.length) * 100);
     }
-    
+
     // Normalize percentage (clamp 0-100)
     pct = Math.min(100, Math.max(0, pct));
-    
+
     const circumference = 339.3;
     const offset = circumference - (pct / 100) * circumference;
     return { offset, pct };
@@ -131,16 +225,32 @@ function TvPage() {
 
   const chartPoints = useMemo(() => {
     if (!data) return [];
-    return data.chartLabels.map((label, i) => ({
-      label,
-      value: data.chartData[i] ?? 0,
-    }));
+    const points = data.chartLabels.map((label, i) => {
+      const val = data.chartData[i] ?? 0;
+      const jam = data.chartStokJam?.[i] ?? 0;
+      const status = data.chartStatus?.[i] ?? "warning";
+      // DEBUG: verify per-bar jam values — remove after confirmation
+      console.log(`[TV Chart] bar[${i}] label="${label}" value=${val} jam=${jam} status=${status}`);
+      return {
+        label,
+        value: val,
+        displayValue: val,
+        jam,
+        status,
+      };
+    });
+    return points;
   }, [data]);
 
-  const yMax = useMemo(() => {
-    const max = Math.max(...(data?.chartData ?? [0]), 4);
-    return Math.ceil(max / 4) * 4 || 16;
-  }, [data?.chartData]);
+  const yAxisConfig = useMemo(() => {
+    if (!chartPoints || chartPoints.length === 0) {
+      return { domain: [0, 5], ticks: [0, 5] };
+    }
+    const maxValue = Math.max(...chartPoints.map((d) => d.displayValue));
+    const yMax = Math.max(5, Math.ceil(maxValue / 5) * 5);
+    const ticks = Array.from({ length: Math.floor(yMax / 5) + 1 }, (_, i) => i * 5);
+    return { domain: [0, yMax] as [number, number], ticks };
+  }, [chartPoints]);
 
   // KPI counts: derived from every individual PRIORITY PRODUCTION row.
   // Each row's ST is computed via getStatus(row.stokJam) — never from the
@@ -152,9 +262,9 @@ function TvPage() {
     let critical = 0, warning = 0, safe = 0;
     for (const p of priorities) {
       const st = getStatus(p.stokJam);
-      if (st === "critical")     critical++;
+      if (st === "critical") critical++;
       else if (st === "warning") warning++;
-      else                       safe++;
+      else safe++;
     }
 
     return { critical, warning, safe };
@@ -327,11 +437,17 @@ function TvPage() {
             </div>
             <section className="tv-chart-wrap">
               {chartPoints.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartPoints}>
+                <ResponsiveContainer width="100%" height="100%" style={{ overflow: "visible" }}>
+                  <BarChart
+                    data={chartPoints}
+                    margin={{ top: 60, right: 10, left: 10, bottom: 5 }}
+                    style={{ overflow: "visible" }}
+                  >
                     <CartesianGrid
-                      strokeDasharray="3 3"
-                      stroke="var(--chart-grid)"
+                      strokeDasharray="4 4"
+                      stroke={visualTheme === "dark" ? "rgba(255, 255, 255, 0.25)" : "rgba(0, 0, 0, 0.1)"}
+                      strokeWidth={visualTheme === "dark" ? 1 : undefined}
+                      horizontal={true}
                       vertical={false}
                     />
                     <XAxis
@@ -341,13 +457,17 @@ function TvPage() {
                       tickLine={false}
                     />
                     <YAxis
-                      domain={[0, yMax]}
-                      tick={{ fill: "var(--color-text-muted)", fontSize: 10 }}
+                      domain={yAxisConfig.domain}
+                      ticks={yAxisConfig.ticks}
                       axisLine={false}
                       tickLine={false}
-                      tickCount={5}
+                      tick={{ fill: "var(--color-text-muted)", fontSize: 10 }}
                     />
                     <Tooltip
+                      formatter={(val: any, name: any, props: any) => {
+                        const realVal = props.payload?.value ?? val;
+                        return [realVal, "value"];
+                      }}
                       contentStyle={{
                         background: "var(--color-bg-surface)",
                         border: "1px solid var(--color-bg-border)",
@@ -355,21 +475,12 @@ function TvPage() {
                         fontSize: 12,
                       }}
                     />
-                    <Line
-                      type="monotone"
-                      dataKey="value"
-                      stroke="#3B82F6"
-                      strokeWidth={2}
-                      dot={false}
-                      fill="url(#tvGradient)"
+                    <Bar
+                      dataKey="displayValue"
+                      shape={<CustomBar />}
+                      isAnimationActive={false}
                     />
-                    <defs>
-                      <linearGradient id="tvGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="rgba(59,130,246,0.15)" />
-                        <stop offset="100%" stopColor="transparent" />
-                      </linearGradient>
-                    </defs>
-                  </LineChart>
+                  </BarChart>
                 </ResponsiveContainer>
               ) : (
                 <p
@@ -418,9 +529,9 @@ function TvPage() {
                   <tr>
                     <th>Machine</th>
                     <th>Part</th>
-                    <th>PN</th>
-                    <th>JAM</th>
-                    <th>St</th>
+                    <th style={{ display: "none" }}>PN</th>
+                    <th>Rasio</th>
+                    <th>Status</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -432,8 +543,8 @@ function TvPage() {
                       rowStatus === "critical"
                         ? "var(--color-critical)"
                         : rowStatus === "warning"
-                        ? "var(--color-warning)"
-                        : "var(--color-safe)";
+                          ? "var(--color-warning)"
+                          : "var(--color-safe)";
                     // Change #2: tag safe rows; hide them when not expanded
                     const isSafeRow = rowStatus === "safe";
                     return (
@@ -444,7 +555,7 @@ function TvPage() {
                       >
                         <td>{p.machine}</td>
                         <td>{p.partName}</td>
-                        <td>{p.partNumber}</td>
+                        <td style={{ display: "none" }}>{p.partNumber}</td>
                         <td>{p.stokJam.toFixed(1)}</td>
                         <td
                           style={{

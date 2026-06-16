@@ -35,6 +35,10 @@ export type TvDashboardData = {
   machines: TvMachine[];
   chartLabels: string[];
   chartData: number[];
+  /** Jam-hours per chart bar (from stock_analytics join). 0 when no analytics row found. */
+  chartStokJam: number[];
+  /** Status per chart bar derived from chartStokJam thresholds. */
+  chartStatus: ("critical" | "warning" | "safe" | "none")[];
   priorities: TvPriority[];
 };
 

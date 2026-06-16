@@ -1,4 +1,4 @@
-import { Suspense, useState, useEffect } from "react";
+import { Suspense } from "react";
 import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "@/hooks/use-theme.tsx";
@@ -7,27 +7,32 @@ import { PageSkeleton } from "@/components/dashboard/PageSkeleton";
 
 import appCss from "../styles.css?url";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // 30s matches the explicit staleTime already on useMasterParts, useMesin,
+      // useUsers, usePrivilegeStations — now applied globally as the baseline.
+      staleTime: 30_000,
+      // Keep cached data for 5 minutes so background revalidation can work
+      // without re-fetching from scratch on every component remount.
+      gcTime: 5 * 60 * 1000,
+      // 3 retries (library default) causes ~15s hangs on network errors.
+      // 1 retry is enough to survive a transient hiccup.
+      retry: 1,
+    },
+  },
+});
 
 // ── Auth guard ─────────────────────────────────────────────────────────────
 // Public paths: /login and / (landing page visible to everyone)
 // All other routes: require valid token or redirect to /login
 function AuthGuard({ children }: { children: React.ReactNode }) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // SSR & Hydration: we cannot securely check auth state yet.
-  // Rendering a neutral loader guarantees ZERO UI leak of protected content
-  // and ensures the initial client render matches the server perfectly.
-  if (!mounted) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-muted-foreground/20 border-t-[#c05c30]" />
-      </div>
-    );
+  // SSR/Hydration safety: before `window` exists we cannot read localStorage.
+  // Render a neutral blank instead of leaking protected content.
+  // Once the DOM exists, isTokenValid() is a pure synchronous localStorage read —
+  // no async cycle needed, so we skip the mandatory spinner flash entirely.
+  if (typeof window === "undefined") {
+    return <div className="min-h-screen bg-background" />;
   }
 
   const pathname = window.location.pathname;
