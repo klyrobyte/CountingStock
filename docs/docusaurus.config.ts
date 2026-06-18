@@ -1,13 +1,13 @@
-import { themes as prismThemes } from 'prism-react-renderer';
-import type { Config } from '@docusaurus/types';
+import {themes as prismThemes} from 'prism-react-renderer';
+import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
 const config: Config = {
-  title: 'Sugity API Docs',
-  tagline: 'Factory Inventory QR System - API Reference',
-  favicon: 'img/logo.svg',
+  title: 'My Site',
+  tagline: 'Dinosaurs are cool',
+  favicon: 'img/favicon.ico',
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
   future: {
@@ -16,12 +16,14 @@ const config: Config = {
 
   // Set the production url of your site here
   url: 'https://your-docusaurus-site.example.com',
-  // Set the /baseUrl/ pathname under which your site is served
+  // Set the /<baseUrl>/ pathname under which your site is served
+  // For GitHub pages deployment, it is often '/<projectName>/'
   baseUrl: '/',
 
   // GitHub pages deployment config.
-  organizationName: 'sugity',
-  projectName: 'pixel-scan-dashboard',
+  // If you aren't using GitHub pages, you don't need these.
+  organizationName: 'facebook', // Usually your GitHub org/user name.
+  projectName: 'docusaurus', // Usually your repo name.
 
   onBrokenLinks: 'throw',
 
@@ -73,25 +75,24 @@ const config: Config = {
       respectPrefersColorScheme: true,
     },
     navbar: {
-      title: 'Sugity API Docs',
+      title: 'My Site',
       logo: {
-        alt: 'Sugity Logo',
+        alt: 'My Site Logo',
         src: 'img/logo.svg',
       },
       items: [
         {
           type: 'docSidebar',
-          sidebarId: 'apiSidebar',
-          position: 'left',
-          label: 'API Reference',
-        },
-        {
-          type: 'docSidebar',
           sidebarId: 'tutorialSidebar',
           position: 'left',
-          label: 'Guides',
+          label: 'Tutorial',
         },
-
+        {to: '/blog', label: 'Blog', position: 'left'},
+        {
+          href: 'https://github.com/facebook/docusaurus',
+          label: 'GitHub',
+          position: 'right',
+        },
       ],
     },
     footer: {
@@ -101,25 +102,25 @@ const config: Config = {
           title: 'Docs',
           items: [
             {
-              label: 'API Documentation',
-              to: '/docs/api',
+              label: 'Tutorial',
+              to: '/docs/intro',
             },
           ],
         },
         {
-          title: 'Developers',
+          title: 'Community',
           items: [
             {
-              label: 'Linkedin',
-              href: 'https://linkedin.com/in/rizky-daffy-al-fajri',
+              label: 'Stack Overflow',
+              href: 'https://stackoverflow.com/questions/tagged/docusaurus',
             },
             {
-              label: 'Instagram',
-              href: 'https://instagram.com/rizky.daffy',
+              label: 'Discord',
+              href: 'https://discordapp.com/invite/docusaurus',
             },
             {
-              label: 'Websites',
-              href: 'https://rizkydaffy.my.id',
+              label: 'X',
+              href: 'https://x.com/docusaurus',
             },
           ],
         },
@@ -132,12 +133,12 @@ const config: Config = {
             },
             {
               label: 'GitHub',
-              href: 'https://github.com/rizkydaffy',
+              href: 'https://github.com/facebook/docusaurus',
             },
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} Sugity Integrated Systems. Rizky build it with Docusaurus.`,
+      copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`,
     },
     prism: {
       theme: prismThemes.github,

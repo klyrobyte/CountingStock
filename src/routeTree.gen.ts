@@ -24,7 +24,6 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CustomerRouteImport } from './routes/customer'
 import { Route as CategoryRouteImport } from './routes/category'
 import { Route as AllQrRouteImport } from './routes/all-qr'
-import { Route as SplatRouteImport } from './routes/$'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UsersIndexRouteImport } from './routes/users/index'
 import { Route as MesinIndexRouteImport } from './routes/mesin/index'
@@ -110,11 +109,6 @@ const AllQrRoute = AllQrRouteImport.update({
   path: '/all-qr',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SplatRoute = SplatRouteImport.update({
-  id: '/$',
-  path: '/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -163,7 +157,6 @@ const MasterDataCreateRoute = MasterDataCreateRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/$': typeof SplatRoute
   '/all-qr': typeof AllQrRoute
   '/category': typeof CategoryRoute
   '/customer': typeof CustomerRoute
@@ -190,7 +183,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/$': typeof SplatRoute
   '/all-qr': typeof AllQrRoute
   '/category': typeof CategoryRoute
   '/customer': typeof CustomerRoute
@@ -218,7 +210,6 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/$': typeof SplatRoute
   '/all-qr': typeof AllQrRoute
   '/category': typeof CategoryRoute
   '/customer': typeof CustomerRoute
@@ -247,7 +238,6 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/$'
     | '/all-qr'
     | '/category'
     | '/customer'
@@ -274,7 +264,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/$'
     | '/all-qr'
     | '/category'
     | '/customer'
@@ -301,7 +290,6 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/$'
     | '/all-qr'
     | '/category'
     | '/customer'
@@ -329,7 +317,6 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  SplatRoute: typeof SplatRoute
   AllQrRoute: typeof AllQrRoute
   CategoryRoute: typeof CategoryRoute
   CustomerRoute: typeof CustomerRoute
@@ -462,13 +449,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AllQrRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/$': {
-      id: '/$'
-      path: '/$'
-      fullPath: '/$'
-      preLoaderRoute: typeof SplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/': {
       id: '/'
       path: '/'
@@ -537,7 +517,6 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  SplatRoute: SplatRoute,
   AllQrRoute: AllQrRoute,
   CategoryRoute: CategoryRoute,
   CustomerRoute: CustomerRoute,

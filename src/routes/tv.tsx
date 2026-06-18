@@ -107,7 +107,7 @@ const CustomBar = (props: any) => {
   const startPath = getPath(y + height, 0);
   const endPath = getPath(y, height);
 
-  const formattedJam = `${Number(jam).toFixed(1).replace('.', ',')} HR`;
+  const formattedJam = `${Number(jam).toFixed(1).replace('.', ',')}`;
   // Hasil: "1,2 HR"
   const badgeY = Math.max(y, 22);
 
@@ -137,7 +137,8 @@ const CustomBar = (props: any) => {
         fontWeight={700}
         textAnchor="middle"
       >
-        {`${value} PCs`}
+        {`${value}`}
+
       </motion.text>
 
       {/* Hour Pill */}
@@ -529,6 +530,7 @@ function TvPage() {
                         border: "1px solid var(--color-bg-border)",
                         borderRadius: 8,
                         fontSize: 12,
+                        color: "white",
                       }}
                     />
                     <Bar
