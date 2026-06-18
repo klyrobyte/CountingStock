@@ -51,7 +51,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-// GET /api/stock-analytics/tv — aggregated TV dashboard payload
+// GET /api/stock-analytics/tv - aggregated TV dashboard payload
 router.get("/tv", async (req, res) => {
   try {
     const factory = (req.query.factory as string) || "";
@@ -197,7 +197,7 @@ router.get("/tv", async (req, res) => {
           a.stokJam - b.stokJam
       )
       .flatMap((m) =>
-        (m.partRows.length > 0 ? m.partRows : [{ part: "—", pn: "—", jam: m.stokJam }]).map(
+        (m.partRows.length > 0 ? m.partRows : [{ part: "-", pn: "-", jam: m.stokJam }]).map(
           (row) => ({
             machine: m.machineCode,
             partName: row.part,

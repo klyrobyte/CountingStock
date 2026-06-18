@@ -8,7 +8,7 @@ import { useQrHistory } from "@/hooks/use-qr-process";
 export const Route = createFileRoute("/task-history")({
   head: () => ({
     meta: [
-      { title: "History Tugas — Sugity Creatives" },
+      { title: "History Tugas - Sugity Creatives" },
       { name: "description", content: "View your task and scan history." },
     ],
   }),

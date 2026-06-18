@@ -126,7 +126,7 @@ export function SidebarContent({ collapsed, onToggle, onNavigate }: Props) {
 
   const authUser = getAuthUser();
   // Auth guard guarantees authUser is non-null here.
-  // No guest state — empty fallbacks are purely defensive.
+  // No guest state - empty fallbacks are purely defensive.
   const displayName = authUser?.username ?? "";
   const displayRole = authUser?.role ?? "";
   const initials = authUser ? authUser.username.substring(0, 2).toUpperCase() : "";

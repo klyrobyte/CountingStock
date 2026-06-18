@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   TV dashboard — 1:1 layout/CSS from stock_tv.html (scoped under .tv-page)
+   TV dashboard - 1:1 layout/CSS from stock_tv.html (scoped under .tv-page)
    Logic in tv.tsx / components is unchanged; only presentation rules here.
    ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -155,7 +155,7 @@ html:has(.tv-page) body {
   flex: 0 0 auto;
 }
 
-.tv-page .tv-header-right > span {
+.tv-page .tv-header-right>span {
   font-size: 12px !important;
   font-weight: 600 !important;
   color: var(--color-text-secondary) !important;
@@ -185,11 +185,13 @@ html:has(.tv-page) body {
 }
 
 @keyframes tv-pulse-green {
+
   0%,
   100% {
     opacity: 1;
     transform: scale(1);
   }
+
   50% {
     opacity: 0.5;
     transform: scale(0.8);
@@ -354,7 +356,7 @@ html:has(.tv-page) body {
 }
 
 /* KPI header + footer (override inline styles from tv.tsx) */
-.tv-page .tv-kpi-card > div:first-child {
+.tv-page .tv-kpi-card>div:first-child {
   display: flex !important;
   justify-content: space-between !important;
   font-size: 11px !important;
@@ -365,27 +367,27 @@ html:has(.tv-page) body {
   padding: 0 !important;
 }
 
-.tv-page .tv-kpi-card.critical > div:first-child {
+.tv-page .tv-kpi-card.critical>div:first-child {
   color: var(--color-critical) !important;
 }
 
-.tv-page .tv-kpi-card.critical > div:first-child span {
+.tv-page .tv-kpi-card.critical>div:first-child span {
   color: var(--color-critical-text) !important;
 }
 
-.tv-page .tv-kpi-card.warning > div:first-child {
+.tv-page .tv-kpi-card.warning>div:first-child {
   color: var(--color-warning) !important;
 }
 
-.tv-page .tv-kpi-card.warning > div:first-child span {
+.tv-page .tv-kpi-card.warning>div:first-child span {
   color: var(--color-warning-text) !important;
 }
 
-.tv-page .tv-kpi-card.safe > div:first-child {
+.tv-page .tv-kpi-card.safe>div:first-child {
   color: var(--color-safe) !important;
 }
 
-.tv-page .tv-kpi-card.safe > div:first-child span {
+.tv-page .tv-kpi-card.safe>div:first-child span {
   color: var(--color-safe-text) !important;
 }
 
@@ -397,7 +399,7 @@ html:has(.tv-page) body {
   margin: auto 0;
 }
 
-.tv-page .tv-kpi-card > div:last-child {
+.tv-page .tv-kpi-card>div:last-child {
   font-size: 11px !important;
   font-weight: 400 !important;
   color: var(--color-text-muted) !important;
@@ -420,11 +422,11 @@ html:has(.tv-page) body {
   padding: 0;
 }
 
-.tv-page .tv-left > .tv-section-label:last-of-type {
+.tv-page .tv-left>.tv-section-label:last-of-type {
   margin-top: 4px;
 }
 
-.tv-page .tv-left > p {
+.tv-page .tv-left>p {
   font-size: 13px;
   color: var(--color-text-muted);
   margin: 0;
@@ -442,7 +444,7 @@ html:has(.tv-page) body {
   width: 100%;
 }
 
-.tv-page .tv-machine-grid > .tv-mc-wrap {
+.tv-page .tv-machine-grid>.tv-mc-wrap {
   display: contents;
 }
 
@@ -519,7 +521,7 @@ html:has(.tv-page) body {
   border-left: 3px solid var(--color-safe);
 }
 
-/* .chart-wrapper — fill remaining left column height like stock_tv.html canvas */
+/* .chart-wrapper - fill remaining left column height like stock_tv.html canvas */
 .tv-page .tv-chart-wrap,
 .tv-page .chart-wrapper {
   flex: 1 1 0;
@@ -554,7 +556,7 @@ html:has(.tv-page) body {
   overflow: visible !important;
 }
 
-.tv-page .tv-chart-wrap > p {
+.tv-page .tv-chart-wrap>p {
   font-size: 13px;
   color: var(--color-text-muted);
   padding: 16px;
@@ -571,7 +573,7 @@ html:has(.tv-page) body {
   flex-shrink: 0;
 }
 
-.tv-page .tv-panel-header > span:first-child {
+.tv-page .tv-panel-header>span:first-child {
   font-size: 12px !important;
   font-weight: 600 !important;
   color: var(--color-text-secondary) !important;
@@ -579,7 +581,7 @@ html:has(.tv-page) body {
   line-height: 1.2 !important;
 }
 
-.tv-page .tv-panel-header > span:last-child {
+.tv-page .tv-panel-header>span:last-child {
   background: var(--color-warning-bg) !important;
   border: 1px solid var(--color-warning-dim) !important;
   border-radius: 4px !important;
@@ -604,7 +606,7 @@ html:has(.tv-page) body {
   min-height: 0;
 }
 
-.tv-page .tv-empty > div {
+.tv-page .tv-empty>div {
   font-size: 13px;
   line-height: 1.2;
 }
@@ -635,16 +637,152 @@ html:has(.tv-page) body {
   font-size: 24px;
 }
 
-/* Responsive — stock_tv.html breakpoints (scoped) */
+/* ═══════════════════════════════════════════════════════════════════════════
+   PRIORITY PRODUCTION - A/B crossfade pagination animation (additive only)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Base transition for both slots */
+.priority-slot {
+  transition:
+    opacity 500ms cubic-bezier(0.4, 0, 0.2, 1),
+    filter 500ms cubic-bezier(0.4, 0, 0.2, 1),
+    transform 500ms cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity, filter, transform;
+}
+
+/* Active slot - fully visible and interactive */
+.priority-slot.slot-active {
+  opacity: 1;
+  filter: blur(0px);
+  transform: scale(1);
+  pointer-events: auto;
+}
+
+/* Inactive slot - hidden underneath, no interaction */
+.priority-slot.slot-inactive {
+  opacity: 0;
+  filter: blur(4px);
+  transform: scale(0.98);
+  pointer-events: none;
+}
+
+/* During transition - active slot exits */
+.priority-slot.slot-active.slot-transitioning {
+  opacity: 0;
+  filter: blur(4px);
+  transform: scale(0.98);
+}
+
+/* During transition - inactive slot enters simultaneously */
+.priority-slot.slot-inactive.slot-transitioning {
+  opacity: 1;
+  filter: blur(0px);
+  transform: scale(1);
+}
+
+/* Staggered row entrance - Bloomberg Terminal style cascade */
+.priority-slot .priority-row:nth-child(1) {
+  transition-delay: 0ms;
+}
+
+.priority-slot .priority-row:nth-child(2) {
+  transition-delay: 30ms;
+}
+
+.priority-slot .priority-row:nth-child(3) {
+  transition-delay: 60ms;
+}
+
+.priority-slot .priority-row:nth-child(4) {
+  transition-delay: 90ms;
+}
+
+.priority-slot .priority-row:nth-child(5) {
+  transition-delay: 120ms;
+}
+
+.priority-slot .priority-row:nth-child(6) {
+  transition-delay: 150ms;
+}
+
+.priority-slot .priority-row:nth-child(7) {
+  transition-delay: 180ms;
+}
+
+.priority-slot .priority-row:nth-child(8) {
+  transition-delay: 210ms;
+}
+
+.priority-slot .priority-row:nth-child(9) {
+  transition-delay: 240ms;
+}
+
+.priority-slot .priority-row:nth-child(10) {
+  transition-delay: 270ms;
+}
+
+.priority-slot .priority-row:nth-child(11) {
+  transition-delay: 300ms;
+}
+
+.priority-slot .priority-row:nth-child(12) {
+  transition-delay: 330ms;
+}
+
+.priority-slot .priority-row:nth-child(13) {
+  transition-delay: 360ms;
+}
+
+.priority-slot .priority-row:nth-child(14) {
+  transition-delay: 390ms;
+}
+
+.priority-slot .priority-row:nth-child(15) {
+  transition-delay: 420ms;
+}
+
+/* Cycle progress bar - airport departure board feel */
+.tv-page .tv-priority-progress {
+  height: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 6px;
+  border-radius: 1px;
+}
+
+.tv-page .tv-priority-progress-fill {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.4);
+  transform-origin: left center;
+  animation: tv-progress-fill linear forwards;
+}
+
+@keyframes tv-progress-fill {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* Responsive - stock_tv.html breakpoints (scoped) */
 @media (min-width: 1920px) {
+
   .tv-page .tv-mc-val,
   .tv-page .mc-val {
     font-size: 52px;
   }
+
   .tv-page .tv-kpi-number,
   .tv-page .kpi-number {
     font-size: 72px;
   }
+
   .tv-page .tv-gauge-val,
   .tv-page .gauge-val {
     font-size: 36px;
@@ -652,14 +790,17 @@ html:has(.tv-page) body {
 }
 
 @media (min-width: 2560px) {
+
   .tv-page .tv-mc-val,
   .tv-page .mc-val {
     font-size: 64px;
   }
+
   .tv-page .tv-kpi-number,
   .tv-page .kpi-number {
     font-size: 88px;
   }
+
   .tv-page .tv-gauge-val,
   .tv-page .gauge-val {
     font-size: 44px;

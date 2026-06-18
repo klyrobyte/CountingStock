@@ -5,7 +5,7 @@ import { ModelApi } from "@/hooks/use-master-data";
 export const Route = createFileRoute("/model")({
   head: () => ({
     meta: [
-      { title: "Model Management — Sugity Creatives" },
+      { title: "Model Management - Sugity Creatives" },
       { name: "description", content: "Kelola data model parts" },
     ],
   }),

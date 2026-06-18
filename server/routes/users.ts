@@ -33,7 +33,7 @@ router.get("/", async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// [2] POST /api/users — create user
+// [2] POST /api/users - create user
 // Body: { username, nik?, password, role?, status? }
 // ═══════════════════════════════════════════════════════════════════════════
 router.post("/", async (req, res) => {
@@ -92,7 +92,7 @@ router.post("/", async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// [3] PUT /api/users/:id — update user
+// [3] PUT /api/users/:id - update user
 // ═══════════════════════════════════════════════════════════════════════════
 router.put("/:id", async (req, res) => {
   try {

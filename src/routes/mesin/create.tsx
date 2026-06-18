@@ -17,7 +17,7 @@ export const Route = createFileRoute("/mesin/create")({
   validateSearch: searchSchema,
   head: () => ({
     meta: [
-      { title: "Tambah Mesin — Sugity Creatives" },
+      { title: "Tambah Mesin - Sugity Creatives" },
       { name: "description", content: "Tambah atau edit data mesin" },
     ],
   }),
@@ -176,7 +176,7 @@ function CreateMesinPage() {
             </Field>
           </div>
 
-          {/* Row 2: Description — full width */}
+          {/* Row 2: Description - full width */}
           <div className="mt-5">
             <Field label="Description">
               <input
@@ -238,7 +238,7 @@ function CreateMesinPage() {
                 Minimum Stock / Machine
               </h3>
               <p className="text-xs text-muted-foreground mb-4">
-                Mesin untuk factory <strong>{factory}</strong> — status berdasarkan Stok Jam.
+                Mesin untuk factory <strong>{factory}</strong> - status berdasarkan Stok Jam.
               </p>
               <MinimumStockGrid
                 machines={stockPreview?.machines ?? []}

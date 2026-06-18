@@ -1,5 +1,5 @@
 /**
- * Station scan hook — wraps /api/qr/process using the STATION JWT.
+ * Station scan hook - wraps /api/qr/process using the STATION JWT.
  * Completely separate from useProcessQr which uses the main user session.
  * The station token is sent as a Bearer token in the Authorization header.
  */

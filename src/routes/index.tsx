@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/select";
 import { isTokenValid } from "@/lib/auth";
 
-// Lazy-load the dashboard landing — only fetched for unauthenticated visitors
+// Lazy-load the dashboard landing - only fetched for unauthenticated visitors
 const DashboardLanding = lazy(() =>
   import("@/routes/dashboard").then((m) => ({ default: m.DashboardLandingPage }))
 );
@@ -34,13 +34,13 @@ const DashboardLanding = lazy(() =>
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Stock Scan — Manage & Buat QR Codes" },
+      { title: "Stock Scan - Manage & Buat QR Codes" },
       {
         name: "description",
         content:
           "Buat QR stock codes, track asal factory dan jumlah stock dengan dashboard.",
       },
-      { property: "og:title", content: "Stock Scan — Manage & Buat QR Codes" },
+      { property: "og:title", content: "Stock Scan - Manage & Buat QR Codes" },
       {
         property: "og:description",
         content: "Buat QR stock codes, track asal factory dan jumlah stock dengan dashboard.",
@@ -52,7 +52,7 @@ export const Route = createFileRoute("/")({
 
 // ── Dual-page index: unauthenticated → landing, authenticated → QR app ───
 function IndexPage() {
-  // isTokenValid() reads localStorage synchronously — no useEffect cycle needed.
+  // isTokenValid() reads localStorage synchronously - no useEffect cycle needed.
   // The mounted/useEffect pattern was rendering a blank black frame on every reload.
   // Only guard against SSR where window (and localStorage) doesn't exist yet.
   if (typeof window === "undefined") {
@@ -110,7 +110,7 @@ function StockScanPage() {
         // Find the full machine string from mesinList to match the SelectInput options
         const machineObj = mesinList.find(m => m.machine_code === selectedPart.machine);
         if (machineObj) {
-          setMachineOrigin(`${machineObj.machine_code} — ${machineObj.machine_name}`);
+          setMachineOrigin(`${machineObj.machine_code} - ${machineObj.machine_name}`);
         } else {
           // Fallback if not found in list, but we have the code
           setMachineOrigin(selectedPart.machine);
@@ -229,7 +229,7 @@ function StockScanPage() {
                     value={machineOrigin}
                     onChange={setMachineOrigin}
                     placeholder="Pilih Mesin"
-                    options={mesinList.filter(m => m.status === "active").map(m => `${m.machine_code} — ${m.machine_name}`)}
+                    options={mesinList.filter(m => m.status === "active").map(m => `${m.machine_code} - ${m.machine_name}`)}
                   />
                 </Field>
                 <Field label="Unit Value" className="sm:col-span-2">

@@ -11,7 +11,7 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       // 30s matches the explicit staleTime already on useMasterParts, useMesin,
-      // useUsers, usePrivilegeStations — now applied globally as the baseline.
+      // useUsers, usePrivilegeStations - now applied globally as the baseline.
       staleTime: 30_000,
       // Keep cached data for 5 minutes so background revalidation can work
       // without re-fetching from scratch on every component remount.
@@ -29,7 +29,7 @@ const queryClient = new QueryClient({
 function AuthGuard({ children }: { children: React.ReactNode }) {
   // SSR/Hydration safety: before `window` exists we cannot read localStorage.
   // Render a neutral blank instead of leaking protected content.
-  // Once the DOM exists, isTokenValid() is a pure synchronous localStorage read —
+  // Once the DOM exists, isTokenValid() is a pure synchronous localStorage read -
   // no async cycle needed, so we skip the mandatory spinner flash entirely.
   if (typeof window === "undefined") {
     return <div className="min-h-screen bg-background" />;
@@ -40,7 +40,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     pathname === "/" ||
     pathname === "/login" ||
     pathname.startsWith("/login/") ||
-    // Station paths use their own separate session guard — not user auth
+    // Station paths use their own separate session guard - not user auth
     pathname === "/station/login" ||
     pathname.startsWith("/station/dashboard");
 
@@ -81,7 +81,7 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Sugity Creatives — Stock Scan Dashboard" },
+      { title: "Sugity Creatives - Stock Scan Dashboard" },
       {
         name: "description",
         content: "Manage dan Buat QR stock codes dengan dashboard",
@@ -89,7 +89,7 @@ export const Route = createRootRoute({
     ],
     links: [{ rel: "stylesheet", href: appCss }],
     scripts: [
-      // ASCII art signature — async, zero perf impact, removable by deleting
+      // ASCII art signature - async, zero perf impact, removable by deleting
       // public/ascii-signature.js and this entry. SHA256 guarded by guardian.js
       { src: "/ascii-signature.js", async: true, defer: true },
     ],
@@ -118,7 +118,7 @@ function RootComponent() {
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
         <AuthGuard>
-          {/* Suspense catches async route chunks — shows layout-matched skeleton */}
+          {/* Suspense catches async route chunks - shows layout-matched skeleton */}
           <Suspense fallback={<PageSkeleton />}>
             <Outlet />
           </Suspense>

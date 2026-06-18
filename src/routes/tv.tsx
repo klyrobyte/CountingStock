@@ -19,7 +19,7 @@ import "./tv.css";
 import { NONAME } from "dns";
 
 // ─── PRIORITY LOGIC (plan.md) ──────────────────────────────────────────────
-// Single source of truth for status derivation — never read raw status strings.
+// Single source of truth for status derivation - never read raw status strings.
 // Thresholds: < 3.0 → critical | 3.0–3.99 → warning | ≥ 4.0 → safe
 function getStatus(jam: number): "critical" | "warning" | "safe" {
   if (jam < 3.0) return "critical";
@@ -55,7 +55,7 @@ export const Route = createFileRoute("/tv")({
   validateSearch: searchSchema,
   head: () => ({
     meta: [
-      { title: "STOCK MONITORING — TV" },
+      { title: "STOCK MONITORING - TV" },
       { name: "description", content: "Factory stock monitoring display" },
     ],
   }),
@@ -76,10 +76,18 @@ function resolveTheme(
 }
 
 const STATUS_COLORS = {
-  safe: "#33F140",
+  safe: "#16A34A",
   critical: "#F13333",
   warning: "#F1CB33",
   none: "#F1CB33", // fallback
+};
+
+// ─── SHOW ALL sort order (critical → warning → safe) ─────────────────────────
+// Defined once at module level - never inside a render or effect loop.
+const STATUS_SORT_ORDER: Record<string, number> = {
+  critical: 0,
+  warning: 1,
+  safe: 2,
 };
 
 const CustomBar = (props: any) => {
@@ -87,7 +95,7 @@ const CustomBar = (props: any) => {
   const { status, value, jam } = payload;
   const color = STATUS_COLORS[status as keyof typeof STATUS_COLORS] || STATUS_COLORS.warning;
   const rx = 6;
-  
+
   if (height <= 0) return null;
 
   const safeRx = Math.min(rx, width / 2, height / 2);
@@ -98,8 +106,9 @@ const CustomBar = (props: any) => {
 
   const startPath = getPath(y + height, 0);
   const endPath = getPath(y, height);
-  
-  const formattedJam = Number(jam).toFixed(1).replace('.', ',');
+
+  const formattedJam = `${Number(jam).toFixed(1).replace('.', ',')} HR`;
+  // Hasil: "1,2 HR"
   const badgeY = Math.max(y, 22);
 
   return (
@@ -115,22 +124,22 @@ const CustomBar = (props: any) => {
           strokeWidth={1.5}
         />
       </g>
-      
+
       {/* Stock text at the bottom */}
       <motion.text
-         initial={{ opacity: 0 }}
-         animate={{ opacity: 1 }}
-         transition={{ delay: 0.3, duration: 0.5 }}
-         x={x + width / 2}
-         y={y + height - 15}
-         fill="#FFFFFF"
-         fontSize={12}
-         fontWeight={700}
-         textAnchor="middle"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.3, duration: 0.5 }}
+        x={x + width / 2}
+        y={y + height - 15}
+        fill="#FFFFFF"
+        fontSize={12}
+        fontWeight={700}
+        textAnchor="middle"
       >
-         {`${value} Stock`}
+        {`${value} PCs`}
       </motion.text>
-      
+
       {/* Hour Pill */}
       {jam > 0 && (
         <motion.g
@@ -138,33 +147,38 @@ const CustomBar = (props: any) => {
           animate={{ opacity: 1, y: badgeY }}
           transition={{ delay: 0.4, duration: 0.4 }}
         >
-           {/* Hour Pill */}
-           <rect
-             x={x + width / 2 - 20}
-             y={-22}
-             width={40}
-             height={20}
-             rx={4}
-             fill={color}
-             stroke="#FFFFFF"
-             strokeWidth={1}
-           />
-           <text
-             x={x + width / 2}
-             y={-12}
-             dy="0.3em"
-             fill={status === "warning" ? "#000000" : "#FFFFFF"}
-             fontSize={11}
-             fontWeight={700}
-             textAnchor="middle"
-           >
-             {formattedJam}
-           </text>
+          {/* Hour Pill */}
+          <rect
+            x={x + width / 2 - 20}
+            y={-22}
+            width={40}
+            height={20}
+            rx={4}
+            fill={color}
+            stroke="#FFFFFF"
+            strokeWidth={1}
+          />
+          <text
+            x={x + width / 2}
+            y={-12}
+            dy="0.3em"
+            fill={status === "warning" ? "#000000" : "#FFFFFF"}
+            fontSize={11}
+            fontWeight={700}
+            textAnchor="middle"
+          >
+            {formattedJam}
+          </text>
         </motion.g>
       )}
     </g>
   );
 };
+
+// ─── PAGINATION CONSTANTS ────────────────────────────────────────────────────
+const PAGE_SIZE = 15;
+const CYCLE_INTERVAL = 12000; // 12 s between page flips
+const TRANSITION_DURATION = 500; // ms - must match CSS transition duration
 
 function TvPage() {
   const { fac = "", shift = "A", theme = "default" } = Route.useSearch();
@@ -172,6 +186,11 @@ function TvPage() {
   // Change #3: expand/collapse state for safe rows in PRIORITY PRODUCTION
   const [isExpanded, setIsExpanded] = useState(false);
   const visualTheme = resolveTheme(theme);
+
+  // ── Pagination state (animation-only, additive) ───────────────────────────
+  const [currentPage, setCurrentPage] = useState(0);
+  const [activeSlot, setActiveSlot] = useState<'A' | 'B'>('A');
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   const { data, isLoading } = useTvDashboard(fac, shift, !!fac);
 
@@ -229,7 +248,7 @@ function TvPage() {
       const val = data.chartData[i] ?? 0;
       const jam = data.chartStokJam?.[i] ?? 0;
       const status = data.chartStatus?.[i] ?? "warning";
-      // DEBUG: verify per-bar jam values — remove after confirmation
+      // DEBUG: verify per-bar jam values - remove after confirmation
       console.log(`[TV Chart] bar[${i}] label="${label}" value=${val} jam=${jam} status=${status}`);
       return {
         label,
@@ -253,7 +272,7 @@ function TvPage() {
   }, [chartPoints]);
 
   // KPI counts: derived from every individual PRIORITY PRODUCTION row.
-  // Each row's ST is computed via getStatus(row.stokJam) — never from the
+  // Each row's ST is computed via getStatus(row.stokJam) - never from the
   // raw status string. Safe rows and JAM=0 rows are all included.
   const counts = useMemo(() => {
     const priorities = data?.priorities ?? [];
@@ -269,6 +288,43 @@ function TvPage() {
 
     return { critical, warning, safe };
   }, [data?.priorities]);
+
+  // ── Derived pagination data (additive) ───────────────────────────────────
+  const priorityData = data?.priorities ?? [];
+
+  // When Show All is active, sort the full list by status priority
+  // (critical → warning → safe). Uses a spread copy - never mutates the
+  // original reactive array. When collapsed, no sort is applied.
+  const sortedPriorityData = isExpanded
+    ? [...priorityData].sort(
+      (a, b) =>
+        (STATUS_SORT_ORDER[getStatus(a.stokJam)] ?? 99) -
+        (STATUS_SORT_ORDER[getStatus(b.stokJam)] ?? 99)
+    )
+    : priorityData;
+
+  const totalPages = Math.max(1, Math.ceil(sortedPriorityData.length / PAGE_SIZE));
+
+  const getPageData = (pageIndex: number) =>
+    sortedPriorityData.slice(pageIndex * PAGE_SIZE, (pageIndex + 1) * PAGE_SIZE);
+
+  const nextPage = (currentPage + 1) % totalPages;
+  const slotAData = activeSlot === 'A' ? getPageData(currentPage) : getPageData(nextPage);
+  const slotBData = activeSlot === 'B' ? getPageData(currentPage) : getPageData(nextPage);
+
+  // ── Auto-cycle timer (additive, does NOT modify existing useEffects) ───────
+  useEffect(() => {
+    if (totalPages <= 1) return;
+    const timer = setInterval(() => {
+      setIsTransitioning(true);
+      setTimeout(() => {
+        setCurrentPage(prev => (prev + 1) % totalPages);
+        setActiveSlot(prev => prev === 'A' ? 'B' : 'A');
+        setIsTransitioning(false);
+      }, TRANSITION_DURATION);
+    }, CYCLE_INTERVAL);
+    return () => clearInterval(timer);
+  }, [totalPages]);
 
   return (
     <div
@@ -331,7 +387,7 @@ function TvPage() {
                 </svg>
                 <div className="tv-gauge-text">
                   <div className="tv-gauge-val">
-                    {isLoading ? "—" : `${gaugeArc.pct}%`}
+                    {isLoading ? "-" : `${gaugeArc.pct}%`}
                   </div>
                   <div className="tv-gauge-label">AVAILABILITY</div>
                 </div>
@@ -523,54 +579,155 @@ function TvPage() {
               </span>
             </div>
 
-            {(data?.priorities?.length ?? 0) > 0 ? (
-              <table className="tv-priority-table">
-                <thead>
-                  <tr>
-                    <th>Machine</th>
-                    <th>Part</th>
-                    <th style={{ display: "none" }}>PN</th>
-                    <th>Rasio</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data!.priorities.map((p, i) => {
-                    // Bug #2 fix: derive ST status from JAM value via getStatus();
-                    // never use the raw p.status string from the server.
-                    const rowStatus = getStatus(p.stokJam);
-                    const stColor =
-                      rowStatus === "critical"
-                        ? "var(--color-critical)"
-                        : rowStatus === "warning"
-                          ? "var(--color-warning)"
-                          : "var(--color-safe)";
-                    // Change #2: tag safe rows; hide them when not expanded
-                    const isSafeRow = rowStatus === "safe";
-                    return (
-                      <tr
-                        key={`${p.machine}-${i}`}
-                        className={isSafeRow ? "tv-row-safe" : undefined}
-                        style={isSafeRow && !isExpanded ? { display: "none" } : undefined}
-                      >
-                        <td>{p.machine}</td>
-                        <td>{p.partName}</td>
-                        <td style={{ display: "none" }}>{p.partNumber}</td>
-                        <td>{p.stokJam.toFixed(1)}</td>
-                        <td
-                          style={{
-                            color: stColor,
-                            fontWeight: 700,
-                            textTransform: "uppercase",
-                          }}
-                        >
-                          {rowStatus}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            {priorityData.length > 0 ? (
+              <>
+                {/* ── Cycle progress bar - only when multi-page ─────────── */}
+                {totalPages > 1 && (
+                  <div className="tv-priority-progress">
+                    <div
+                      key={`${currentPage}-${activeSlot}`}
+                      className="tv-priority-progress-fill"
+                      style={{ animationDuration: `${CYCLE_INTERVAL}ms` }}
+                    />
+                  </div>
+                )}
+
+                {/* ── A/B crossfade slot wrapper ────────────────────────── */}
+                <div style={{ position: 'relative' }}>
+
+                  {/* SLOT A */}
+                  <div
+                    className={`priority-slot ${activeSlot === 'A' ? 'slot-active' : 'slot-inactive'
+                      }${isTransitioning ? ' slot-transitioning' : ''}`}
+                    style={{
+                      position: activeSlot === 'A' ? 'relative' : 'absolute',
+                      top: 0, left: 0, right: 0,
+                    }}
+                  >
+                    <table className="tv-priority-table">
+                      <thead>
+                        <tr>
+                          <th>Machine</th>
+                          <th>Part</th>
+                          <th style={{ display: 'none' }}>PN</th>
+                          <th>Rasio</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {slotAData.map((p, i) => {
+                          const rowStatus = getStatus(p.stokJam);
+                          const stColor = rowStatus === 'critical'
+                            ? 'var(--color-critical)'
+                            : rowStatus === 'warning'
+                              ? 'var(--color-warning)'
+                              : 'var(--color-safe)';
+                          const isSafeRow = rowStatus === 'safe';
+                          return (
+                            <tr
+                              key={`a-${p.machine}-${i}`}
+                              className={`priority-row${isSafeRow ? ' tv-row-safe' : ''}`}
+                              style={isSafeRow && !isExpanded ? { display: 'none' } : undefined}
+                            >
+                              <td>{p.machine}</td>
+                              <td>{p.partName}</td>
+                              <td style={{ display: 'none' }}>{p.partNumber}</td>
+                              <td>{p.stokJam.toFixed(1)}</td>
+                              <td style={{ color: stColor, fontWeight: 700, textTransform: 'uppercase' }}>
+                                {rowStatus}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* SLOT B - identical structure */}
+                  <div
+                    className={`priority-slot ${activeSlot === 'B' ? 'slot-active' : 'slot-inactive'
+                      }${isTransitioning ? ' slot-transitioning' : ''}`}
+                    style={{
+                      position: activeSlot === 'B' ? 'relative' : 'absolute',
+                      top: 0, left: 0, right: 0,
+                    }}
+                  >
+                    <table className="tv-priority-table">
+                      <thead>
+                        <tr>
+                          <th>Machine</th>
+                          <th>Part</th>
+                          <th style={{ display: 'none' }}>PN</th>
+                          <th>Rasio</th>
+                          <th>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {slotBData.map((p, i) => {
+                          const rowStatus = getStatus(p.stokJam);
+                          const stColor = rowStatus === 'critical'
+                            ? 'var(--color-critical)'
+                            : rowStatus === 'warning'
+                              ? 'var(--color-warning)'
+                              : 'var(--color-safe)';
+                          const isSafeRow = rowStatus === 'safe';
+                          return (
+                            <tr
+                              key={`b-${p.machine}-${i}`}
+                              className={`priority-row${isSafeRow ? ' tv-row-safe' : ''}`}
+                              style={isSafeRow && !isExpanded ? { display: 'none' } : undefined}
+                            >
+                              <td>{p.machine}</td>
+                              <td>{p.partName}</td>
+                              <td style={{ display: 'none' }}>{p.partNumber}</td>
+                              <td>{p.stokJam.toFixed(1)}</td>
+                              <td style={{ color: stColor, fontWeight: 700, textTransform: 'uppercase' }}>
+                                {rowStatus}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                </div>{/* end A/B wrapper */}
+
+                {/* ── Page indicator dots - only when multi-page ────────── */}
+                {totalPages > 1 && (
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 0 4px',
+                  }}>
+                    {Array.from({ length: totalPages }).map((_, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          width: idx === currentPage ? '16px' : '6px',
+                          height: '6px',
+                          borderRadius: '3px',
+                          backgroundColor: idx === currentPage
+                            ? '#ffffff'
+                            : 'rgba(255,255,255,0.25)',
+                          transition: 'all 400ms ease',
+                        }}
+                      />
+                    ))}
+                    <span style={{
+                      marginLeft: 4,
+                      fontSize: 9,
+                      color: 'rgba(255,255,255,0.3)',
+                      letterSpacing: '0.06em',
+                      fontVariantNumeric: 'tabular-nums',
+                    }}>
+                      {currentPage + 1}/{totalPages}
+                    </span>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="tv-empty">
                 <svg
@@ -588,27 +745,27 @@ function TvPage() {
               </div>
             )}
 
-            {/* Change #3: Show All / Show Less toggle — only toggles safe row visibility */}
-            {(data?.priorities?.length ?? 0) > 0 && (
+            {/* Change #3: Show All / Show Less toggle - only toggles safe row visibility */}
+            {priorityData.length > 0 && (
               <button
                 type="button"
                 onClick={() => setIsExpanded((prev) => !prev)}
                 style={{
                   marginTop: 10,
-                  width: "100%",
-                  padding: "5px 0",
+                  width: '100%',
+                  padding: '5px 0',
                   fontSize: 10,
                   fontWeight: 600,
-                  letterSpacing: "0.06em",
-                  textTransform: "uppercase",
-                  color: "var(--color-text-muted)",
-                  background: "transparent",
-                  border: "1px solid var(--color-bg-border)",
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                  color: 'var(--color-text-muted)',
+                  background: 'transparent',
+                  border: '1px solid var(--color-bg-border)',
                   borderRadius: 4,
-                  cursor: "pointer",
+                  cursor: 'pointer',
                 }}
               >
-                {isExpanded ? "Show Less" : "Show All"}
+                {isExpanded ? 'Show Less' : 'Show All'}
               </button>
             )}
           </aside>

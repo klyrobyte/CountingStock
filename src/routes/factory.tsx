@@ -5,7 +5,7 @@ import { FactoryApi } from "@/hooks/use-master-data";
 export const Route = createFileRoute("/factory")({
   head: () => ({
     meta: [
-      { title: "Factory Management — Sugity Creatives" },
+      { title: "Factory Management - Sugity Creatives" },
       { name: "description", content: "Kelola data factory origin" },
     ],
   }),

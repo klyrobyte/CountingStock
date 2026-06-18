@@ -38,7 +38,7 @@ import { FactoryApi } from "@/hooks/use-master-data";
 export const Route = createFileRoute("/devices")({
   head: () => ({
     meta: [
-      { title: "Device Management — Sugity Creatives" },
+      { title: "Device Management - Sugity Creatives" },
       { name: "description", content: "Management perangkat scanner." },
     ],
   }),
@@ -193,8 +193,8 @@ function AddDeviceModal({ onClose }: { onClose: () => void }) {
                 required
                 className={inputCls}
               >
-                <option value="IN">IN — Scan Masuk</option>
-                <option value="OUT">OUT — Scan Keluar</option>
+                <option value="IN">IN - Scan Masuk</option>
+                <option value="OUT">OUT - Scan Keluar</option>
               </select>
             </div>
 
@@ -410,8 +410,8 @@ function EditDeviceModal({ device, onClose }: { device: DeviceRow; onClose: () =
                 required
                 className={inputCls}
               >
-                <option value="IN">IN — Scan Masuk</option>
-                <option value="OUT">OUT — Scan Keluar</option>
+                <option value="IN">IN - Scan Masuk</option>
+                <option value="OUT">OUT - Scan Keluar</option>
               </select>
             </div>
 
@@ -477,7 +477,7 @@ function EditDeviceModal({ device, onClose }: { device: DeviceRow; onClose: () =
   );
 }
 
-// ── Device Card (Grid) — ORIGINAL CODE UNTOUCHED ─────────────────────────────
+// ── Device Card (Grid) - ORIGINAL CODE UNTOUCHED ─────────────────────────────
 
 function DeviceCard({ d, onDelete, onEdit }: { d: DeviceRow; onDelete: (id: number) => void; onEdit: (d: DeviceRow) => void }) {
   const TypeIcon = d.type === "phone" ? Smartphone : Tablet;
@@ -552,7 +552,7 @@ function DeviceCard({ d, onDelete, onEdit }: { d: DeviceRow; onDelete: (id: numb
       <div className="mt-4 space-y-1 border-t border-border pt-4 text-xs">
         <div className="flex justify-between">
           <span className="text-muted-foreground">Location</span>
-          <span className="text-foreground">{d.location || "—"}</span>
+          <span className="text-foreground">{d.location || "-"}</span>
         </div>
         <div className="flex justify-between">
           <span className="text-muted-foreground">Last Sync</span>
@@ -631,13 +631,13 @@ function DeviceListView({
                 {/* Code */}
                 <td className="px-4 py-3.5 hidden sm:table-cell">
                   <span className="font-mono text-xs bg-card-elevated px-2 py-1 rounded-lg text-muted-foreground">
-                    {d.device_code || "—"}
+                    {d.device_code || "-"}
                   </span>
                 </td>
 
                 {/* Location */}
                 <td className="px-4 py-3.5 hidden md:table-cell">
-                  <span className="text-sm text-foreground">{d.location || "—"}</span>
+                  <span className="text-sm text-foreground">{d.location || "-"}</span>
                 </td>
 
                 {/* Role */}
@@ -648,7 +648,7 @@ function DeviceListView({
                       : "bg-orange-500/10 text-orange-600 dark:text-orange-400"
                       }`}
                   >
-                    {d.device_role || "—"}
+                    {d.device_role || "-"}
                   </span>
                 </td>
 
@@ -839,7 +839,7 @@ function DevicesPage() {
             {search ? `Tidak ada perangkat yang cocok dengan "${search}".` : "Belum ada perangkat terdaftar."}
           </div>
         ) : view === "grid" ? (
-          /* ── GRID VIEW — ORIGINAL CODE UNTOUCHED ────────────────────── */
+          /* ── GRID VIEW - ORIGINAL CODE UNTOUCHED ────────────────────── */
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {filtered.map((d) => (
               <DeviceCard key={d.id} d={d} onDelete={handleDelete} onEdit={setEditingDevice} />

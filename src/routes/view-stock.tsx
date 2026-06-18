@@ -16,7 +16,7 @@ import { useStock, useStockStats, useStockFactories, type StockRow } from "@/hoo
 export const Route = createFileRoute("/view-stock")({
   head: () => ({
     meta: [
-      { title: "Lihat Stock  — Sugity Creatives" },
+      { title: "Lihat Stock  - Sugity Creatives" },
       { name: "description", content: "Realtime stock data view with IN/OUT tracking." },
     ],
   }),
@@ -157,7 +157,7 @@ function ViewStockPage() {
                 No stock items match your filters.{" "}
                 {query === "" && factory === "All" && (
                   <span className="block mt-1 text-xs">
-                    Create a QR code first — each new QR auto-creates a stock entry.
+                    Create a QR code first - each new QR auto-creates a stock entry.
                   </span>
                 )}
               </div>
@@ -175,7 +175,7 @@ function ViewStockPage() {
           </span>
           <span className="flex items-center gap-1.5">
             <span className="inline-block h-2.5 w-2.5 rounded-full bg-red-500" />
-            Empty (0 units — cannot scan OUT)
+            Empty (0 units - cannot scan OUT)
           </span>
           <span className="flex items-center gap-1.5">
             <span className="inline-block h-2.5 w-2.5 rounded-full bg-muted-foreground/40" />
@@ -256,7 +256,7 @@ function StockCard({ row }: { row: StockRow }) {
             {" "} Total PCs
           </span>
           <span className="text-[11.5px] font-medium text-foreground">
-            {isUntouched ? "—" : `${percentage.toFixed(1)}%`}
+            {isUntouched ? "-" : `${percentage.toFixed(1)}%`}
           </span>
         </div>
         <div className="h-2 w-full overflow-hidden rounded-full bg-card">
@@ -296,9 +296,8 @@ function StatCard({
           {label}
         </span>
         <span
-          className={`flex h-9 w-9 items-center justify-center rounded-full ${
-            accent ? "bg-destructive/15 text-destructive" : "bg-card-elevated text-foreground/80"
-          }`}
+          className={`flex h-9 w-9 items-center justify-center rounded-full ${accent ? "bg-destructive/15 text-destructive" : "bg-card-elevated text-foreground/80"
+            }`}
         >
           <Icon className="h-4 w-4" />
         </span>

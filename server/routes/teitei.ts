@@ -23,7 +23,7 @@ function mapTeitei(r: any) {
   };
 }
 
-// GET /api/teitei — list with master part info
+// GET /api/teitei - list with master part info
 router.get("/", async (_req, res) => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
@@ -45,7 +45,7 @@ router.get("/", async (_req, res) => {
   }
 });
 
-// GET /api/teitei/parts — master parts without teitei (for add dropdown)
+// GET /api/teitei/parts - master parts without teitei (for add dropdown)
 router.get("/parts", async (_req, res) => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(

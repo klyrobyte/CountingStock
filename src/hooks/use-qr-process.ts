@@ -74,7 +74,7 @@ export function useQrInfo(token: string | null) {
   });
 }
 
-// ── QR Scan history — auto-refresh every 5s ──────────────────────────────
+// ── QR Scan history - auto-refresh every 5s ──────────────────────────────
 export function useQrHistory() {
   return useQuery({
     queryKey: ["qr-history"],

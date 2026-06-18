@@ -5,7 +5,7 @@ import type { RowDataPacket, ResultSetHeader } from "mysql2";
 const router = Router();
 
 // ═══════════════════════════════════════════════════════════════════════════
-// [1] GET /api/mesin — list all machines (optional search)
+// [1] GET /api/mesin - list all machines (optional search)
 // ═══════════════════════════════════════════════════════════════════════════
 router.get("/", async (req, res) => {
   try {
@@ -28,7 +28,7 @@ router.get("/", async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// [2] POST /api/mesin — create new machine
+// [2] POST /api/mesin - create new machine
 // ═══════════════════════════════════════════════════════════════════════════
 router.post("/", async (req, res) => {
   try {
@@ -77,7 +77,7 @@ router.post("/", async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// [3] PUT /api/mesin/:id — update machine
+// [3] PUT /api/mesin/:id - update machine
 // ═══════════════════════════════════════════════════════════════════════════
 router.put("/:id", async (req, res) => {
   try {
@@ -121,7 +121,7 @@ router.put("/:id", async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// [4] PATCH /api/mesin/:id/toggle — toggle active/inactive status
+// [4] PATCH /api/mesin/:id/toggle - toggle active/inactive status
 // ═══════════════════════════════════════════════════════════════════════════
 router.patch("/:id/toggle", async (req, res) => {
   try {
@@ -141,7 +141,7 @@ router.patch("/:id/toggle", async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// [5] DELETE /api/mesin/:id — delete machine
+// [5] DELETE /api/mesin/:id - delete machine
 // ═══════════════════════════════════════════════════════════════════════════
 router.delete("/:id", async (req, res) => {
   try {

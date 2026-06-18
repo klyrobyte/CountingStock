@@ -16,7 +16,7 @@ router.use(requireInternalKey);
 // ═══════════════════════════════════════════════════════════════════════════
 router.get("/stations", async (_req, res) => {
   try {
-    // Single query: join devices with privilege counts — O(devices + privileges)
+    // Single query: join devices with privilege counts - O(devices + privileges)
     const [rows] = await pool.query<RowDataPacket[]>(
       `SELECT
          d.id,
@@ -104,7 +104,7 @@ router.get("/station/:id", async (req, res) => {
 // ═══════════════════════════════════════════════════════════════════════════
 // [3] POST /api/privileges/station/:id
 // Save/replace privilege configuration for a station.
-// Body: { qr_ids: number[] }  — array of qr_codes.id values
+// Body: { qr_ids: number[] }  - array of qr_codes.id values
 //
 // Supports MULTIPLE QRs per station (many rows inserted).
 // Uses a replace strategy: delete old rows, insert new ones atomically.
@@ -209,10 +209,10 @@ router.delete("/station/:id", async (req, res) => {
 
 // ═══════════════════════════════════════════════════════════════════════════
 // [5] GET /api/privileges/check?station_id=X&qr_db_id=Y
-// Server-side privilege check — called internally from /api/qr/process.
+// Server-side privilege check - called internally from /api/qr/process.
 // Returns: { allowed: true } | { allowed: false }
 //
-// Performance: Uses indexed columns (station_id, qr_id) — O(1) lookup.
+// Performance: Uses indexed columns (station_id, qr_id) - O(1) lookup.
 // ═══════════════════════════════════════════════════════════════════════════
 router.get("/check", async (req, res) => {
   try {
@@ -230,12 +230,12 @@ router.get("/check", async (req, res) => {
     );
     const totalPrivileges = Number(countRows[0]?.cnt ?? 0);
 
-    // Open access mode — no rows = no restriction
+    // Open access mode - no rows = no restriction
     if (totalPrivileges === 0) {
       return res.json({ success: true, data: { allowed: true, mode: "open" } });
     }
 
-    // Restricted mode — check if specific QR is in the allowed list
+    // Restricted mode - check if specific QR is in the allowed list
     const [checkRows] = await pool.query<RowDataPacket[]>(
       "SELECT id FROM station_qr_privileges WHERE station_id = ? AND qr_id = ? LIMIT 1",
       [stationId, qrDbId]

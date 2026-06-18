@@ -4,7 +4,7 @@ import type { RowDataPacket } from "mysql2";
 
 const router = Router();
 
-// GET /api/stock — list stock with filters
+// GET /api/stock - list stock with filters
 router.get("/", async (req, res) => {
   try {
     const search = (req.query.search as string) || "";
@@ -32,7 +32,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-// GET /api/stock/stats — summary stats
+// GET /api/stock/stats - summary stats
 router.get("/stats", async (req, res) => {
   try {
     const [totalResult] = await pool.query<RowDataPacket[]>(
@@ -55,7 +55,7 @@ router.get("/stats", async (req, res) => {
   }
 });
 
-// GET /api/stock/factories — list distinct factories
+// GET /api/stock/factories - list distinct factories
 router.get("/factories", async (req, res) => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(

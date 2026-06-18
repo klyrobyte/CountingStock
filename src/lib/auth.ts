@@ -1,7 +1,7 @@
 // ── Auth token helpers (localStorage, no framework dependency) ───────────────
 
 const AUTH_TOKEN_KEY = "sugity-auth-token";
-const AUTH_USER_KEY  = "sugity-auth-user";
+const AUTH_USER_KEY = "sugity-auth-user";
 
 export type AuthUser = {
   id: number;
@@ -18,7 +18,7 @@ export function getAuthToken(): string | null {
 }
 
 /**
- * Decode JWT payload using built-in atob — no external library.
+ * Decode JWT payload using built-in atob - no external library.
  * Returns the `exp` field as milliseconds, or null if not present.
  */
 function decodeTokenExpiry(token: string): number | null {
@@ -35,14 +35,14 @@ function decodeTokenExpiry(token: string): number | null {
 
 /**
  * Returns true only if a token exists AND has not expired.
- * Auto-evicts the stale token from storage on expiry — keeps state clean.
+ * Auto-evicts the stale token from storage on expiry - keeps state clean.
  */
 export function isTokenValid(): boolean {
   const token = getAuthToken();
   if (!token) return false;
   const expiry = decodeTokenExpiry(token);
   if (expiry !== null && Date.now() >= expiry) {
-    clearAuth(); // auto-evict expired session — user is redirected by AuthGuard
+    clearAuth(); // auto-evict expired session - user is redirected by AuthGuard
     return false;
   }
   return true;
@@ -73,11 +73,11 @@ export function clearAuth(): void {
 }
 
 // ─── Route access ─────────────────────────────────────────────────────────────
-// ONLY /login is publicly accessible — every other route requires a valid token.
+// ONLY /login is publicly accessible - every other route requires a valid token.
 export const PUBLIC_PATHS = ["/login"];
 
 // ─── Station session (SEPARATE from user auth) ────────────────────────────────
-// Uses completely different localStorage keys — cannot interfere with user auth.
+// Uses completely different localStorage keys - cannot interfere with user auth.
 
 const STATION_TOKEN_KEY = "sugity-station-token";
 const STATION_DEVICE_KEY = "sugity-station-device";

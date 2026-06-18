@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Skeleton loader — matches rough DashboardLayout page structure
+// Skeleton loader - matches rough DashboardLayout page structure
 // Used as Suspense fallback during route transitions / lazy chunk loading
 // ─────────────────────────────────────────────────────────────────────────────
 

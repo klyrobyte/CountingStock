@@ -12,7 +12,7 @@ function hashPin(pin: string): string {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// GET /api/devices — list all devices
+// GET /api/devices - list all devices
 // ═══════════════════════════════════════════════════════════════════════════
 router.get("/", async (_req, res) => {
   try {
@@ -26,7 +26,7 @@ router.get("/", async (_req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// POST /api/devices — create a new device (from /devices management page)
+// POST /api/devices - create a new device (from /devices management page)
 // Body: { device_code, name, location?, device_role, pin, model?, type?, active_status? }
 // ═══════════════════════════════════════════════════════════════════════════
 router.post("/", async (req, res) => {
@@ -80,7 +80,7 @@ router.post("/", async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// PUT /api/devices/:id — update device fields
+// PUT /api/devices/:id - update device fields
 // ═══════════════════════════════════════════════════════════════════════════
 router.put("/:id", async (req, res) => {
   try {
@@ -133,7 +133,7 @@ router.put("/:id", async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// DELETE /api/devices/:id — remove a device
+// DELETE /api/devices/:id - remove a device
 // ═══════════════════════════════════════════════════════════════════════════
 router.delete("/:id", async (req, res) => {
   try {

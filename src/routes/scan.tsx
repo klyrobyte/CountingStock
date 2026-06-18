@@ -23,12 +23,12 @@ import { useScanSound } from "@/hooks/use-scan-sound";
 export const Route = createFileRoute("/scan")({
   head: () => ({
     meta: [
-      { title: "Scan QR — Sugity Creatives" },
+      { title: "Scan QR - Sugity Creatives" },
       {
         name: "description",
         content: "Scan QR codes to toggle IN/OUT status with your device camera.",
       },
-      { property: "og:title", content: "Scan QR — Sugity Creatives" },
+      { property: "og:title", content: "Scan QR - Sugity Creatives" },
     ],
   }),
   component: ScanPage,
@@ -48,7 +48,7 @@ function ScanPage() {
   const lastScannedRef = useRef<string>("");
   const cooldownRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  // Synchronous refs — the camera callback reads these instead of stale closure state.
+  // Synchronous refs - the camera callback reads these instead of stale closure state.
   // This fixes: Force OUT reading as IN, and 25fps multi-fire causing 8×3=24 per scan.
   const scanModeRef = useRef<"auto" | "forceIn" | "forceOut">("forceIn");
   const processingRef = useRef(false);
@@ -98,7 +98,7 @@ function ScanPage() {
     } catch { /* not a URL */ }
     // Format 2: Direct JWT (three dot-separated parts)
     if (trimmed.split(".").length === 3) return trimmed;
-    // Format 3: Short opaque token (new system) — ≤16 URL-safe alphanumeric chars
+    // Format 3: Short opaque token (new system) - ≤16 URL-safe alphanumeric chars
     if (/^[A-Za-z0-9_-]{1,16}$/.test(trimmed)) return trimmed;
     return null;
   }, []);
@@ -111,19 +111,19 @@ function ScanPage() {
     (rawValue: string) => {
       const currentMode = scanModeRef.current;
 
-      // Synchronous multi-fire guard — blocks all frames while one mutation is in flight
+      // Synchronous multi-fire guard - blocks all frames while one mutation is in flight
       if (processingRef.current) return;
 
       // In auto mode keep dedup; in force mode allow re-scanning same QR after cooldown
       if (currentMode === "auto" && lastScannedRef.current === rawValue) return;
 
-      // Lock immediately (synchronous — prevents next camera frame)
+      // Lock immediately (synchronous - prevents next camera frame)
       processingRef.current = true;
       lastScannedRef.current = rawValue;
 
       const token = extractToken(rawValue);
       if (!token) {
-        // Invalid token — play warning immediately
+        // Invalid token - play warning immediately
         playWarning();
         setScanError("QR detected but does not contain a valid inventory token.");
         lastScannedRef.current = "";
@@ -131,7 +131,7 @@ function ScanPage() {
         return;
       }
 
-      // Valid token — play info sound immediately on detection
+      // Valid token - play info sound immediately on detection
       playInfo();
       setScanError(null);
       setIsProcessing(true);
@@ -147,7 +147,7 @@ function ScanPage() {
 
       processQr.mutate({ token, forceAction }, {
         onSuccess: (result) => {
-          // Success — play success sound immediately when server responds
+          // Success - play success sound immediately when server responds
           playSuccess();
           setScanResult(result);
           setIsProcessing(false);
@@ -161,7 +161,7 @@ function ScanPage() {
           }, cooldownMs);
         },
         onError: (err) => {
-          // Error — play warning sound immediately when server responds
+          // Error - play warning sound immediately when server responds
           playWarning();
           setScanError(err.message || "Failed to process QR code.");
           setIsProcessing(false);
@@ -187,7 +187,7 @@ function ScanPage() {
 
     if (!isCameraApiAvailable()) {
       setCameraError(
-        "Live camera memerlukan HTTPS. Gunakan 'Capture Photo' di bawah — ini akan berfungsi di semua perangkat (kayaknya sih)."
+        "Live camera memerlukan HTTPS. Gunakan 'Capture Photo' di bawah - ini akan berfungsi di semua perangkat (kayaknya sih)."
       );
       setMode("file");
       return;
@@ -212,12 +212,12 @@ function ScanPage() {
           qrbox: { width: 300, height: 300 },
           aspectRatio: 1.0,
           experimentalFeatures: {
-            useBarCodeDetectorIfSupported: true, // native BarcodeDetector API — 2-5× faster
+            useBarCodeDetectorIfSupported: true, // native BarcodeDetector API - 2-5× faster
           },
           rememberLastUsedCamera: true,
         } as any),
         (text) => handleDetected(text),
-        () => { /* scan miss — silent */ }
+        () => { /* scan miss - silent */ }
       );
 
       setScanning(true);
@@ -235,7 +235,7 @@ function ScanPage() {
         msg.includes("getUserMedia is not defined")
       ) {
         friendly =
-          "Live camera membutuhkan HTTPS. Gunakan 'Capture Photo' di bawah — ini akan berfungsi di semua perangkat (kayaknya sih).";
+          "Live camera membutuhkan HTTPS. Gunakan 'Capture Photo' di bawah - ini akan berfungsi di semua perangkat (kayaknya sih).";
         setMode("file");
       } else if (msg.includes("notfound") || msg.includes("no camera")) {
         friendly = "No camera found on this device.";
@@ -283,11 +283,11 @@ function ScanPage() {
         }
 
         const scanner = new Html5Qrcode("qr-file-reader", { verbose: false });
-        // scanFile: decodes QR from an image file — no camera API / HTTPS required
+        // scanFile: decodes QR from an image file - no camera API / HTTPS required
         const decoded = await scanner.scanFile(file, /* showImage: */ false);
         handleDetected(decoded);
       } catch {
-        // File decode failed — play warning immediately
+        // File decode failed - play warning immediately
         playWarning();
         setScanError(
           "Could not decode a QR code from this image. Make sure the QR is clear and well-lit, then try again."
@@ -514,7 +514,7 @@ function ScanPage() {
                   <Camera className="mx-auto mb-3 h-10 w-10 text-[#a4c9e9] opacity-80" />
                   <p className="text-sm font-medium text-foreground">Ambil Foto dari QR Code</p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Berfungsi di semua perangkat seluler — tidak memerlukan HTTPS.
+                    Berfungsi di semua perangkat seluler - tidak memerlukan HTTPS.
                     <br />
                     Kamera bawaan Anda akan terbuka untuk menangkap QR.
                   </p>
@@ -564,7 +564,7 @@ function ScanPage() {
                   <Link2 className="mb-3 h-8 w-8 text-[#a4c9e9] opacity-80" />
                   <p className="text-sm font-medium text-foreground">Tempel QR token nya atau isi URL</p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Scan QR dengan Google Lens / SCANNER — salin URL yang muncul, lalu tempel di sini.
+                    Scan QR dengan Google Lens / SCANNER - salin URL yang muncul, lalu tempel di sini.
                   </p>
                   <div className="mt-4 flex gap-2">
                     <input
@@ -589,7 +589,7 @@ function ScanPage() {
               </div>
             )}
 
-            {/* ── Scan Result — shared across all modes ── */}
+            {/* ── Scan Result - shared across all modes ── */}
             {(isProcessing || scanResult || scanError) && (
               <div className="mt-4">
                 {isProcessing && (
@@ -670,21 +670,21 @@ function ScanPage() {
                 <li className="flex gap-2.5">
                   <Camera className="mt-0.5 h-4 w-4 shrink-0 text-[#a4c9e9]" />
                   <span>
-                    <strong className="text-foreground">Camera Langsung</strong> — Membutuhkan HTTPS ,
+                    <strong className="text-foreground">Camera Langsung</strong> - Membutuhkan HTTPS ,
                     25 FPS dengan ARIS native untuk scan tercepat.
                   </span>
                 </li>
                 <li className="flex gap-2.5">
                   <ImageUp className="mt-0.5 h-4 w-4 shrink-0 text-[#a4c9e9]" />
                   <span>
-                    <strong className="text-foreground">Ambil Gambar</strong> — Berfungsi di semua
+                    <strong className="text-foreground">Ambil Gambar</strong> - Berfungsi di semua
                     perangkat seluler melalui HTTP. Membuka kamera bawaan untuk mengambil foto QR.
                   </span>
                 </li>
                 <li className="flex gap-2.5">
                   <Link2 className="mt-0.5 h-4 w-4 shrink-0 text-[#a4c9e9]" />
                   <span>
-                    <strong className="text-foreground">Tempel URL</strong> — Scan dengan SCANNER,
+                    <strong className="text-foreground">Tempel URL</strong> - Scan dengan SCANNER,
                     salin URL yang ditampilkan, tempel di sini dan tekan Process.
                   </span>
                 </li>

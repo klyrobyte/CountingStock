@@ -14,7 +14,7 @@ import {
 export const Route = createFileRoute("/qr-privileges")({
   head: () => ({
     meta: [
-      { title: "Privilege QR — Sugity Integrated Systems" },
+      { title: "Privilege QR - Sugity Integrated Systems" },
       { name: "description", content: "Kelola akses QR scan per akun station." },
     ],
   }),
@@ -26,11 +26,10 @@ type ToastType = "success" | "error";
 function Toast({ msg, type, onClose }: { msg: string; type: ToastType; onClose: () => void }) {
   return (
     <div
-      className={`fixed bottom-6 right-6 z-[100] flex items-center gap-3 rounded-2xl px-5 py-3.5 shadow-2xl text-sm font-semibold animate-in slide-in-from-bottom-4 duration-300 ${
-        type === "success"
+      className={`fixed bottom-6 right-6 z-[100] flex items-center gap-3 rounded-2xl px-5 py-3.5 shadow-2xl text-sm font-semibold animate-in slide-in-from-bottom-4 duration-300 ${type === "success"
           ? "bg-emerald-500 text-white"
           : "bg-red-500 text-white"
-      }`}
+        }`}
     >
       {type === "success" ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
       {msg}
@@ -70,11 +69,10 @@ function StationCard({
           </div>
         </div>
         <span
-          className={`shrink-0 inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${
-            isRestricted
+          className={`shrink-0 inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${isRestricted
               ? "bg-orange-500/10 text-orange-400"
               : "bg-emerald-500/10 text-emerald-400"
-          }`}
+            }`}
         >
           {isRestricted ? `Restricted · ${station.privilege_count} QR` : "Default"}
         </span>
@@ -219,7 +217,7 @@ function PrivilegeModal({
           <div>
             <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-[#C05C30]" />
-              Pengaturan Privilege QR — {station.name}
+              Pengaturan Privilege QR - {station.name}
             </h2>
             <p className="text-xs text-muted-foreground mt-0.5">
               Pindahkan QR ke kolom kanan untuk mengizinkan. Kosongkan kolom kanan = open access.
@@ -263,11 +261,10 @@ function PrivilegeModal({
                       <button
                         key={q.id}
                         onClick={() => toggleLeft(q.id)}
-                        className={`w-full text-left rounded-xl px-3 py-2.5 text-xs transition-smooth ${
-                          selectedLeft.has(q.id)
+                        className={`w-full text-left rounded-xl px-3 py-2.5 text-xs transition-smooth ${selectedLeft.has(q.id)
                             ? "bg-[#C05C30]/20 border border-[#C05C30]/50"
                             : "hover:bg-card-elevated border border-transparent"
-                        }`}
+                          }`}
                       >
                         <span className="font-semibold text-foreground block truncate">{q.part_name}</span>
                         <span className="text-muted-foreground">{q.qr_id} · {q.factory}</span>
@@ -321,11 +318,10 @@ function PrivilegeModal({
                       <button
                         key={q.id}
                         onClick={() => toggleRight(q.id)}
-                        className={`w-full text-left rounded-xl px-3 py-2.5 text-xs transition-smooth ${
-                          selectedRight.has(q.id)
+                        className={`w-full text-left rounded-xl px-3 py-2.5 text-xs transition-smooth ${selectedRight.has(q.id)
                             ? "bg-emerald-500/20 border border-emerald-500/50"
                             : "hover:bg-card-elevated border border-transparent"
-                        }`}
+                          }`}
                       >
                         <span className="font-semibold text-foreground block truncate">{q.part_name}</span>
                         <span className="text-muted-foreground">{q.qr_id} · {q.factory}</span>

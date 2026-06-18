@@ -11,7 +11,7 @@ const searchSchema = z.object({ editId: z.number().optional() });
 export const Route = createFileRoute("/users/create")({
   validateSearch: searchSchema,
   head: () => ({
-    meta: [{ title: "Tambah User — Sugity Creatives" }],
+    meta: [{ title: "Tambah User - Sugity Creatives" }],
   }),
   component: CreateUserPage,
 });

@@ -68,7 +68,7 @@ Below are the specific adjustments, grouped by file:
   ```
 * **After**:
   ```tsx
-  // editUser.role is already "admin" | "operator" | "usertv" — assign directly.
+  // editUser.role is already "admin" | "operator" | "usertv" - assign directly.
   // The old "viewer" branch was dead code (type overlap error TS2367).
   setRole(editUser.role);
   ```
@@ -137,7 +137,7 @@ Below are the specific adjustments, grouped by file:
     return useQuery({
       queryKey: ["tv-dashboard", factory, shift],
       queryFn: () => ...,
-      refetchInterval: 10_000, // 10s — stock data is measured in hours; no need to poll every 3s
+      refetchInterval: 10_000, // 10s - stock data is measured in hours; no need to poll every 3s
       enabled: enabled && !!factory,
     });
   }

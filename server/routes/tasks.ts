@@ -4,7 +4,7 @@ import type { RowDataPacket } from "mysql2";
 
 const router = Router();
 
-// GET /api/tasks — list all tasks
+// GET /api/tasks - list all tasks
 router.get("/", async (req, res) => {
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
@@ -16,7 +16,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-// POST /api/tasks — create a task
+// POST /api/tasks - create a task
 router.post("/", async (req, res) => {
   try {
     const { title, type, status, user } = req.body;

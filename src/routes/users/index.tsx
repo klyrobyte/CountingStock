@@ -19,7 +19,7 @@ import {
 export const Route = createFileRoute("/users/")({
   head: () => ({
     meta: [
-      { title: "User Management — Sugity Creatives" },
+      { title: "User Management - Sugity Creatives" },
       { name: "description", content: "Kelola Data Pengguna" },
     ],
   }),
@@ -188,7 +188,7 @@ function UserRow({ user, onDelete }: { user: AppUser; onDelete: (u: AppUser) => 
         </span>
       </td>
       <td className="border-b border-border/60 px-5 py-4 text-muted-foreground text-[13px]">
-        {user.nik || "—"}
+        {user.nik || "-"}
       </td>
       <td className="border-b border-border/60 px-5 py-4">
         <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider ${roleColors[user.role] ?? "bg-muted text-muted-foreground"}`}>

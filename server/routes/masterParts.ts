@@ -6,7 +6,7 @@ import { upsertStockAnalyticsFromMasterPart } from "../lib/stockAnalyticsService
 const router = Router();
 
 // ═══════════════════════════════════════════════════════════════════════════
-// [1] GET /api/master-parts — list all parts (with optional search)
+// [1] GET /api/master-parts - list all parts (with optional search)
 // ═══════════════════════════════════════════════════════════════════════════
 router.get("/", async (req, res) => {
   try {
@@ -31,7 +31,7 @@ router.get("/", async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// [2] POST /api/master-parts — create a new part
+// [2] POST /api/master-parts - create a new part
 // Body: { partNumber, partName, category, model, customer, qtyPerPallet, unit, status, imageBase64? }
 // ═══════════════════════════════════════════════════════════════════════════
 router.post("/", async (req, res) => {
@@ -106,7 +106,7 @@ router.post("/", async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// [3] PUT /api/master-parts/:id — update a part
+// [3] PUT /api/master-parts/:id - update a part
 // ═══════════════════════════════════════════════════════════════════════════
 router.put("/:id", async (req, res) => {
   try {
@@ -192,7 +192,7 @@ router.put("/:id", async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// [4] DELETE /api/master-parts/:id — delete a part
+// [4] DELETE /api/master-parts/:id - delete a part
 // ═══════════════════════════════════════════════════════════════════════════
 router.delete("/:id", async (req, res) => {
   try {

@@ -5,7 +5,7 @@ import { CustomerApi } from "@/hooks/use-master-data";
 export const Route = createFileRoute("/customer")({
   head: () => ({
     meta: [
-      { title: "Customer Management — Sugity Creatives" },
+      { title: "Customer Management - Sugity Creatives" },
       { name: "description", content: "Kelola data customer" },
     ],
   }),

@@ -44,7 +44,7 @@ async function migrate() {
     );
     console.log("✅ Added unique index on qr_codes.short_token");
   } else {
-    console.log("ℹ️  qr_codes.short_token already exists — skipping");
+    console.log("ℹ️  qr_codes.short_token already exists - skipping");
   }
 
   console.log("\n🎉 v4 migration selesai!");

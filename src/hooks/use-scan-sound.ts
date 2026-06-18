@@ -1,5 +1,5 @@
 /**
- * Scan sound hook — plays audio feedback for QR scan events.
+ * Scan sound hook - plays audio feedback for QR scan events.
  *
  * Sound mapping:
  *  - Scan attempt (input received)  → notification/info

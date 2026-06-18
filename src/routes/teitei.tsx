@@ -24,7 +24,7 @@ import {
 export const Route = createFileRoute("/teitei")({
   head: () => ({
     meta: [
-      { title: "Teitei Management — Sugity Creatives" },
+      { title: "Teitei Management - Sugity Creatives" },
       { name: "description", content: "Kelola nilai teitei per master part" },
     ],
   }),
@@ -157,12 +157,12 @@ function TeiteiPage() {
                         <option value="">Pilih master part…</option>
                         {availableParts.map((p) => (
                           <option key={p.id} value={p.id}>
-                            {p.partNumber} — {p.partName}
+                            {p.partNumber} - {p.partName}
                           </option>
                         ))}
                       </select>
                     </td>
-                    <td className="border-b border-border/60 px-3 py-3">—</td>
+                    <td className="border-b border-border/60 px-3 py-3">-</td>
                     <td className="border-b border-border/60 px-3 py-3">
                       <input
                         type="number"
@@ -253,7 +253,7 @@ function TeiteiPage() {
                         {item.partName}
                       </td>
                       <td className="border-b border-border/60 px-3 py-3.5 text-muted-foreground">
-                        {item.model || "—"}
+                        {item.model || "-"}
                       </td>
                       <td className="border-b border-border/60 px-3 py-3.5">
                         {editingId === item.id ? (

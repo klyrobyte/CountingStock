@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
-      { title: "Login — Sugity Creatives" },
+      { title: "Login - Sugity Creatives" },
       { name: "description", content: "Masuk ke sistem inventory Sugity" },
     ],
   }),
@@ -48,7 +48,7 @@ function LoginPage() {
   );
 
   return (
-    /* page wrapper — light gray bg, detects theme via CSS variable */
+    /* page wrapper - light gray bg, detects theme via CSS variable */
     <div
       className="min-h-screen flex flex-col items-center justify-between py-10 px-4"
       style={{ backgroundColor: "var(--login-bg, #F1F1F1)" }}
@@ -93,8 +93,8 @@ function LoginPage() {
               }}
               onFocus={(e) => (e.currentTarget.style.borderColor = "#c05c30")}
               onBlur={(e) =>
-                (e.currentTarget.style.borderColor =
-                  "var(--login-border, #D1D5DB)")
+              (e.currentTarget.style.borderColor =
+                "var(--login-border, #D1D5DB)")
               }
             />
           </div>
@@ -124,8 +124,8 @@ function LoginPage() {
                 }}
                 onFocus={(e) => (e.currentTarget.style.borderColor = "#c05c30")}
                 onBlur={(e) =>
-                  (e.currentTarget.style.borderColor =
-                    "var(--login-border, #D1D5DB)")
+                (e.currentTarget.style.borderColor =
+                  "var(--login-border, #D1D5DB)")
                 }
               />
               <button
@@ -180,12 +180,12 @@ function LoginPage() {
               color: "var(--login-secondary-text, #374151)",
             }}
             onMouseEnter={(e) =>
-              (e.currentTarget.style.backgroundColor =
-                "var(--login-secondary-hover, #D1D5DB)")
+            (e.currentTarget.style.backgroundColor =
+              "var(--login-secondary-hover, #D1D5DB)")
             }
             onMouseLeave={(e) =>
-              (e.currentTarget.style.backgroundColor =
-                "var(--login-secondary-btn, #E5E7EB)")
+            (e.currentTarget.style.backgroundColor =
+              "var(--login-secondary-btn, #E5E7EB)")
             }
           >
             Kembali Ke Portal

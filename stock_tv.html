@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -52,11 +53,12 @@
         }
 
         /* --- 2. Structural CSS --- */
-        html, body { 
-            height: 100%; 
-            margin: 0; 
-            padding: 0; 
-            overflow: hidden; 
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
             background-color: var(--color-bg-base);
             color: var(--color-text-primary);
             font-family: 'Inter', sans-serif;
@@ -82,15 +84,51 @@
             flex-shrink: 0;
         }
 
-        .header-title { font-size: 15px; font-weight: 700; }
-        .header-time { font-size: 13px; color: var(--color-text-secondary); }
-        .header-right { display: flex; align-items: center; gap: 12px; }
-        .live-badge { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--color-safe); }
-        .live-dot { width: 8px; height: 8px; background: var(--color-safe); border-radius: 50%; animation: pulse-green 1.5s ease-in-out infinite; }
-        
+        .header-title {
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .header-time {
+            font-size: 13px;
+            color: var(--color-text-secondary);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .live-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--color-safe);
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--color-safe);
+            border-radius: 50%;
+            animation: pulse-green 1.5s ease-in-out infinite;
+        }
+
         @keyframes pulse-green {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(0.8); }
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.5;
+                transform: scale(0.8);
+            }
         }
 
         .btn-tv {
@@ -132,11 +170,39 @@
         }
 
         /* --- KPI ROW (tv-kpi-row) --- */
-        .top-row { display: flex; gap: 12px; height: 140px; flex-shrink: 0; }
-        .gauge-container { width: 140px; height: 140px; position: relative; flex-shrink: 0; }
-        .gauge-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
-        .gauge-val { font-size: 28px; font-weight: 700; line-height: 1; }
-        .gauge-label { font-size: 9px; color: var(--color-text-muted); letter-spacing: 0.12em; }
+        .top-row {
+            display: flex;
+            gap: 12px;
+            height: 140px;
+            flex-shrink: 0;
+        }
+
+        .gauge-container {
+            width: 140px;
+            height: 140px;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .gauge-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .gauge-val {
+            font-size: 28px;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .gauge-label {
+            font-size: 9px;
+            color: var(--color-text-muted);
+            letter-spacing: 0.12em;
+        }
 
         /* tv-kpi-row: the KPI card container */
         tv-kpi-row {
@@ -146,51 +212,170 @@
         }
 
         .kpi-card {
-            flex: 1; border-radius: 0 8px 8px 0; padding: 12px 14px;
-            display: flex; flex-direction: column; justify-content: space-between;
+            flex: 1;
+            border-radius: 0 8px 8px 0;
+            padding: 12px 14px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
             transition: background-color 0.2s ease;
         }
-        .kpi-card.critical { background: var(--color-critical-bg); border: 1px solid var(--color-critical-dim); border-left: 3px solid var(--color-critical); }
-        .kpi-card.warning  { background: var(--color-warning-bg);  border: 1px solid var(--color-warning-dim);  border-left: 3px solid var(--color-warning); }
-        .kpi-card.safe     { background: var(--color-safe-bg);     border: 1px solid var(--color-safe-dim);     border-left: 3px solid var(--color-safe); }
-        .kpi-number { font-size: 56px; font-weight: 700; line-height: 1; margin: auto 0; transition: all 0.3s ease; }
 
-        .section-label { font-size: 11px; font-weight: 600; color: var(--color-text-muted); letter-spacing: 0.1em; text-transform: uppercase; flex-shrink: 0; }
+        .kpi-card.critical {
+            background: var(--color-critical-bg);
+            border: 1px solid var(--color-critical-dim);
+            border-left: 3px solid var(--color-critical);
+        }
+
+        .kpi-card.warning {
+            background: var(--color-warning-bg);
+            border: 1px solid var(--color-warning-dim);
+            border-left: 3px solid var(--color-warning);
+        }
+
+        .kpi-card.safe {
+            background: var(--color-safe-bg);
+            border: 1px solid var(--color-safe-dim);
+            border-left: 3px solid var(--color-safe);
+        }
+
+        .kpi-number {
+            font-size: 56px;
+            font-weight: 700;
+            line-height: 1;
+            margin: auto 0;
+            transition: all 0.3s ease;
+        }
+
+        .section-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--color-text-muted);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            flex-shrink: 0;
+        }
 
         /* --- MACHINE GRID (tv-mc-val) --- */
-        .machine-grid { 
-            display: grid; 
-            grid-template-columns: repeat(4, 1fr); 
-            grid-auto-rows: minmax(80px, 90px); 
-            gap: 8px; 
-            flex-shrink: 0; 
+        .machine-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-auto-rows: minmax(80px, 90px);
+            gap: 8px;
+            flex-shrink: 0;
         }
 
         .mc-card {
-            background: var(--color-bg-surface); border-radius: 0 8px 8px 0; padding: 10px 12px;
-            display: grid; grid-template-areas: "id icon" "val icon"; grid-template-columns: 1fr auto; grid-template-rows: auto 1fr;
+            background: var(--color-bg-surface);
+            border-radius: 0 8px 8px 0;
+            padding: 10px 12px;
+            display: grid;
+            grid-template-areas: "id icon" "val icon";
+            grid-template-columns: 1fr auto;
+            grid-template-rows: auto 1fr;
             border: 1px solid var(--color-bg-border);
             transition: background-color 0.2s ease, border-color 0.3s ease;
         }
-        .mc-id   { grid-area: id;   font-size: 12px; font-weight: 500; color: var(--color-text-muted); }
-        .mc-icon { grid-area: icon; font-size: 28px; align-self: center; }
+
+        .mc-id {
+            grid-area: id;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--color-text-muted);
+        }
+
+        .mc-icon {
+            grid-area: icon;
+            font-size: 28px;
+            align-self: center;
+        }
 
         /* tv-mc-val: the value inside each MC card */
-        tv-mc-val { grid-area: val; font-size: 40px; font-weight: 700; line-height: 1; align-self: end; display: block; transition: all 0.3s ease; }
+        tv-mc-val {
+            grid-area: val;
+            font-size: 40px;
+            font-weight: 700;
+            line-height: 1;
+            align-self: end;
+            display: block;
+            transition: all 0.3s ease;
+        }
 
-        .mc-card.critical { border: 1px solid var(--color-critical-dim); border-left: 3px solid var(--color-critical); }
-        .mc-card.warning  { border: 1px solid var(--color-warning-dim);  border-left: 3px solid var(--color-warning); }
-        .mc-card.safe     { border: 1px solid var(--color-safe-dim);     border-left: 3px solid var(--color-safe); }
+        .mc-card.critical {
+            border: 1px solid var(--color-critical-dim);
+            border-left: 3px solid var(--color-critical);
+        }
 
-        .chart-wrapper { flex: 1; min-height: 0; display: flex; flex-direction: column; position: relative; }
-        #stockChart { width: 100% !important; height: 100% !important; }
+        .mc-card.warning {
+            border: 1px solid var(--color-warning-dim);
+            border-left: 3px solid var(--color-warning);
+        }
 
-        @media (min-width: 1920px) { tv-mc-val { font-size: 52px; } .kpi-number { font-size: 72px; } .gauge-val { font-size: 36px; } }
-        @media (min-width: 2560px) { tv-mc-val { font-size: 64px; } .kpi-number { font-size: 88px; } .gauge-val { font-size: 44px; } }
+        .mc-card.safe {
+            border: 1px solid var(--color-safe-dim);
+            border-left: 3px solid var(--color-safe);
+        }
+
+        .chart-wrapper {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        #stockChart {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        @media (min-width: 1920px) {
+            tv-mc-val {
+                font-size: 52px;
+            }
+
+            .kpi-number {
+                font-size: 72px;
+            }
+
+            .gauge-val {
+                font-size: 36px;
+            }
+        }
+
+        @media (min-width: 2560px) {
+            tv-mc-val {
+                font-size: 64px;
+            }
+
+            .kpi-number {
+                font-size: 88px;
+            }
+
+            .gauge-val {
+                font-size: 44px;
+            }
+        }
 
         /* --- RIGHT PANEL: PRIORITY PRODUCTION --- */
-        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-shrink: 0; }
-        .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--color-text-muted); padding-bottom: 60px; }
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            flex-shrink: 0;
+        }
+
+        .empty-state {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            color: var(--color-text-muted);
+            padding-bottom: 60px;
+        }
 
         /* tv-priority-table: the scrollable priority table */
         tv-priority-table {
@@ -203,8 +388,15 @@
             scrollbar-width: thin;
             scrollbar-color: var(--color-bg-border) transparent;
         }
-        tv-priority-table::-webkit-scrollbar { width: 4px; }
-        tv-priority-table::-webkit-scrollbar-thumb { background: var(--color-bg-border); border-radius: 2px; }
+
+        tv-priority-table::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        tv-priority-table::-webkit-scrollbar-thumb {
+            background: var(--color-bg-border);
+            border-radius: 2px;
+        }
 
         /* MC Group block inside priority table */
         .priority-mc-group {
@@ -226,9 +418,20 @@
             letter-spacing: 0.05em;
         }
 
-        .priority-mc-header.critical { background: var(--color-critical-bg); color: var(--color-critical); }
-        .priority-mc-header.warning  { background: var(--color-warning-bg);  color: var(--color-warning); }
-        .priority-mc-header.safe     { background: var(--color-safe-bg);     color: var(--color-safe); }
+        .priority-mc-header.critical {
+            background: var(--color-critical-bg);
+            color: var(--color-critical);
+        }
+
+        .priority-mc-header.warning {
+            background: var(--color-warning-bg);
+            color: var(--color-warning);
+        }
+
+        .priority-mc-header.safe {
+            background: var(--color-safe-bg);
+            color: var(--color-safe);
+        }
 
         /* Status badge for the ST column */
         .badge-st {
@@ -242,9 +445,24 @@
             text-transform: uppercase;
             letter-spacing: 0.08em;
         }
-        .badge-critical { background: var(--color-critical-bg); color: var(--color-critical); border: 1px solid var(--color-critical-dim); }
-        .badge-warning  { background: var(--color-warning-bg);  color: var(--color-warning);  border: 1px solid var(--color-warning-dim); }
-        .badge-safe     { background: var(--color-safe-bg);     color: var(--color-safe);     border: 1px solid var(--color-safe-dim); }
+
+        .badge-critical {
+            background: var(--color-critical-bg);
+            color: var(--color-critical);
+            border: 1px solid var(--color-critical-dim);
+        }
+
+        .badge-warning {
+            background: var(--color-warning-bg);
+            color: var(--color-warning);
+            border: 1px solid var(--color-warning-dim);
+        }
+
+        .badge-safe {
+            background: var(--color-safe-bg);
+            color: var(--color-safe);
+            border: 1px solid var(--color-safe-dim);
+        }
 
         /* Part rows inside a MC group */
         .priority-part-row {
@@ -256,20 +474,43 @@
             font-size: 11px;
             border-bottom: 1px solid var(--color-bg-border);
         }
-        .priority-part-row:last-child { border-bottom: none; }
-        .priority-part-name { color: var(--color-text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .priority-part-jam  { font-weight: 600; font-size: 12px; color: var(--color-text-primary); min-width: 36px; text-align: right; }
-        .priority-part-st   { min-width: 54px; text-align: right; }
+
+        .priority-part-row:last-child {
+            border-bottom: none;
+        }
+
+        .priority-part-name {
+            color: var(--color-text-secondary);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .priority-part-jam {
+            font-weight: 600;
+            font-size: 12px;
+            color: var(--color-text-primary);
+            min-width: 36px;
+            text-align: right;
+        }
+
+        .priority-part-st {
+            min-width: 54px;
+            text-align: right;
+        }
     </style>
 </head>
+
 <body>
 
     <div id="app-shell">
         <header>
             <div class="header-title">STOCK MONITORING</div>
-            <div class="header-time" id="clock">Sun 24 May 2026 — 08:41:33 WIB</div>
+            <div class="header-time" id="clock">Sun 24 May 2026 - 08:41:33 WIB</div>
             <div class="header-right">
-                <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+                <div class="live-badge">
+                    <div class="live-dot"></div>LIVE
+                </div>
                 <button class="btn-tv" onclick="document.documentElement.requestFullscreen()">TV MODE</button>
             </div>
         </header>
@@ -279,8 +520,11 @@
                 <section class="top-row">
                     <div class="gauge-container">
                         <svg viewBox="0 0 140 140" width="140" height="140">
-                            <circle cx="70" cy="70" r="54" stroke="var(--color-bg-border)" stroke-width="10" fill="none" />
-                            <circle id="gauge-arc" cx="70" cy="70" r="54" stroke="var(--color-safe)" stroke-width="10" fill="none" stroke-dasharray="339.3" stroke-dashoffset="60" stroke-linecap="round" transform="rotate(-90 70 70)" style="transition: stroke-dashoffset 800ms ease;" />
+                            <circle cx="70" cy="70" r="54" stroke="var(--color-bg-border)" stroke-width="10"
+                                fill="none" />
+                            <circle id="gauge-arc" cx="70" cy="70" r="54" stroke="var(--color-safe)" stroke-width="10"
+                                fill="none" stroke-dasharray="339.3" stroke-dashoffset="60" stroke-linecap="round"
+                                transform="rotate(-90 70 70)" style="transition: stroke-dashoffset 800ms ease;" />
                         </svg>
                         <div class="gauge-text">
                             <div class="gauge-val" id="gauge-display">82.1%</div>
@@ -291,17 +535,23 @@
                     <!-- tv-kpi-row: KPI cards auto-counted from PRIORITY PRODUCTION MC groups -->
                     <tv-kpi-row id="tv-kpi-row">
                         <div class="kpi-card critical" id="kpi-critical">
-                            <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:600; color:var(--color-critical); text-transform:uppercase;">Critical <span style="color:var(--color-critical-text);">&lt; 3JAM</span></div>
+                            <div
+                                style="display:flex; justify-content:space-between; font-size:11px; font-weight:600; color:var(--color-critical); text-transform:uppercase;">
+                                Critical <span style="color:var(--color-critical-text);">&lt; 3JAM</span></div>
                             <div class="kpi-number" id="kpi-critical-count">0</div>
                             <div style="font-size:11px; color:var(--color-text-muted);">MC GROUPS</div>
                         </div>
                         <div class="kpi-card warning" id="kpi-warning">
-                            <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:600; color:var(--color-warning); text-transform:uppercase;">Warning <span style="color:var(--color-warning-text);">3–4JAM</span></div>
+                            <div
+                                style="display:flex; justify-content:space-between; font-size:11px; font-weight:600; color:var(--color-warning); text-transform:uppercase;">
+                                Warning <span style="color:var(--color-warning-text);">3–4JAM</span></div>
                             <div class="kpi-number" id="kpi-warning-count">0</div>
                             <div style="font-size:11px; color:var(--color-text-muted);">MC GROUPS</div>
                         </div>
                         <div class="kpi-card safe" id="kpi-safe">
-                            <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:600; color:var(--color-safe); text-transform:uppercase;">Safe <span style="color:var(--color-safe-text);">&gt; 4JAM</span></div>
+                            <div
+                                style="display:flex; justify-content:space-between; font-size:11px; font-weight:600; color:var(--color-safe); text-transform:uppercase;">
+                                Safe <span style="color:var(--color-safe-text);">&gt; 4JAM</span></div>
                             <div class="kpi-number" id="kpi-safe-count">0</div>
                             <div style="font-size:11px; color:var(--color-text-muted);">MC GROUPS</div>
                         </div>
@@ -319,8 +569,12 @@
 
             <aside class="right-col">
                 <div class="panel-header">
-                    <span style="font-size:12px; font-weight:600; color:var(--color-text-secondary); letter-spacing:0.1em;">PRIORITY PRODUCTION</span>
-                    <span style="background:var(--color-warning-bg); border:1px solid var(--color-warning-dim); border-radius:4px; padding:3px 8px; font-size:10px; font-weight:700; color:var(--color-warning);">&lt; 4H</span>
+                    <span
+                        style="font-size:12px; font-weight:600; color:var(--color-text-secondary); letter-spacing:0.1em;">PRIORITY
+                        PRODUCTION</span>
+                    <span
+                        style="background:var(--color-warning-bg); border:1px solid var(--color-warning-dim); border-radius:4px; padding:3px 8px; font-size:10px; font-weight:700; color:var(--color-warning);">&lt;
+                        4H</span>
                 </div>
 
                 <!-- tv-priority-table: grouped MC blocks with ST column derived from JAM -->
@@ -355,14 +609,14 @@
         const isDarkMode = applyTheme();
 
         // =========================================================
-        // PRIORITY LOGIC — Section 1
+        // PRIORITY LOGIC - Section 1
         // JAM thresholds:  < 3.0 → critical | 3.0–3.99 → warning | ≥ 4.0 → safe
         // =========================================================
         function jamStatus(jam) {
             const v = parseFloat(jam);
-            if (isNaN(v))       return 'critical'; // unknown → treat as critical
-            if (v < 3.0)        return 'critical';
-            if (v < 4.0)        return 'warning';
+            if (isNaN(v)) return 'critical'; // unknown → treat as critical
+            if (v < 3.0) return 'critical';
+            if (v < 4.0) return 'warning';
             return 'safe';
         }
 
@@ -374,24 +628,24 @@
         const STATUS_LABEL = { critical: 'critical', warning: 'warning', safe: 'safe' };
 
         // =========================================================
-        // DATA — PRIORITY PRODUCTION (raw parts with JAM)
+        // DATA - PRIORITY PRODUCTION (raw parts with JAM)
         // Each row: { mc, part, jam }
         // =========================================================
         const priorityRows = [
-            { mc: 'MC#2', part: 'DAPPY',        jam: 0.0   },
-            { mc: 'MC#2', part: 'DUMMY PART',   jam: 0.0   },
+            { mc: 'MC#2', part: 'DAPPY', jam: 0.0 },
+            { mc: 'MC#2', part: 'DUMMY PART', jam: 0.0 },
             { mc: 'MC#2', part: 'PANEL QTR LH', jam: 106.7 },
-            { mc: 'MC#2', part: 'RIZKY DAFFY',  jam: 40.0  },
-            { mc: 'MC#3', part: 'PART-A',        jam: 3.5   },
-            { mc: 'MC#3', part: 'PART-B',        jam: 3.8   },
-            { mc: 'MC#5', part: 'COWL TOP',      jam: 1.2   },
-            { mc: 'MC#5', part: 'HOOD ASSY',     jam: 2.6   },
-            { mc: 'MC#7', part: 'FENDER RH',     jam: 4.1   },
-            { mc: 'MC#7', part: 'FENDER LH',     jam: 5.3   },
+            { mc: 'MC#2', part: 'RIZKY DAFFY', jam: 40.0 },
+            { mc: 'MC#3', part: 'PART-A', jam: 3.5 },
+            { mc: 'MC#3', part: 'PART-B', jam: 3.8 },
+            { mc: 'MC#5', part: 'COWL TOP', jam: 1.2 },
+            { mc: 'MC#5', part: 'HOOD ASSY', jam: 2.6 },
+            { mc: 'MC#7', part: 'FENDER RH', jam: 4.1 },
+            { mc: 'MC#7', part: 'FENDER LH', jam: 5.3 },
         ];
 
         // =========================================================
-        // SECTION 2 — Group rows by MC, compute min JAM per MC
+        // SECTION 2 - Group rows by MC, compute min JAM per MC
         // =========================================================
         function groupByMC(rows) {
             const groups = {};
@@ -410,18 +664,18 @@
         }
 
         // =========================================================
-        // SECTION 2 — Render tv-mc-val in the machine grid
+        // SECTION 2 - Render tv-mc-val in the machine grid
         // =========================================================
         function renderMachineGrid(mcGroups) {
             const container = document.getElementById('m-grid');
             container.innerHTML = '';
 
             // All MC slots (some may not be in priority data → show as 'none')
-            const allMCs = ['MC#1','MC#2','MC#3','MC#4','MC#5','MC#6','MC#7','MC#8'];
+            const allMCs = ['MC#1', 'MC#2', 'MC#3', 'MC#4', 'MC#5', 'MC#6', 'MC#7', 'MC#8'];
             const overrides = {
                 'MC#1': { val: null, status: 'none', sub: 'Running / Reset' },
-                'MC#4': { val: 5.5,  status: 'safe'   },
-                'MC#6': { val: 2.6,  status: 'warning' },
+                'MC#4': { val: 5.5, status: 'safe' },
+                'MC#6': { val: 2.6, status: 'warning' },
             };
 
             allMCs.forEach(mcId => {
@@ -431,23 +685,23 @@
                 if (mcGroups[mcId]) {
                     // Driven by PRIORITY PRODUCTION data
                     const g = mcGroups[mcId];
-                    status     = g.status;
+                    status = g.status;
                     displayVal = g.minJAM.toFixed(1);
-                    sub        = null;
+                    sub = null;
                 } else if (overrides[mcId]) {
                     const o = overrides[mcId];
-                    status     = o.status;
+                    status = o.status;
                     displayVal = o.val !== null ? o.val.toFixed(1) : null;
-                    sub        = o.sub || null;
+                    sub = o.sub || null;
                 } else {
                     // Default: not in priority, show static safe placeholder
-                    status     = 'safe';
-                    displayVal = '—';
-                    sub        = null;
+                    status = 'safe';
+                    displayVal = '-';
+                    sub = null;
                 }
 
                 card.className = `mc-card ${status}`;
-                const icon = status === 'critical' ? '💔' : status === 'warning' ? '⚠️' : status === 'safe' ? '💚' : '—';
+                const icon = status === 'critical' ? '💔' : status === 'warning' ? '⚠️' : status === 'safe' ? '💚' : '-';
                 const valStr = displayVal !== null ? displayVal : 'N/A';
 
                 card.innerHTML = `
@@ -460,7 +714,7 @@
         }
 
         // =========================================================
-        // SECTION 1 — Render tv-priority-table (grouped MC blocks)
+        // SECTION 1 - Render tv-priority-table (grouped MC blocks)
         //             ST badge per row is derived from that row's JAM
         // =========================================================
         function renderPriorityTable(mcGroups) {
@@ -516,7 +770,7 @@
         }
 
         // =========================================================
-        // SECTION 3 — Update tv-kpi-row counts from every individual
+        // SECTION 3 - Update tv-kpi-row counts from every individual
         //             PRIORITY PRODUCTION row (not MC group minJAM).
         //             ST is computed per-row via jamStatus(row.jam).
         //             Safe rows and JAM=0 rows are all counted.
@@ -529,12 +783,12 @@
             });
 
             document.getElementById('kpi-critical-count').textContent = tally.critical;
-            document.getElementById('kpi-warning-count').textContent  = tally.warning;
-            document.getElementById('kpi-safe-count').textContent      = tally.safe;
+            document.getElementById('kpi-warning-count').textContent = tally.warning;
+            document.getElementById('kpi-safe-count').textContent = tally.safe;
         }
 
         // =========================================================
-        // MAIN RENDER — single entry point, call whenever data changes
+        // MAIN RENDER - single entry point, call whenever data changes
         // =========================================================
         function render() {
             const mcGroups = groupByMC(priorityRows);
@@ -587,16 +841,17 @@
         // =========================================================
         function updateClock() {
             const now = new Date();
-            document.getElementById('clock').innerText = now.toLocaleString('en-GB', { 
-                weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', 
-                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false 
+            document.getElementById('clock').innerText = now.toLocaleString('en-GB', {
+                weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
+                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
             }) + ' WIB';
         }
 
         setInterval(updateClock, 1000);
         updateClock();
-        render();       // initial render — reactive: call render() again whenever priorityRows changes
+        render();       // initial render - reactive: call render() again whenever priorityRows changes
         initChart();
     </script>
 </body>
+
 </html>

@@ -23,7 +23,7 @@ export const Route = createFileRoute("/master-data/create")({
   validateSearch: searchSchema,
   head: () => ({
     meta: [
-      { title: "Buat Part Baru — Sugity Creatives" },
+      { title: "Buat Part Baru - Sugity Creatives" },
       { name: "description", content: "Tambah Master Part baru ke database" },
     ],
   }),
@@ -191,7 +191,7 @@ function CreateMasterPartPage() {
         if (isEdit && editId) {
           // Guard: editId must resolve to a known master part
           if (!editPart) {
-            setSubmitError("Part tidak ditemukan — ID tidak valid.");
+            setSubmitError("Part tidak ditemukan - ID tidak valid.");
             return;
           }
 
@@ -209,7 +209,7 @@ function CreateMasterPartPage() {
               partId: editId,
             });
           } else {
-            // 2b. No QR yet (new part or first-time) — generate fresh
+            // 2b. No QR yet (new part or first-time) - generate fresh
             await generateQr.mutateAsync({
               partName: payload.partName,
               factoryOrigin: payload.factoryOrigin,
@@ -222,7 +222,7 @@ function CreateMasterPartPage() {
           setSuccess(true);
           setTimeout(() => navigate({ to: "/master-data" }), 900);
         } else {
-          // 1. Create Master Part — get the new ID from the response
+          // 1. Create Master Part - get the new ID from the response
           const createdPart: MasterPart = await createPart.mutateAsync(payload);
 
           // 2. Generate QR linked to the new part ID
@@ -367,10 +367,10 @@ function CreateMasterPartPage() {
                   onChange={(e) => setMachine(e.target.value)}
                   className={SELECT}
                 >
-                  <option value="">— Tidak ada —</option>
+                  <option value="">- Tidak ada -</option>
                   {mesinList.map((m) => (
                     <option key={m.id} value={m.machine_code}>
-                      {m.machine_code} — {m.machine_name}
+                      {m.machine_code} - {m.machine_name}
                     </option>
                   ))}
                 </select>
@@ -428,7 +428,7 @@ function CreateMasterPartPage() {
 
           </div>
 
-          {/* Part Image — full width */}
+          {/* Part Image - full width */}
           <div className="mt-5">
             <Field label="Part Image">
               {imagePreview ? (

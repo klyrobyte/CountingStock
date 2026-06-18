@@ -5,7 +5,7 @@ import { Boxes, LayoutGrid } from "lucide-react";
 export type WorkspaceMode = "inventaris" | "material";
 
 export interface WorkspaceSwitcherProps {
-  /** Controlled value — if provided, component is controlled */
+  /** Controlled value - if provided, component is controlled */
   value?: WorkspaceMode;
   /** Called whenever the user toggles the workspace */
   onChange?: (mode: WorkspaceMode) => void;
@@ -19,9 +19,9 @@ const WORKSPACES: {
   label: string;
   icon: React.ElementType;
 }[] = [
-  { id: "inventaris", label: "Inventaris", icon: LayoutGrid },
-  { id: "material",   label: "Material",   icon: Boxes },
-];
+    { id: "inventaris", label: "Inventaris", icon: LayoutGrid },
+    { id: "material", label: "Material", icon: Boxes },
+  ];
 
 // ── Component ────────────────────────────────────────────────────────────────
 export function WorkspaceSwitcher({
@@ -110,7 +110,7 @@ export function WorkspaceSwitcher({
             "bg-[#C05C30]",
             /* subtle highlight on top edge */
             "shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_2px_8px_rgba(192,92,48,0.35)]",
-            /* GPU-composited slide — uses transform for 60 fps */
+            /* GPU-composited slide - uses transform for 60 fps */
             "transition-transform duration-[280ms] cubic-bezier(0.4,0,0.2,1)",
             /* width is exactly half the track */
             "w-[calc(50%-3px)]",

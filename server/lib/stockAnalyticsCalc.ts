@@ -65,7 +65,7 @@ export function statusIcon(status: StockHourStatus): string {
     case "safe":
       return "💚";
     default:
-      return "—";
+      return "-";
   }
 }
 

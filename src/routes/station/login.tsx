@@ -7,7 +7,7 @@ import { setStationAuth, type StationDevice } from "@/lib/auth";
 export const Route = createFileRoute("/station/login")({
   head: () => ({
     meta: [
-      { title: "Login Scanner — Sugity Integrated Systems" },
+      { title: "Login Scanner - Sugity Integrated Systems" },
       { name: "description", content: "Login untuk perangkat scanner station." },
     ],
   }),

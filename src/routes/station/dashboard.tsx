@@ -14,7 +14,7 @@ import type { ProcessQrResult } from "@/hooks/use-qr-process";
 export const Route = createFileRoute("/station/dashboard")({
   head: () => ({
     meta: [
-      { title: "Station Scanner — Sugity Integrated Systems" },
+      { title: "Station Scanner - Sugity Integrated Systems" },
       { name: "description", content: "Scanner station untuk proses Scan IN/OUT." },
     ],
   }),
@@ -40,7 +40,7 @@ function extractToken(rawValue: string): string | null {
   } catch { /* not a URL */ }
   // Format 2: Direct JWT (three dot-separated parts)
   if (trimmed.split(".").length === 3) return trimmed;
-  // Format 3: Short opaque token (new system) — ≤16 URL-safe alphanumeric chars
+  // Format 3: Short opaque token (new system) - ≤16 URL-safe alphanumeric chars
   if (/^[A-Za-z0-9_-]{1,16}$/.test(trimmed)) return trimmed;
   return null;
 }
@@ -61,8 +61,34 @@ function StationDashboardPage() {
   const [partstats, setPartstats] = useState<"reguler" | "bcp">("reguler");
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // ── Cooldown state (additive) ─────────────────────────────────────────────
+  const [cooldown, setCooldown] = useState(false);
+  const [cooldownSec, setCooldownSec] = useState(0);
+  const cooldownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const stationScan = useStationScan();
   const { playInfo, playSuccess, playWarning } = useScanSound();
+
+  // ── Cooldown helper (additive) ────────────────────────────────────────────
+  const startCooldown = useCallback(() => {
+    // Clear any leftover interval from a previous cooldown
+    if (cooldownIntervalRef.current) clearInterval(cooldownIntervalRef.current);
+    setCooldown(true);
+    setCooldownSec(5);
+    cooldownIntervalRef.current = setInterval(() => {
+      setCooldownSec((prev) => {
+        if (prev <= 1) {
+          clearInterval(cooldownIntervalRef.current!);
+          cooldownIntervalRef.current = null;
+          setCooldown(false);
+          // Re-focus after cooldown ends
+          setTimeout(() => inputRef.current?.focus(), 50);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, []);
 
   useEffect(() => {
     setMounted(true);
@@ -85,16 +111,18 @@ function StationDashboardPage() {
 
   const handleScan = useCallback(
     (raw: string) => {
+      // ── Cooldown guard (additive) - silently ignore scans during cooldown ──
+      if (cooldown) return;
       const token = extractToken(raw);
       if (!token) {
-        // Invalid QR — play warning immediately
+        // Invalid QR - play warning immediately
         playWarning();
-        setScanError("QR tidak valid — tidak mengandung token inventori yang dikenali.");
+        setScanError("QR tidak valid - tidak mengandung token inventori yang dikenali.");
         setScanInput("");
         return;
       }
 
-      // Valid token detected — play info sound immediately on scan attempt
+      // Valid token detected - play info sound immediately on scan attempt
       playInfo();
       setScanError(null);
       const forceAction: "SCAN_IN" | "SCAN_OUT" =
@@ -104,7 +132,7 @@ function StationDashboardPage() {
         { token, forceAction, partstats },
         {
           onSuccess: (result) => {
-            // Success — play success sound immediately when server responds
+            // Success - play success sound immediately when server responds
             playSuccess();
             setHistory((prev) => [
               {
@@ -117,9 +145,11 @@ function StationDashboardPage() {
             setScanInput("");
             // Re-focus for next scan
             setTimeout(() => inputRef.current?.focus(), 100);
+            // ── Start cooldown after success (additive) ──────────────────────
+            startCooldown();
           },
           onError: (err) => {
-            // Error — play warning sound immediately when server responds
+            // Error - play warning sound immediately when server responds
             playWarning();
             // ── Privilege validation error (server returns QR_NOT_ALLOWED) ──────
             if (err.message === "QR_NOT_ALLOWED") {
@@ -137,7 +167,8 @@ function StationDashboardPage() {
         }
       );
     },
-    [device, stationScan, playInfo, playSuccess, playWarning]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [device, stationScan, playInfo, playSuccess, playWarning, cooldown, startCooldown]
   );
 
   const handleKeyDown = useCallback(
@@ -225,7 +256,7 @@ function StationDashboardPage() {
 
         {/* Scan input area */}
         <div
-          className="w-full rounded-2xl shadow-sm mb-4"
+          className="w-full rounded-2xl shadow-sm mb-4 relative"
           style={{ backgroundColor: "var(--station-card, #FFFFFF)" }}
         >
           <input
@@ -236,32 +267,58 @@ function StationDashboardPage() {
             onChange={(e) => setScanInput(e.target.value)}
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
-            placeholder="Klik Disini, SCAN QR HERE...."
-            className="w-full rounded-2xl px-6 py-5 text-base text-center outline-none bg-transparent"
-            style={{ color: "var(--station-text, #2D2D2D)" }}
+            placeholder={cooldown ? "" : "Klik Disini, SCAN QR HERE...."}
+            className="w-full rounded-2xl px-6 py-5 text-base text-center outline-none bg-transparent transition-opacity duration-300"
+            style={{
+              color: "var(--station-text, #2D2D2D)",
+              // Visual feedback: dim the input while in cooldown
+              // Do NOT use `disabled` - keeps focus alive
+              opacity: cooldown ? 0.35 : 1,
+              pointerEvents: cooldown ? "none" : "auto",
+              cursor: cooldown ? "not-allowed" : "text",
+            }}
             autoComplete="off"
+            // readOnly during cooldown keeps focus + prevents keyboard pop on mobile
+            readOnly={cooldown}
           />
+          {/* ── Cooldown overlay (additive) ─────────────────────────────── */}
+          {cooldown && (
+            <div
+              className="absolute inset-0 flex items-center justify-center gap-2 rounded-2xl pointer-events-none"
+              style={{ backgroundColor: "rgba(192,92,48,0.07)" }}
+            >
+              {/* Spinning ring - tier-1 loading style */}
+              <span
+                className="inline-block h-4 w-4 rounded-full border-2 border-orange-200 border-t-[#C05C30] animate-spin flex-shrink-0"
+                aria-hidden="true"
+              />
+              <span
+                className="text-sm font-semibold tracking-wide"
+                style={{ color: "#C05C30" }}
+              >
+                Harap tunggu&hellip; {cooldownSec}s
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Partstats Switcher */}
         <div className="w-full flex rounded-2xl border bg-white mb-4 shadow-sm overflow-hidden" style={{ borderColor: "var(--station-border, #D1D5DB)" }}>
           <button
             onClick={() => { setPartstats("reguler"); focusInput(); }}
-            className={`flex-1 py-3.5 text-sm font-semibold transition-all ${
-              partstats === "reguler"
-                ? "bg-[#C05C30] text-white"
-                : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-            }`}
+            className={`flex-1 py-3.5 text-sm font-semibold transition-all ${partstats === "reguler"
+              ? "bg-[#C05C30] text-white"
+              : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+              }`}
           >
             Reguler Part
           </button>
           <button
             onClick={() => { setPartstats("bcp"); focusInput(); }}
-            className={`flex-1 py-3.5 text-sm font-semibold transition-all ${
-              partstats === "bcp"
-                ? "bg-[#C05C30] text-white"
-                : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-            }`}
+            className={`flex-1 py-3.5 text-sm font-semibold transition-all ${partstats === "bcp"
+              ? "bg-[#C05C30] text-white"
+              : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+              }`}
           >
             BCP Part
           </button>
@@ -269,8 +326,8 @@ function StationDashboardPage() {
 
         {/* Helper text */}
         <p className="text-xs text-center mb-4" style={{ color: "var(--station-footer, #9CA3AF)" }}>
-          Gunakan Scanner — Tempel QR token nya atau isi URL<br />
-          Scan QR dengan Google Lens / SCANNER — salin URL yang muncul, lalu tempel di sini.
+          Gunakan Scanner - Tempel QR token nya atau isi URL<br />
+          Scan QR dengan Google Lens / SCANNER - salin URL yang muncul, lalu tempel di sini.
         </p>
 
         {/* Processing indicator */}
@@ -289,7 +346,7 @@ function StationDashboardPage() {
           </div>
         )}
 
-        {/* Privilege Error Toast — "Proses dibatalkan: QR yang di-scan tidak diizinkan" */}
+        {/* Privilege Error Toast - "Proses dibatalkan: QR yang di-scan tidak diizinkan" */}
         {privilegeError && (
           <div
             className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-2xl px-6 py-4 shadow-2xl text-sm font-bold text-white animate-in slide-in-from-bottom-4 duration-300"
@@ -351,11 +408,10 @@ function StationDashboardPage() {
                         {entry.result.partName}
                       </span>
                       <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-                          entry.result.action === "SCAN_IN"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-orange-100 text-orange-700"
-                        }`}
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${entry.result.action === "SCAN_IN"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-orange-100 text-orange-700"
+                          }`}
                       >
                         {entry.result.action === "SCAN_IN" ? "IN" : "OUT"}
                       </span>

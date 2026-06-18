@@ -63,7 +63,7 @@ async function migrate() {
           backfilled++;
         }
       } catch {
-        // Invalid/expired token — leave machine_origin as ''
+        // Invalid/expired token - leave machine_origin as ''
       }
     }
     console.log(`✅ Backfilled machine_origin for ${backfilled} rows`);

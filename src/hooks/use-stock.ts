@@ -44,7 +44,7 @@ export function useStockFactories() {
   return useQuery({
     queryKey: ["stock-factories"],
     queryFn: () => fetchApi<string[]>("/qr/stock/factories"),
-    // Factory list rarely changes — treat as near-static to avoid
+    // Factory list rarely changes - treat as near-static to avoid
     // re-fetching on every component mount (e.g. factory filter dropdown).
     staleTime: 5 * 60 * 1000,
   });

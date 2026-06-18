@@ -4,7 +4,7 @@ import type { RowDataPacket } from "mysql2";
 
 const router = Router();
 
-// GET /api/scans/recent — get recent scans
+// GET /api/scans/recent - get recent scans
 router.get("/recent", async (req, res) => {
   try {
     const limit = Number(req.query.limit) || 10;
@@ -18,7 +18,7 @@ router.get("/recent", async (req, res) => {
   }
 });
 
-// POST /api/scans — Record a scan
+// POST /api/scans - Record a scan
 router.post("/", async (req, res) => {
   try {
     const { qr_id, label, factory, scanned_by } = req.body;

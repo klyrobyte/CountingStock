@@ -9,7 +9,7 @@ function statusIcon(status: TvMachine["cardStatus"]): string {
     case "safe":
       return "💚";
     default:
-      return "—";
+      return "-";
   }
 }
 

@@ -21,7 +21,7 @@ import {
 export const Route = createFileRoute("/mesin/")({
   head: () => ({
     meta: [
-      { title: "Mesin Management — Sugity Creatives" },
+      { title: "Mesin Management - Sugity Creatives" },
       { name: "description", content: "Kelola Data Mesin" },
     ],
   }),
@@ -152,7 +152,7 @@ function MesinPage() {
             <h3 className="mt-4 text-base font-semibold text-foreground">Hapus Mesin?</h3>
             <p className="mt-1.5 text-sm text-muted-foreground">
               <span className="font-medium text-foreground">{deleteTarget.machine_code}</span>{" "}
-              — {deleteTarget.machine_name} akan dihapus secara permanen.
+              - {deleteTarget.machine_name} akan dihapus secara permanen.
             </p>
             {deleteError && (
               <div className="mt-3 flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">
@@ -214,18 +214,17 @@ function MesinRow({
       {/* Description */}
       <td className="border-b border-border/60 px-5 py-4 text-muted-foreground">
         <span className="text-[13px]">
-          {mesin.description || "—"}
+          {mesin.description || "-"}
         </span>
       </td>
 
       {/* Status */}
       <td className="border-b border-border/60 px-5 py-4">
         <span
-          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider ${
-            mesin.status === "active"
+          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider ${mesin.status === "active"
               ? "bg-emerald-500/10 text-emerald-500 dark:text-emerald-400"
               : "bg-muted text-muted-foreground"
-          }`}
+            }`}
         >
           {mesin.status === "active" ? "Active" : "Inactive"}
         </span>
@@ -249,11 +248,10 @@ function MesinRow({
             id={`btn-toggle-mesin-${mesin.id}`}
             onClick={onToggle}
             disabled={isToggling}
-            className={`inline-flex h-8 w-8 items-center justify-center rounded-full transition-smooth disabled:opacity-50 ${
-              mesin.status === "active"
+            className={`inline-flex h-8 w-8 items-center justify-center rounded-full transition-smooth disabled:opacity-50 ${mesin.status === "active"
                 ? "text-emerald-500 hover:bg-emerald-500/10"
                 : "text-muted-foreground hover:bg-accent"
-            }`}
+              }`}
             title={mesin.status === "active" ? "Nonaktifkan" : "Aktifkan"}
           >
             <CirclePlay className="h-4 w-4" />

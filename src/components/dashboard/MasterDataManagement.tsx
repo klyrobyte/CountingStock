@@ -106,7 +106,7 @@ export function MasterDataManagement({ title, description, api }: MasterDataMana
               <tbody>
                 {isAdding && (
                   <tr className="bg-card-elevated/20">
-                    <td className="border-b border-border/60 px-3 py-3">—</td>
+                    <td className="border-b border-border/60 px-3 py-3">-</td>
                     <td className="border-b border-border/60 px-3 py-3">
                       <input
                         autoFocus
@@ -117,7 +117,7 @@ export function MasterDataManagement({ title, description, api }: MasterDataMana
                         onKeyDown={(e) => e.key === "Enter" && handleAdd()}
                       />
                     </td>
-                    <td className="border-b border-border/60 px-3 py-3">—</td>
+                    <td className="border-b border-border/60 px-3 py-3">-</td>
                     <td className="border-b border-border/60 px-3 py-3 text-right">
                       <div className="inline-flex gap-2">
                         <button

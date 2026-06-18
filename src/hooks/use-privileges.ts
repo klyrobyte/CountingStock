@@ -3,7 +3,7 @@
  * ─────────────────────────────────────────────────────────────────────────────
  * React Query hooks for the QR Privilege Management system.
  * All calls include x-internal-key header (from Vite env, only available in
- * the admin dashboard which is already JWT-protected — never reaches stations).
+ * the admin dashboard which is already JWT-protected - never reaches stations).
  */
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAuthToken } from "@/lib/auth";
@@ -63,18 +63,18 @@ async function fetchPrivilegeApi<T>(
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// [1] usePrivilegeStations — list all stations with privilege status
+// [1] usePrivilegeStations - list all stations with privilege status
 // ═══════════════════════════════════════════════════════════════════════════
 export function usePrivilegeStations() {
   return useQuery<StationPrivilegeInfo[]>({
     queryKey: ["privilege-stations"],
     queryFn: () => fetchPrivilegeApi<StationPrivilegeInfo[]>("/privileges/stations"),
-    staleTime: 30_000, // 30s — stations don't change often
+    staleTime: 30_000, // 30s - stations don't change often
   });
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// [2] useStationPrivilegeDetail — QR list for a specific station
+// [2] useStationPrivilegeDetail - QR list for a specific station
 // ═══════════════════════════════════════════════════════════════════════════
 export function useStationPrivilegeDetail(stationId: number | null) {
   return useQuery<StationPrivilegeDetail>({
@@ -87,7 +87,7 @@ export function useStationPrivilegeDetail(stationId: number | null) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// [3] useSetStationPrivileges — save/replace privileges for a station
+// [3] useSetStationPrivileges - save/replace privileges for a station
 // Supports multiple QR IDs per station
 // ═══════════════════════════════════════════════════════════════════════════
 export function useSetStationPrivileges() {
@@ -110,7 +110,7 @@ export function useSetStationPrivileges() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// [4] useResetStationPrivileges — reset station to open access
+// [4] useResetStationPrivileges - reset station to open access
 // ═══════════════════════════════════════════════════════════════════════════
 export function useResetStationPrivileges() {
   const qc = useQueryClient();

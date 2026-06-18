@@ -15,7 +15,7 @@ const sessionCache = new Map<string, { metadata: Record<string, unknown>; scanne
 const SECRET_KEY = process.env.JWT_SECRET || "pixel-scan-secret-key-2026"; //change with sha1 encrypt
 // BASE_URL is kept for any future use but is no longer embedded in QR payloads
 const _BASE_URL = process.env.API_BASE_URL || "http://localhost:3001";
-void _BASE_URL; // intentionally unused — QR now stores only a short token
+void _BASE_URL; // intentionally unused - QR now stores only a short token
 
 // ─── Helper: generate a short opaque token (8 URL-safe chars) ────────────────
 // Uses crypto.randomBytes for unpredictability. Charset is base62 (no +/= padding).
@@ -57,7 +57,7 @@ async function updateStock(
     "SELECT id, current_stock, unit_value FROM stock WHERE batch_id = ?",
     [batchId]
   );
-  if (rows.length === 0) return; // no stock row — skip (seed data doesn't have stock rows)
+  if (rows.length === 0) return; // no stock row - skip (seed data doesn't have stock rows)
 
   const currentStock = Number(rows[0].current_stock);
   const uv = Number(rows[0].unit_value);
@@ -69,7 +69,7 @@ async function updateStock(
     newStock = currentStock + unitValue;
     trend = "up";
   } else {
-    // Caller already checked stock > 0 before calling this — just subtract
+    // Caller already checked stock > 0 before calling this - just subtract
     newStock = Math.max(0, currentStock - unitValue);
     trend = newStock === 0 ? "down" : "down";
   }
@@ -83,7 +83,7 @@ async function updateStock(
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// [1] GET /api/qr — list all QR codes
+// [1] GET /api/qr - list all QR codes
 // ═══════════════════════════════════════════════════════════════════════════
 router.get("/", async (req, res) => {
   try {
@@ -106,7 +106,7 @@ router.get("/", async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// [2] POST /api/qr/generate — create a new QR code with JWT token
+// [2] POST /api/qr/generate - create a new QR code with JWT token
 // Body: { partName, factoryOrigin, value }
 // Also inserts a row into the stock table with current_stock = 0
 // ═══════════════════════════════════════════════════════════════════════════
@@ -125,13 +125,13 @@ router.post("/generate", async (req, res) => {
     const qrId = await nextQrId();
     const unitValue = Number(value);
 
-    // Sign full JWT — stored server-side only, never embedded in the QR image
+    // Sign full JWT - stored server-side only, never embedded in the QR image
     const token = jwt.sign(
       { batchId, partName, factoryOrigin, value: unitValue, machineOrigin: machineOrigin ?? "" },
       SECRET_KEY
     );
 
-    // Generate a short opaque token — this is all the QR image encodes
+    // Generate a short opaque token - this is all the QR image encodes
     // Collision probability at current scale is negligible; retry once on duplicate
     let shortToken = generateShortToken();
     try {
@@ -142,10 +142,10 @@ router.post("/generate", async (req, res) => {
       );
       if (existing.length > 0) shortToken = generateShortToken();
     } catch {
-      // short_token column may not exist yet — migration not run; fall through
+      // short_token column may not exist yet - migration not run; fall through
     }
 
-    // QR encodes only the short token — no URL, no IP, no JWT
+    // QR encodes only the short token - no URL, no IP, no JWT
     const qrImageBase64 = await QRCode.toDataURL(shortToken, {
       width: 400,
       margin: 2,
@@ -203,7 +203,7 @@ router.post("/generate", async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// [NEW] POST /api/qr/regenerate — Replace a QR code, keeping stock/history
+// [NEW] POST /api/qr/regenerate - Replace a QR code, keeping stock/history
 // ═══════════════════════════════════════════════════════════════════════════
 router.post("/regenerate", async (req, res) => {
   try {
@@ -241,7 +241,7 @@ router.post("/regenerate", async (req, res) => {
         "SELECT id FROM qr_codes WHERE short_token = ? LIMIT 1", [newShortToken]
       );
       if (collide.length > 0) newShortToken = generateShortToken();
-    } catch {}
+    } catch { }
 
     const qrImageBase64 = await QRCode.toDataURL(newShortToken, {
       width: 400,
@@ -306,7 +306,7 @@ router.post("/regenerate", async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// [NEW] GET /api/qr/by-part/:partId — find latest active QR for a master part
+// [NEW] GET /api/qr/by-part/:partId - find latest active QR for a master part
 // Used by edit mode in /master-data/create?editId to do a stable ID-based lookup
 // instead of fragile part_name string matching.
 // ═══════════════════════════════════════════════════════════════════════════
@@ -323,7 +323,7 @@ router.get("/by-part/:partId", async (req, res) => {
     );
 
     if (rows.length === 0) {
-      // No QR yet — not an error, part just hasn't been assigned a QR
+      // No QR yet - not an error, part just hasn't been assigned a QR
       return res.json({ success: true, data: null });
     }
 
@@ -334,7 +334,7 @@ router.get("/by-part/:partId", async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// [3] GET /api/qr/info?token=<shortToken> — resolve short token → batch data
+// [3] GET /api/qr/info?token=<shortToken> - resolve short token → batch data
 // The QR image now encodes only the short token (8 chars).
 // This endpoint looks up the full JWT from qr_codes, verifies it, and returns
 // the same response shape as before so all clients remain compatible.
@@ -368,7 +368,7 @@ router.get("/info", async (req, res) => {
         currentToken = aliasRows[0].new_short_token;
         depth++;
       }
-      
+
       actualToken = currentToken;
       const [finalRows] = await pool.query<RowDataPacket[]>(
         "SELECT token, updated_at, machine_origin FROM qr_codes WHERE short_token = ? LIMIT 1",
@@ -380,7 +380,7 @@ router.get("/info", async (req, res) => {
     }
 
     if (rows.length === 0) {
-      return res.status(404).json({ success: false, error: "QR tidak dikenali — token tidak ditemukan" });
+      return res.status(404).json({ success: false, error: "QR tidak dikenali - token tidak ditemukan" });
     }
 
     const fullJwt: string = rows[0].token;
@@ -427,7 +427,7 @@ router.get("/info", async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// [4] POST /api/qr/process — toggle SCAN IN / SCAN OUT
+// [4] POST /api/qr/process - toggle SCAN IN / SCAN OUT
 // Body: { token, forceAction? }
 //   forceAction: "SCAN_IN" | "SCAN_OUT" | undefined
 //   - undefined → auto-toggle (original behavior, untouched)
@@ -456,7 +456,7 @@ router.post("/process", async (req, res) => {
       );
 
       let actualToken = token;
-      
+
       if (rows.length === 0) {
         let currentToken = token;
         let depth = 0;
@@ -469,7 +469,7 @@ router.post("/process", async (req, res) => {
           currentToken = aliasRows[0].new_short_token;
           depth++;
         }
-        
+
         actualToken = currentToken;
         const [finalRows] = await pool.query<RowDataPacket[]>(
           "SELECT token FROM qr_codes WHERE short_token = ? LIMIT 1",
@@ -481,7 +481,7 @@ router.post("/process", async (req, res) => {
       }
 
       if (rows.length === 0) {
-        return res.status(404).json({ success: false, error: "QR tidak dikenali — token tidak ditemukan" });
+        return res.status(404).json({ success: false, error: "QR tidak dikenali - token tidak ditemukan" });
       }
       fullJwt = rows[0].token;
     }
@@ -495,7 +495,7 @@ router.post("/process", async (req, res) => {
 
     const { batchId, partName, factoryOrigin, value } = decoded;
 
-    // ── QR Privilege Validation (NEW — do not modify code below this block) ───
+    // ── QR Privilege Validation (NEW - do not modify code below this block) ───
     // Only applies to requests from station devices (JWT payload has device_id).
     // Logic:
     //   - No privilege rows for this station → open access, continue normally.
@@ -566,7 +566,7 @@ router.post("/process", async (req, res) => {
       if (currentStock !== null && currentStock === 0) {
         return res.status(409).json({
           success: false,
-          error: `Tidak bisa SCAN OUT — stok ${partName} sudah 0 unit.`,
+          error: `Tidak bisa SCAN OUT - stok ${partName} sudah 0 unit.`,
         });
       }
 
@@ -576,7 +576,7 @@ router.post("/process", async (req, res) => {
       message = `${partName} Berhasil di SCAN OUT (${value} unit).`;
 
     } else {
-      // ── AUTO-TOGGLE (original logic — do not modify) ───────────────────────
+      // ── AUTO-TOGGLE (original logic - do not modify) ───────────────────────
       if (sessionCache.has(batchId)) {
         // Check stock before allowing OUT
         const [stockRows] = await pool.query<RowDataPacket[]>(
@@ -588,7 +588,7 @@ router.post("/process", async (req, res) => {
         if (currentStock !== null && currentStock === 0) {
           return res.status(409).json({
             success: false,
-            error: `Tidak bisa SCAN OUT — stok ${partName} sudah 0 unit.`,
+            error: `Tidak bisa SCAN OUT - stok ${partName} sudah 0 unit.`,
           });
         }
 
@@ -668,7 +668,7 @@ router.post("/process", async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// [5] GET /api/qr/history — all scan events for monitoring
+// [5] GET /api/qr/history - all scan events for monitoring
 // ═══════════════════════════════════════════════════════════════════════════
 router.get("/history", async (_req, res) => {
   try {
@@ -685,7 +685,7 @@ router.get("/history", async (_req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// [6] GET /api/qr/stock — all stock rows with live data
+// [6] GET /api/qr/stock - all stock rows with live data
 // ═══════════════════════════════════════════════════════════════════════════
 router.get("/stock", async (req, res) => {
   try {
@@ -714,7 +714,7 @@ router.get("/stock", async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// [7] GET /api/qr/stock/stats — summary stats for the stock dashboard
+// [7] GET /api/qr/stock/stats - summary stats for the stock dashboard
 // ═══════════════════════════════════════════════════════════════════════════
 router.get("/stock/stats", async (_req, res) => {
   try {
@@ -738,7 +738,7 @@ router.get("/stock/stats", async (_req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// [8] GET /api/qr/stock/factories — distinct factories for filter dropdown
+// [8] GET /api/qr/stock/factories - distinct factories for filter dropdown
 // ═══════════════════════════════════════════════════════════════════════════
 router.get("/stock/factories", async (_req, res) => {
   try {
@@ -752,16 +752,16 @@ router.get("/stock/factories", async (_req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// [9] DELETE /api/qr/:id — Delete a QR code
+// [9] DELETE /api/qr/:id - Delete a QR code
 // ═══════════════════════════════════════════════════════════════════════════
 router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     // Check if the QR has associated stock and delete it if current_stock == 0 or ignore if it has stock?
     // The prompt says just "delete qr". Let's just delete the qr_codes and stock rows for safety.
     const [qrRows] = await pool.query<RowDataPacket[]>("SELECT batch_id FROM qr_codes WHERE id = ?", [id]);
-    
+
     if (qrRows.length > 0) {
       const batchId = qrRows[0].batch_id;
       // Delete from stock and scan_records and tasks? Let's just delete from qr_codes for now, cascading might be needed or we just delete it from qr_codes table.

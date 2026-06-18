@@ -19,7 +19,7 @@ import {
 export const Route = createFileRoute("/master-data/")({
   head: () => ({
     meta: [
-      { title: "Master Data — Sugity Creatives" },
+      { title: "Master Data - Sugity Creatives" },
       { name: "description", content: "Kelola Data Master Part" },
     ],
   }),
@@ -149,7 +149,7 @@ function MasterDataPage() {
               <span className="font-medium text-foreground">
                 {deleteTarget.part_number}
               </span>{" "}
-              — {deleteTarget.part_name} akan dihapus secara permanen.
+              - {deleteTarget.part_name} akan dihapus secara permanen.
             </p>
             {deleteError && (
               <div className="mt-3 flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive">
@@ -227,7 +227,7 @@ function PartRow({
       {/* Model / Category */}
       <td className="border-b border-border/60 px-4 py-3.5">
         <div className="text-[13.5px] font-medium text-foreground">
-          {part.model || "—"}
+          {part.model || "-"}
         </div>
         {part.category && (
           <div className="text-[11px] italic text-muted-foreground">
@@ -239,11 +239,10 @@ function PartRow({
       {/* Status */}
       <td className="border-b border-border/60 px-4 py-3.5">
         <span
-          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider ${
-            part.status === "active"
+          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider ${part.status === "active"
               ? "bg-emerald-500/10 text-emerald-500 dark:text-emerald-400"
               : "bg-muted text-muted-foreground"
-          }`}
+            }`}
         >
           {part.status === "active" ? "Active" : "Inactive"}
         </span>

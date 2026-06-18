@@ -5,7 +5,7 @@ import { CategoryApi } from "@/hooks/use-master-data";
 export const Route = createFileRoute("/category")({
   head: () => ({
     meta: [
-      { title: "Category Management — Sugity Creatives" },
+      { title: "Category Management - Sugity Creatives" },
       { name: "description", content: "Kelola data kategori parts" },
     ],
   }),

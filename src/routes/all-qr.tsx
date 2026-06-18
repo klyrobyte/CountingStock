@@ -19,7 +19,7 @@ import {
 export const Route = createFileRoute("/all-qr")({
   head: () => ({
     meta: [
-      { title: "Semua QR Codes — Sugity Creatives" },
+      { title: "Semua QR Codes - Sugity Creatives" },
       { name: "description", content: "Complete archive of created QR stock codes." },
     ],
   }),
@@ -77,8 +77,8 @@ function AllQrPage() {
       const part = masterParts.find(p => p.part_name === item.part_name);
       navigate({
         to: "/qr-viewer",
-        search: { 
-          img: item.qr_image_base64, 
+        search: {
+          img: item.qr_image_base64,
           label: item.part_name,
           partname: item.part_name,
           partnum: part?.part_number || "",
@@ -178,7 +178,7 @@ function AllQrPage() {
                     className="group rounded-2xl border border-border-surface bg-card p-4 transition-smooth hover:bg-card"
                   >
                     {/* QR display */}
-                    <div 
+                    <div
                       className="qr-wrapper flex aspect-square items-center justify-center rounded-xl overflow-hidden bg-white relative cursor-pointer"
                       onClick={() => setSelectedQrId(item.id)}
                     >
@@ -351,7 +351,7 @@ function AllQrPage() {
                               {item.status}
                             </span>
                           ) : (
-                            <span className="text-xs text-muted-foreground/40">—</span>
+                            <span className="text-xs text-muted-foreground/40">-</span>
                           )}
                         </td>
                         <td className="border-b border-border/60 px-3 py-3.5 text-muted-foreground">
@@ -424,7 +424,7 @@ function AllQrPage() {
             </AlertDialogHeader>
             <AlertDialogFooter className="bg-card-elevated px-6 py-4 flex flex-row justify-end gap-3 sm:justify-end border-t border-border-surface">
               <AlertDialogCancel className="mt-0 border-border hover:bg-accent hover:text-foreground text-foreground">Batal</AlertDialogCancel>
-              <AlertDialogAction 
+              <AlertDialogAction
                 onClick={(e) => {
                   e.preventDefault();
                   confirmDelete();

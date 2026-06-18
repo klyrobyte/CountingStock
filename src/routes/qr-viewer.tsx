@@ -15,7 +15,7 @@ export const Route = createFileRoute("/qr-viewer")({
   }),
   head: () => ({
     meta: [
-      { title: "QR Viewer — Scan Dashboard" },
+      { title: "QR Viewer - Scan Dashboard" },
       { name: "description", content: "Full-size QR code viewer for printing." },
     ],
   }),
@@ -95,15 +95,15 @@ function QrViewerPage() {
         <div className="w-full grid grid-cols-2 gap-y-4 gap-x-2 rounded-2xl bg-card-elevated p-4 text-left ring-1 ring-border-surface print:bg-transparent print:ring-gray-300 print:px-2">
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Part Model</div>
-            <div className="mt-0.5 text-xs font-medium text-foreground print:text-black truncate">{partmodel || "—"}</div>
+            <div className="mt-0.5 text-xs font-medium text-foreground print:text-black truncate">{partmodel || "-"}</div>
           </div>
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Homelane Factory</div>
-            <div className="mt-0.5 text-xs font-medium text-foreground print:text-black truncate">{factoryOrigin || "—"}</div>
+            <div className="mt-0.5 text-xs font-medium text-foreground print:text-black truncate">{factoryOrigin || "-"}</div>
           </div>
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Homelane Machine</div>
-            <div className="mt-0.5 text-xs font-medium text-foreground print:text-black truncate">{machineOrigin || "—"}</div>
+            <div className="mt-0.5 text-xs font-medium text-foreground print:text-black truncate">{machineOrigin || "-"}</div>
           </div>
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Terakhir Di Update</div>
@@ -114,7 +114,7 @@ function QrViewerPage() {
                 year: "numeric",
                 hour: "2-digit",
                 minute: "2-digit",
-              }).format(new Date(updatedAt)) : "—"}
+              }).format(new Date(updatedAt)) : "-"}
             </div>
           </div>
         </div>
@@ -127,7 +127,7 @@ function QrViewerPage() {
         </p>
       </div>
 
-      {/* Controls — hidden when printing */}
+      {/* Controls - hidden when printing */}
       <div className="mt-8 flex gap-3 print:hidden">
         <Link
           to="/"

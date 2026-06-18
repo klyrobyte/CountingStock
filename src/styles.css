@@ -47,15 +47,19 @@
 
 :root {
   --radius: 0.75rem;
-  /* Default to dark — this app is dark-mode exclusive */
-  --background: oklch(0.18 0 0); /* ~#121212 */
+  /* Default to dark - this app is dark-mode exclusive */
+  --background: oklch(0.18 0 0);
+  /* ~#121212 */
   --foreground: oklch(0.96 0 0);
-  --card: oklch(0.22 0 0); /* ~#1e1e1e */
+  --card: oklch(0.22 0 0);
+  /* ~#1e1e1e */
   --card-foreground: oklch(0.96 0 0);
-  --card-elevated: oklch(0.26 0 0); /* ~#252525 inputs */
+  --card-elevated: oklch(0.26 0 0);
+  /* ~#252525 inputs */
   --popover: oklch(0.22 0 0);
   --popover-foreground: oklch(0.96 0 0);
-  --primary: oklch(0.68 0.16 250); /* pixel blue */
+  --primary: oklch(0.68 0.16 250);
+  /* pixel blue */
   --primary-foreground: oklch(0.15 0 0);
   --secondary: oklch(0.28 0 0);
   --secondary-foreground: oklch(0.96 0 0);
@@ -65,12 +69,14 @@
   --accent-foreground: oklch(0.96 0 0);
   --destructive: oklch(0.62 0.21 25);
   --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.3 0 0); /* hairline ~#333 */
+  --border: oklch(0.3 0 0);
+  /* hairline ~#333 */
   --border-strong: oklch(0.38 0 0);
   --input: oklch(0.3 0 0);
   --ring: oklch(0.68 0.16 250);
   --pixel-blue: oklch(0.68 0.16 250);
-  --pixel-blue-soft: oklch(0.82 0.06 245); /* pale pastel blue for active pill */
+  --pixel-blue-soft: oklch(0.82 0.06 245);
+  /* pale pastel blue for active pill */
   --chart-1: oklch(0.68 0.16 250);
   --chart-2: oklch(0.7 0.12 180);
   --chart-3: oklch(0.75 0.14 80);
@@ -84,7 +90,7 @@
   --sidebar-accent-foreground: oklch(0.96 0 0);
   --sidebar-border: oklch(0.3 0 0);
   --sidebar-ring: oklch(0.68 0.16 250);
-  /* Surface tokens (dark values — matches existing hardcoded hex) */
+  /* Surface tokens (dark values - matches existing hardcoded hex) */
   --surface-page: #1f1f1e;
   --surface-sidebar: #1d1d1c;
   --surface-section: #1b1b1b;
@@ -96,14 +102,19 @@
 
 /* ── Light theme ─────────────────────────────────────────────────────────── */
 html.light {
-  --background: oklch(0.97 0.005 80);       /* warm off-white */
-  --foreground: oklch(0.18 0.01 60);        /* near-black warm */
-  --card: oklch(0.99 0.003 80);             /* white card */
+  --background: oklch(0.97 0.005 80);
+  /* warm off-white */
+  --foreground: oklch(0.18 0.01 60);
+  /* near-black warm */
+  --card: oklch(0.99 0.003 80);
+  /* white card */
   --card-foreground: oklch(0.18 0.01 60);
-  --card-elevated: oklch(0.95 0.005 80);    /* light gray inputs */
+  --card-elevated: oklch(0.95 0.005 80);
+  /* light gray inputs */
   --popover: oklch(0.99 0.003 80);
   --popover-foreground: oklch(0.18 0.01 60);
-  --primary: oklch(0.55 0.18 250);          /* deeper pixel blue for contrast */
+  --primary: oklch(0.55 0.18 250);
+  /* deeper pixel blue for contrast */
   --primary-foreground: oklch(0.98 0 0);
   --secondary: oklch(0.93 0.005 80);
   --secondary-foreground: oklch(0.22 0.01 60);
@@ -133,12 +144,18 @@ html.light {
   --sidebar-border: oklch(0.88 0.008 80);
   --sidebar-ring: oklch(0.55 0.18 250);
   /* Surface tokens (light values) */
-  --surface-page: oklch(0.96 0.005 80);      /* warm light page bg */
-  --surface-sidebar: oklch(0.98 0.003 80);   /* white sidebar */
-  --surface-section: oklch(0.99 0.003 80);   /* white sections */
-  --surface-elevated: oklch(0.96 0.005 80);  /* light gray elevated */
-  --surface-hover: oklch(0.92 0.008 80);     /* subtle hover */
-  --border-surface: oklch(0.88 0.008 80);    /* light border */
+  --surface-page: oklch(0.96 0.005 80);
+  /* warm light page bg */
+  --surface-sidebar: oklch(0.98 0.003 80);
+  /* white sidebar */
+  --surface-section: oklch(0.99 0.003 80);
+  /* white sections */
+  --surface-elevated: oklch(0.96 0.005 80);
+  /* light gray elevated */
+  --surface-hover: oklch(0.92 0.008 80);
+  /* subtle hover */
+  --border-surface: oklch(0.88 0.008 80);
+  /* light border */
   --sidebar-hover: oklch(0.94 0.005 80);
 }
 
@@ -173,13 +190,16 @@ html.light {
   .transition-smooth {
     transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
   }
+
   .hairline {
     border: 1px solid var(--color-border);
   }
+
   .scrollbar-thin::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
+
   .scrollbar-thin::-webkit-scrollbar-thumb {
     background: var(--color-border-strong);
     border-radius: 9999px;
