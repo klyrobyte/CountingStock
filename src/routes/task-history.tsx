@@ -81,7 +81,7 @@ function TaskHistoryPage() {
                 <li className="py-8 text-center text-sm text-muted-foreground">Loading scan history...</li>
               ) : scanHistory.length === 0 ? (
                 <li className="py-8 text-center text-sm text-muted-foreground">
-                  No scan events yet. Create a QR code and scan it!
+                  Yahh masih belum ada nih scan events nya. coba buat QR code lalu scan!
                 </li>
               ) : scanHistory.map((s) => {
                 const isIn = s.action === "SCAN_IN";

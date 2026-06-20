@@ -198,7 +198,7 @@ function TvPage() {
     const tick = () => {
       const now = new Date();
       setClock(
-        now.toLocaleString("en-GB", {
+        now.toLocaleString("id-ID", {
           weekday: "short",
           day: "numeric",
           month: "short",
@@ -546,7 +546,7 @@ function TvPage() {
                     padding: 16,
                   }}
                 >
-                  No stock data for this factory.
+                  Yah belum ada stock data untuk factory ini.
                 </p>
               )}
             </section>

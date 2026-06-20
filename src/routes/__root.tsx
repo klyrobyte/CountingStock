@@ -28,11 +28,11 @@ const queryClient = new QueryClient({
 // All other routes: require valid token or redirect to /login
 function AuthGuard({ children }: { children: React.ReactNode }) {
   // SSR/Hydration safety: before `window` exists we cannot read localStorage.
-  // Render a neutral blank instead of leaking protected content.
-  // Once the DOM exists, isTokenValid() is a pure synchronous localStorage read -
-  // no async cycle needed, so we skip the mandatory spinner flash entirely.
+  // Return children directly on SSR — RootComponent always renders the same
+  // tree shape (AuthGuard → children), preventing the hydration mismatch where
+  // SSR emitted a bare <div> while the client expected a <Suspense> boundary.
   if (typeof window === "undefined") {
-    return <div className="min-h-screen bg-background" />;
+    return <>{children}</>;
   }
 
   const pathname = window.location.pathname;
@@ -118,7 +118,8 @@ function RootComponent() {
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
         <AuthGuard>
-          {/* Suspense catches async route chunks - shows layout-matched skeleton */}
+          {/* Suspense catches async route chunks - shows layout-matched skeleton.
+              Kept inside AuthGuard so the tree shape is identical on SSR and client. */}
           <Suspense fallback={<PageSkeleton />}>
             <Outlet />
           </Suspense>

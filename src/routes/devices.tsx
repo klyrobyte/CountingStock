@@ -52,9 +52,9 @@ function getLastSyncLabel(lastSync: string): string {
   const now = new Date();
   const diffMin = Math.floor((now.getTime() - syncDate.getTime()) / 60000);
   if (diffMin < 1) return "Just now";
-  if (diffMin < 60) return `${diffMin} min ago`;
-  if (diffMin < 1440) return `${Math.floor(diffMin / 60)} h ago`;
-  return "Yesterday";
+  if (diffMin < 60) return `${diffMin} min lalu`;
+  if (diffMin < 1440) return `${Math.floor(diffMin / 60)} J lalu`;
+  return "Kemarin";
 }
 
 // ── Add Device Modal ──────────────────────────────────────────────────────────
@@ -551,11 +551,11 @@ function DeviceCard({ d, onDelete, onEdit }: { d: DeviceRow; onDelete: (id: numb
 
       <div className="mt-4 space-y-1 border-t border-border pt-4 text-xs">
         <div className="flex justify-between">
-          <span className="text-muted-foreground">Location</span>
+          <span className="text-muted-foreground">Lokasi</span>
           <span className="text-foreground">{d.location || "-"}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-muted-foreground">Last Sync</span>
+          <span className="text-muted-foreground">Terakhir Terhubung</span>
           <span className="text-foreground">{lastSyncLabel}</span>
         </div>
       </div>
@@ -598,7 +598,7 @@ function DeviceListView({
               Baterai
             </th>
             <th className="px-4 py-3.5 text-left text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground hidden xl:table-cell">
-              Last Sync
+              Terakhir Terhubung
             </th>
             <th className="px-4 py-3.5 text-right text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
               Aksi

@@ -717,8 +717,8 @@ function ScanPage() {
                     );
                     const timeLabel =
                       diffMin < 1 ? "Just now" :
-                        diffMin < 60 ? `${diffMin} min ago` :
-                          `${Math.floor(diffMin / 60)} h ago`;
+                        diffMin < 60 ? `${diffMin} min lalu` :
+                          `${Math.floor(diffMin / 60)} J lalu`;
                     const isIn = r.action === "SCAN_IN";
 
                     return (

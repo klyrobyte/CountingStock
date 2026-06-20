@@ -154,10 +154,10 @@ function ViewStockPage() {
               ))
             ) : stockData.length === 0 ? (
               <div className="py-12 text-center text-sm text-muted-foreground">
-                No stock items match your filters.{" "}
+                Yah ga ada stock items yang terlihat nih.{" "}
                 {query === "" && factory === "All" && (
                   <span className="block mt-1 text-xs">
-                    Create a QR code first - each new QR auto-creates a stock entry.
+                    Buat sebuah QR code dulu - setaip QR baru auto membuat sebuah stock entry.
                   </span>
                 )}
               </div>
