@@ -1,0 +1,28 @@
+{
+  "id": "api/stock",
+  "title": "Stock",
+  "description": "Direct access to the stock table (current inventory levels per QR batch).",
+  "source": "@site/docs/api/stock.md",
+  "sourceDirName": "api",
+  "slug": "/api/stock",
+  "permalink": "/docs/api/stock",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/docs/api/stock.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "stock",
+    "title": "Stock",
+    "sidebar_label": "Stock"
+  },
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "QR Codes",
+    "permalink": "/docs/api/qr"
+  },
+  "next": {
+    "title": "Stock Analytics",
+    "permalink": "/docs/api/stock-analytics"
+  }
+}

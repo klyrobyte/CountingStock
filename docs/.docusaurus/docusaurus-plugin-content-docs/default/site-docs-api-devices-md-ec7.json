@@ -1,0 +1,28 @@
+{
+  "id": "api/devices",
+  "title": "Devices",
+  "description": "Manages physical scanner station devices. Also provides the station-specific login endpoint.",
+  "source": "@site/docs/api/devices.md",
+  "sourceDirName": "api",
+  "slug": "/api/devices",
+  "permalink": "/docs/api/devices",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/docs/api/devices.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "devices",
+    "title": "Devices",
+    "sidebar_label": "Devices"
+  },
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Auth",
+    "permalink": "/docs/api/auth"
+  },
+  "next": {
+    "title": "QR Codes",
+    "permalink": "/docs/api/qr"
+  }
+}

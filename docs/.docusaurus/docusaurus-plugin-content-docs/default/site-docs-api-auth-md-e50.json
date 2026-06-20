@@ -1,0 +1,28 @@
+{
+  "id": "api/auth",
+  "title": "Authentication",
+  "description": "Handles user credential validation and JWT token issuance.",
+  "source": "@site/docs/api/auth.md",
+  "sourceDirName": "api",
+  "slug": "/api/auth",
+  "permalink": "/docs/api/auth",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/docs/api/auth.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "auth",
+    "title": "Authentication",
+    "sidebar_label": "Auth"
+  },
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Overview",
+    "permalink": "/docs/api"
+  },
+  "next": {
+    "title": "Devices",
+    "permalink": "/docs/api/devices"
+  }
+}

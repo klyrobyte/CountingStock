@@ -1,0 +1,28 @@
+{
+  "id": "api/tasks",
+  "title": "Tasks",
+  "description": "Audit log of system events (QR creation, scan in/out, etc.). Tasks are created automatically by QR and scan handlers - this endpoint is read-only for reporting.",
+  "source": "@site/docs/api/tasks.md",
+  "sourceDirName": "api",
+  "slug": "/api/tasks",
+  "permalink": "/docs/api/tasks",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/docs/api/tasks.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "tasks",
+    "title": "Tasks",
+    "sidebar_label": "Tasks"
+  },
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Master Data",
+    "permalink": "/docs/api/master-data"
+  },
+  "next": {
+    "title": "Health Check",
+    "permalink": "/docs/api/health"
+  }
+}

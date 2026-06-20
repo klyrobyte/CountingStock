@@ -1,0 +1,28 @@
+{
+  "id": "api/stock-analytics",
+  "title": "Stock Analytics",
+  "description": "Production analytics per machine/part, used for the TV dashboard and shift-level monitoring.",
+  "source": "@site/docs/api/stock-analytics.md",
+  "sourceDirName": "api",
+  "slug": "/api/stock-analytics",
+  "permalink": "/docs/api/stock-analytics",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/docs/api/stock-analytics.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "stock-analytics",
+    "title": "Stock Analytics",
+    "sidebar_label": "Stock Analytics"
+  },
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Stock",
+    "permalink": "/docs/api/stock"
+  },
+  "next": {
+    "title": "Scans",
+    "permalink": "/docs/api/scans"
+  }
+}

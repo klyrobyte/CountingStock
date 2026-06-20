@@ -1,0 +1,28 @@
+{
+  "id": "api/users",
+  "title": "Users",
+  "description": "CRUD operations for admin/operator user accounts.",
+  "source": "@site/docs/api/users.md",
+  "sourceDirName": "api",
+  "slug": "/api/users",
+  "permalink": "/docs/api/users",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/docs/api/users.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "users",
+    "title": "Users",
+    "sidebar_label": "Users"
+  },
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Scans",
+    "permalink": "/docs/api/scans"
+  },
+  "next": {
+    "title": "Privileges",
+    "permalink": "/docs/api/privileges"
+  }
+}

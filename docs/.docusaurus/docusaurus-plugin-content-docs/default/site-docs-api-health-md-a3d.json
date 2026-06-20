@@ -1,0 +1,24 @@
+{
+  "id": "api/health",
+  "title": "Health Check",
+  "description": "Infrastructure endpoint for load balancers, monitoring systems, and uptime checks.",
+  "source": "@site/docs/api/health.md",
+  "sourceDirName": "api",
+  "slug": "/api/health",
+  "permalink": "/docs/api/health",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/docs/api/health.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "health",
+    "title": "Health Check",
+    "sidebar_label": "Health Check"
+  },
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Tasks",
+    "permalink": "/docs/api/tasks"
+  }
+}

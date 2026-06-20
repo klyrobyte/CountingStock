@@ -1,0 +1,28 @@
+{
+  "id": "api/master-data",
+  "title": "Master Data",
+  "description": "Lookup tables for parts, machines, categories, models, customers, and factories. All follow the same CRUD pattern.",
+  "source": "@site/docs/api/master-data.md",
+  "sourceDirName": "api",
+  "slug": "/api/master-data",
+  "permalink": "/docs/api/master-data",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/docs/api/master-data.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "master-data",
+    "title": "Master Data",
+    "sidebar_label": "Master Data"
+  },
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Privileges",
+    "permalink": "/docs/api/privileges"
+  },
+  "next": {
+    "title": "Tasks",
+    "permalink": "/docs/api/tasks"
+  }
+}

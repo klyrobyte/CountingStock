@@ -1,0 +1,136 @@
+{
+  "docusaurus-plugin-content-docs": {
+    "default": {
+      "path": "/docs",
+      "versions": [
+        {
+          "name": "current",
+          "label": "Next",
+          "isLast": true,
+          "path": "/docs",
+          "mainDocId": "tutorial-basics/create-a-page",
+          "docs": [
+            {
+              "id": "api/auth",
+              "path": "/docs/api/auth",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/devices",
+              "path": "/docs/api/devices",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/health",
+              "path": "/docs/api/health",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/intro",
+              "path": "/docs/api",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/master-data",
+              "path": "/docs/api/master-data",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/privileges",
+              "path": "/docs/api/privileges",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/qr",
+              "path": "/docs/api/qr",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/scans",
+              "path": "/docs/api/scans",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/stock",
+              "path": "/docs/api/stock",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/stock-analytics",
+              "path": "/docs/api/stock-analytics",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/tasks",
+              "path": "/docs/api/tasks",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "api/users",
+              "path": "/docs/api/users",
+              "sidebar": "apiSidebar"
+            },
+            {
+              "id": "intro",
+              "path": "/docs/intro"
+            },
+            {
+              "id": "tutorial-basics/congratulations",
+              "path": "/docs/tutorial-basics/congratulations",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "tutorial-basics/create-a-blog-post",
+              "path": "/docs/tutorial-basics/create-a-blog-post",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "tutorial-basics/create-a-document",
+              "path": "/docs/tutorial-basics/create-a-document",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "tutorial-basics/create-a-page",
+              "path": "/docs/tutorial-basics/create-a-page",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "tutorial-basics/deploy-your-site",
+              "path": "/docs/tutorial-basics/deploy-your-site",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "tutorial-basics/markdown-features",
+              "path": "/docs/tutorial-basics/markdown-features",
+              "sidebar": "tutorialSidebar"
+            },
+            {
+              "id": "tutorial-extras/manage-docs-versions",
+              "path": "/docs/tutorial-extras/manage-docs-versions"
+            },
+            {
+              "id": "tutorial-extras/translate-your-site",
+              "path": "/docs/tutorial-extras/translate-your-site"
+            }
+          ],
+          "draftIds": [],
+          "sidebars": {
+            "tutorialSidebar": {
+              "link": {
+                "path": "/docs/tutorial-basics/create-a-page",
+                "label": "tutorial-basics/create-a-page"
+              }
+            },
+            "apiSidebar": {
+              "link": {
+                "path": "/docs/api",
+                "label": "api/intro"
+              }
+            }
+          }
+        }
+      ],
+      "breadcrumbs": true
+    }
+  }
+}

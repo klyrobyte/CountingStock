@@ -1,0 +1,28 @@
+{
+  "id": "api/privileges",
+  "title": "QR Privileges",
+  "description": "Controls which QR codes each scanner station is allowed to scan. When a station has no privilege rows it operates in open access mode. Once any QR is assigned it switches to restricted mode.",
+  "source": "@site/docs/api/privileges.md",
+  "sourceDirName": "api",
+  "slug": "/api/privileges",
+  "permalink": "/docs/api/privileges",
+  "draft": false,
+  "unlisted": false,
+  "editUrl": "https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/docs/api/privileges.md",
+  "tags": [],
+  "version": "current",
+  "frontMatter": {
+    "id": "privileges",
+    "title": "QR Privileges",
+    "sidebar_label": "Privileges"
+  },
+  "sidebar": "apiSidebar",
+  "previous": {
+    "title": "Users",
+    "permalink": "/docs/api/users"
+  },
+  "next": {
+    "title": "Master Data",
+    "permalink": "/docs/api/master-data"
+  }
+}
