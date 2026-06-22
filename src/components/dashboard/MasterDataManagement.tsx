@@ -18,9 +18,9 @@ interface MasterDataManagementProps {
   description: string;
   api: {
     useGetAll: () => { data: MasterDataItem[] | undefined; isLoading: boolean };
-    useCreate: () => { mutate: any; isPending: boolean };
-    useUpdate: () => { mutate: any; isPending: boolean };
-    useDelete: () => { mutate: any; isPending: boolean };
+    useCreate: () => { mutate: (name: string, options?: Record<string, unknown>) => void; isPending: boolean };
+    useUpdate: () => { mutate: (payload: { id: number; name: string }, options?: Record<string, unknown>) => void; isPending: boolean };
+    useDelete: () => { mutate: (id: number, options?: Record<string, unknown>) => void; isPending: boolean };
   };
 }
 

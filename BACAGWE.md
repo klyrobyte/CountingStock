@@ -16,8 +16,6 @@ Daftar Route :
 [3] Route: /api/qr/process, Method: POST,  Fungsi: processProses toggle SCAN IN / SCAN OUT
 [4] Route: /api/qr/history, Method: GET/JSON,  Fungsi: monitoring semua batch & status real-time
 
-WARN:
-DO NOT TOUCH GUARDIAN HASH IN guardian.js 
 
 for refences:
 // ==========================================

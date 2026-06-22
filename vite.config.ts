@@ -1,20 +1,63 @@
-// @RizkyDaffy/vite-tanstack-config already includes the following - do NOT add em manually
-// or the app will break with duplicate plugins:
-//   - tanstackStart, viteReact, tailwindcss, tsConfigPaths, cloudflare (build-only),
-//     componentTagger (dev-only), VITE_* env injection, @ path alias, React/TanStack dedupe,
-//     error logger plugins, and sandbox detection (port/host/strictPort).
-// You can pass additional config via defineConfig({ vite: { ... } }) if needed.
-import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+// Vite config — Pixel Scan Dashboard
+// Plugins bundled manually (previously delegated to @lovable.dev/vite-tanstack-config):
+//   tailwindcss, vite-tsconfig-paths, tanstackStart, viteReact, cloudflare (build-only),
+//   @ path alias, React/TanStack dedupe, VITE_* env define injection.
+import { defineConfig, loadEnv, type ConfigEnv } from "vite";
+import tailwindcss from "@tailwindcss/vite";
+import tsConfigPaths from "vite-tsconfig-paths";
+import { tanstackStart } from "@tanstack/react-start/plugin/vite";
+import viteReact from "@vitejs/plugin-react";
 
-export default defineConfig({
-    server: {
-        allowedHosts: true,
-        proxy: {
-            "/api": {
-                target: "http://localhost:3001",
-                changeOrigin: true,
-                secure: false,
-            },
-        },
+export default (env: ConfigEnv) => {
+  const { command, mode } = env;
+  const loadedEnv = loadEnv(mode, process.cwd(), "VITE_");
+
+  // Inject VITE_* vars as static replacements so they are tree-shakeable at build time
+  const envDefine: Record<string, string> = {};
+  for (const [key, value] of Object.entries(loadedEnv)) {
+    envDefine[`import.meta.env.${key}`] = JSON.stringify(value);
+  }
+
+  return defineConfig({
+    define: envDefine,
+
+    resolve: {
+      alias: { "@": `${process.cwd()}/src` },
+      dedupe: [
+        "react",
+        "react-dom",
+        "react/jsx-runtime",
+        "react/jsx-dev-runtime",
+        "@tanstack/react-query",
+        "@tanstack/query-core",
+      ],
     },
-})
+
+    plugins: [
+      tailwindcss(),
+      tsConfigPaths({ projects: ["./tsconfig.json"] }),
+      tanstackStart(),
+      viteReact(),
+      // Cloudflare adapter — build only, optional peer dep
+      ...(command === "build"
+        ? [
+            (async () => {
+              const { cloudflare } = await import("@cloudflare/vite-plugin");
+              return cloudflare({ viteEnvironment: { name: "ssr" } });
+            })(),
+          ]
+        : []),
+    ],
+
+    server: {
+      allowedHosts: true,
+      proxy: {
+        "/api": {
+          target: "http://localhost:3001",
+          changeOrigin: true,
+          secure: false,
+        },
+      },
+    },
+  });
+};

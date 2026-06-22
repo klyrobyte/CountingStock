@@ -88,11 +88,6 @@ export const Route = createRootRoute({
       },
     ],
     links: [{ rel: "stylesheet", href: appCss }],
-    scripts: [
-      // ASCII art signature - async, zero perf impact, removable by deleting
-      // public/ascii-signature.js and this entry. SHA256 guarded by guardian.js
-      { src: "/ascii-signature.js", async: true, defer: true },
-    ],
   }),
   shellComponent: RootShell,
   component: RootComponent,

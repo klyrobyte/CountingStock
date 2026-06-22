@@ -16,7 +16,7 @@ import { useTvDashboard } from "@/hooks/use-tv-dashboard";
 import type { TvMachine } from "@/hooks/use-tv-dashboard";
 import { MinimumStockGrid } from "@/components/mesin/MinimumStockGrid";
 import "./tv.css";
-import { NONAME } from "dns";
+
 
 // ─── PRIORITY LOGIC (plan.md) ──────────────────────────────────────────────
 // Single source of truth for status derivation - never read raw status strings.
@@ -90,9 +90,17 @@ const STATUS_SORT_ORDER: Record<string, number> = {
   safe: 2,
 };
 
-const CustomBar = (props: any) => {
-  const { x, y, width, height, payload } = props;
-  const { status, value, jam } = payload;
+interface CustomBarProps {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  payload?: { status: string; value: number; jam: number };
+}
+
+const CustomBar = (props: CustomBarProps) => {
+  const { x = 0, y = 0, width = 0, height = 0, payload } = props;
+  const { status = "warning", value = 0, jam = 0 } = payload ?? {};
   const color = STATUS_COLORS[status as keyof typeof STATUS_COLORS] || STATUS_COLORS.warning;
   const rx = 6;
 
@@ -248,8 +256,6 @@ function TvPage() {
       const val = data.chartData[i] ?? 0;
       const jam = data.chartStokJam?.[i] ?? 0;
       const status = data.chartStatus?.[i] ?? "warning";
-      // DEBUG: verify per-bar jam values - remove after confirmation
-      console.log(`[TV Chart] bar[${i}] label="${label}" value=${val} jam=${jam} status=${status}`);
       return {
         label,
         value: val,
@@ -520,8 +526,8 @@ function TvPage() {
                       tick={{ fill: "var(--color-text-muted)", fontSize: 10 }}
                     />
                     <Tooltip
-                      formatter={(val: any, name: any, props: any) => {
-                        const realVal = props.payload?.value ?? val;
+                      formatter={(val: number, _name: string, entry: { payload?: { value: number } }) => {
+                        const realVal = entry.payload?.value ?? val;
                         return [realVal, "value"];
                       }}
                       contentStyle={{

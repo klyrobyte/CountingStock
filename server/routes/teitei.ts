@@ -7,7 +7,21 @@ import {
 
 const router = Router();
 
-function mapTeitei(r: any) {
+interface TeiteiRow extends RowDataPacket {
+  id: number;
+  master_part_id: number;
+  shikake_value: number | string;
+  min_val?: number | string;
+  qty_per_day?: number | string;
+  part_number: string;
+  part_name: string;
+  model: string;
+  factory_origin: string;
+  created_at: string;
+  updated_at: string;
+}
+
+function mapTeitei(r: TeiteiRow) {
   return {
     id: r.id,
     masterPartId: r.master_part_id,
@@ -26,7 +40,7 @@ function mapTeitei(r: any) {
 // GET /api/teitei - list with master part info
 router.get("/", async (_req, res) => {
   try {
-    const [rows] = await pool.query<RowDataPacket[]>(
+    const [rows] = await pool.query<TeiteiRow[]>(
       `SELECT s.id, s.master_part_id, s.shikake_value, s.min_val, s.qty_per_day, s.created_at, s.updated_at,
               mp.part_number, mp.part_name, mp.model, mp.factory_origin,
               sa.min_val AS analytics_min
@@ -93,7 +107,7 @@ router.post("/", async (req, res) => {
       await syncShikakeSettingsToAnalytics(mpRows[0].part_number as string);
     }
 
-    const [rows] = await pool.query<RowDataPacket[]>(
+    const [rows] = await pool.query<TeiteiRow[]>(
       `SELECT s.id, s.master_part_id, s.shikake_value, s.min_val, s.qty_per_day, mp.part_number, mp.part_name
        FROM shikake_settings s
        LEFT JOIN master_parts mp ON mp.id = s.master_part_id
@@ -156,7 +170,7 @@ router.put("/:id", async (req, res) => {
       await syncShikakeSettingsToAnalytics(partNumber);
     }
 
-    const [rows] = await pool.query<RowDataPacket[]>(
+    const [rows] = await pool.query<TeiteiRow[]>(
       `SELECT s.id, s.master_part_id, s.shikake_value, s.min_val, s.qty_per_day, mp.part_number, mp.part_name
        FROM shikake_settings s
        LEFT JOIN master_parts mp ON mp.id = s.master_part_id

@@ -3,11 +3,21 @@ import jwt from "jsonwebtoken";
 
 const SECRET_KEY = process.env.JWT_SECRET || "pixel-scan-secret-key-2026";
 
+// Decoded JWT payload shape attached to every authenticated request
+interface JwtPayload {
+  id: number;
+  username: string;
+  role: string;
+  iat?: number;
+  exp?: number;
+  [key: string]: unknown;
+}
+
 // Extend Express Request type to include the decoded user info
 declare global {
   namespace Express {
     interface Request {
-      user?: any;
+      user?: JwtPayload;
     }
   }
 }
