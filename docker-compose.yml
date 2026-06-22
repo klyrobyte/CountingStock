@@ -35,9 +35,9 @@ services:
       INTERNAL_API_KEY: ${INTERNAL_API_KEY}
       VITE_INTERNAL_API_KEY: ${VITE_INTERNAL_API_KEY}
       NODE_ENV: production
-    depends_on:
-      db:
-        condition: service_healthy
+    # depends_on:
+    #   db:
+    #     condition: service_healthy
     networks:
       - app-network
       - nginx-public
