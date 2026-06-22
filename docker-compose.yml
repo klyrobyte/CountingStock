@@ -38,45 +38,52 @@ services:
       db:
         condition: service_healthy
     networks:
-      - pixel-net
+      - app-network
+      - nginx-public
     volumes:
       # Optional: mount .env at runtime (alternative to env vars above)
       # - ./.env:/app/.env:ro
       - app-logs:/app/logs
 
   # ── MySQL 8 Database ─────────────────────────────────────────────────────────
-  db:
-    image: mysql:8.0
-    container_name: pixel-scan-db
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
-      MYSQL_DATABASE: ${DB_NAME:-outindb}
-      MYSQL_USER: pixeluser
-      MYSQL_PASSWORD: ${DB_PASSWORD}
-    ports:
-      - "${DB_EXPOSE_PORT:-3306}:3306"   # expose for local phpMyAdmin / DBeaver access
-    volumes:
-      - db-data:/var/lib/mysql
-      # Auto-import the schema on first boot (only runs if volume is empty)
-      - ./database.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD}"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
-    networks:
-      - pixel-net
+  # db:
+  #   image: mysql:8.0
+  #   container_name: pixel-scan-db
+  #   restart: unless-stopped
+  #   environment:
+  #     MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+  #     MYSQL_DATABASE: ${DB_NAME:-outindb}
+  #     MYSQL_USER: pixeluser
+  #     MYSQL_PASSWORD: ${DB_PASSWORD}
+  #   ports:
+  #     - "${DB_EXPOSE_PORT:-3306}:3306"   # expose for local phpMyAdmin / DBeaver access
+  #   volumes:
+  #     - db-data:/var/lib/mysql
+  #     # Auto-import the schema on first boot (only runs if volume is empty)
+  #     - ./database.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+  #   healthcheck:
+  #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD}"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 10
+  #     start_period: 30s
+  #   networks:
+  #     - pixel-net
 
 # ── Named volumes ─────────────────────────────────────────────────────────────
 volumes:
-  db-data:
-    driver: local
+  # db-data:
+  #   driver: local
   app-logs:
     driver: local
 
 # ── Network ───────────────────────────────────────────────────────────────────
 networks:
-  pixel-net:
+  # pixel-net:
+  #   driver: bridge
+  nginx-public:
+    external: true
+    name: nginx-public
+
+  app-network:
     driver: bridge
