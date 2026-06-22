@@ -23,7 +23,7 @@ services:
       - "${API_PORT:-3001}:3001"   # Express API
     environment:
       # Database — overridden by .env or docker compose --env-file
-      DB_HOST: db
+      DB_HOST: ${DB_HOST:-127.0.0.1}
       DB_PORT: 3306
       DB_USER: ${DB_USER:-root}
       DB_PASSWORD: ${DB_PASSWORD}
