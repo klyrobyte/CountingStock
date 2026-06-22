@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback, lazy, Suspense } from "react";
+import { useMemo, useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ArrowRight,
@@ -52,21 +52,23 @@ export const Route = createFileRoute("/")({
 
 // ── Dual-page index: unauthenticated → landing, authenticated → QR app ───
 function IndexPage() {
-  // isTokenValid() reads localStorage synchronously - no useEffect cycle needed.
-  // The mounted/useEffect pattern was rendering a blank black frame on every reload.
-  // Only guard against SSR where window (and localStorage) doesn't exist yet.
-  if (typeof window === "undefined") {
-    return <div className="min-h-screen bg-background" />;
-  }
+  const [mounted, setMounted] = useState(false);
 
-  if (!isTokenValid()) {
-    return (
-      <Suspense fallback={<div className="min-h-screen bg-background" />}>
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
+      {!mounted ? (
+        <div className="min-h-screen bg-background" />
+      ) : isTokenValid() ? (
+        <StockScanPage />
+      ) : (
         <DashboardLanding />
-      </Suspense>
-    );
-  }
-  return <StockScanPage />;
+      )}
+    </Suspense>
+  );
 }
 
 
