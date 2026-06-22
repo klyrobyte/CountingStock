@@ -52,7 +52,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
       MYSQL_DATABASE: ${DB_NAME:-outindb}
-      MYSQL_USER: ${DB_USER:-pixel}
+      MYSQL_USER: pixeluser
       MYSQL_PASSWORD: ${DB_PASSWORD}
     ports:
       - "${DB_EXPOSE_PORT:-3306}:3306"   # expose for local phpMyAdmin / DBeaver access
