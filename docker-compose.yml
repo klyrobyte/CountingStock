@@ -1,0 +1,82 @@
+# ─── Pixel Scan Dashboard — Docker Compose ───────────────────────────────────
+# Usage:
+#   1. cp .env.example .env  →  fill in your values
+#   2. docker compose up -d
+#   3. First run only: docker compose exec app npm run migrate
+#
+# Services: app (Node/frontend+backend), db (MySQL 8)
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── Application (frontend SSR + Express API) ────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    container_name: pixel-scan-app
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-3000}:3000"   # Vite SSR / TanStack Start
+      - "${API_PORT:-3001}:3001"   # Express API
+    environment:
+      # Database — overridden by .env or docker compose --env-file
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: ${DB_USER:-root}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME:-outindb}
+      # API
+      API_PORT: 3001
+      JWT_SECRET: ${JWT_SECRET}
+      API_BASE_URL: ${API_BASE_URL:-http://localhost:3000}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      VITE_INTERNAL_API_KEY: ${VITE_INTERNAL_API_KEY}
+      NODE_ENV: production
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - pixel-net
+    volumes:
+      # Optional: mount .env at runtime (alternative to env vars above)
+      # - ./.env:/app/.env:ro
+      - app-logs:/app/logs
+
+  # ── MySQL 8 Database ─────────────────────────────────────────────────────────
+  db:
+    image: mysql:8.0
+    container_name: pixel-scan-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME:-outindb}
+      MYSQL_USER: ${DB_USER:-pixel}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "${DB_EXPOSE_PORT:-3306}:3306"   # expose for local phpMyAdmin / DBeaver access
+    volumes:
+      - db-data:/var/lib/mysql
+      # Auto-import the schema on first boot (only runs if volume is empty)
+      - ./database.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - pixel-net
+
+# ── Named volumes ─────────────────────────────────────────────────────────────
+volumes:
+  db-data:
+    driver: local
+  app-logs:
+    driver: local
+
+# ── Network ───────────────────────────────────────────────────────────────────
+networks:
+  pixel-net:
+    driver: bridge

@@ -17,6 +17,14 @@ dist-ssr
 .nitro
 *.local
 
+# Secrets
+.env
+.env.local
+.env.*.local
+
+# Docker build artifacts (keep compose + Dockerfile tracked, not cache)
+.dockerignore
+
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars

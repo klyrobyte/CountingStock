@@ -1,22 +1,33 @@
 /**
  * guardian.js
  *
- * Placed outside the main app directory intentionally.
- * Responsible for spawning the backend process.
- * This file never modifies any backend files.
+ * Process manager for the Pixel Scan Dashboard.
+ * Spawns two processes in parallel:
+ *   1. Express API server  (server/index.ts  → port 3001)
+ *   2. TanStack Start SSR  (dist/server/ → port 3000)  — production only
+ *
+ * In development (npm run dev:all) only the API is spawned here;
+ * the Vite dev server is handled by concurrently separately.
  *
  * Usage:
- *   node ../guardian.js
+ *   Development:  npx concurrently "npm run dev" "node guardian.js"
+ *   Production:   node guardian.js
  */
 
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { spawn } from 'child_process';
+import { existsSync } from 'fs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-
 const APP_DIR = __dirname;
-const BACKEND = resolve(APP_DIR, 'server', 'index.ts');
+const IS_PROD = process.env.NODE_ENV === 'production';
+
+// ── Paths ─────────────────────────────────────────────────────────────────────
+const BACKEND_SRC = resolve(APP_DIR, 'server', 'index.ts');
+const FRONTEND_DIST = resolve(APP_DIR, 'dist', 'server', 'assets', 'worker-entry-*.js');
+// TanStack Start SSR entry point from the production build
+const SSR_ENTRY = resolve(APP_DIR, 'dist', 'server', 'index.js');
 
 /**
  * Returns true for structured HTTP access log lines.
@@ -36,34 +47,71 @@ function isHttpAccessLog(line) {
   }
 }
 
-const child = spawn('npx', ['tsx', BACKEND], {
-  cwd: APP_DIR,
-  stdio: ['inherit', 'pipe', 'pipe'],
-  shell: true,
-  env: { ...process.env },
-});
+/**
+ * Spawn a child process and wire stdout/stderr with a [label] prefix.
+ * Returns the ChildProcess handle.
+ */
+function spawnProcess(label, cmd, args, opts = {}) {
+  const child = spawn(cmd, args, {
+    cwd: APP_DIR,
+    stdio: ['inherit', 'pipe', 'pipe'],
+    shell: true,
+    env: { ...process.env },
+    ...opts,
+  });
 
-child.stdout.on('data', (chunk) => {
-  const filtered = chunk
-    .toString()
-    .split('\n')
-    .filter((line) => !isHttpAccessLog(line))
-    .join('\n');
+  child.stdout.on('data', (chunk) => {
+    const filtered = chunk
+      .toString()
+      .split('\n')
+      .filter((line) => !isHttpAccessLog(line))
+      .join('\n');
+    if (filtered.trim().length > 0) {
+      process.stdout.write(`[${label}] ${filtered.trimEnd()}\n`);
+    }
+  });
 
-  if (filtered.trim().length > 0) {
-    process.stdout.write(filtered);
-  }
-});
+  child.stderr.on('data', (chunk) => {
+    process.stderr.write(`[${label}] ${chunk.toString().trimEnd()}\n`);
+  });
 
-child.stderr.on('data', (chunk) => {
-  process.stderr.write(chunk);
-});
+  child.on('error', (err) => {
+    console.error(`[guardian] Failed to spawn ${label}: ${err.message}`);
+    process.exit(1);
+  });
 
-child.on('close', (code) => {
-  process.exit(code ?? 0);
-});
+  child.on('close', (code) => {
+    console.log(`[guardian] ${label} exited with code ${code}.`);
+    // If either critical process dies, shut everything down
+    process.exit(code ?? 0);
+  });
 
-child.on('error', (err) => {
-  console.error(`[guardian] Failed to spawn backend: ${err.message}`);
-  process.exit(1);
-});
+  return child;
+}
+
+// ── Spawn Express API server (always) ─────────────────────────────────────────
+const api = spawnProcess('api', 'npx', ['tsx', BACKEND_SRC]);
+
+// ── Spawn SSR frontend in production mode ────────────────────────────────────
+// In development, the Vite dev server is started separately by `npm run dev`.
+if (IS_PROD && existsSync(SSR_ENTRY)) {
+  spawnProcess('ssr', 'node', [SSR_ENTRY], {
+    env: {
+      ...process.env,
+      PORT: process.env.SSR_PORT || '3000',
+    },
+  });
+} else if (IS_PROD) {
+  console.warn('[guardian] Production mode but dist/server/index.js not found.');
+  console.warn('[guardian] Run `npm run build` before starting in production.');
+}
+
+// ── Graceful shutdown: forward signals to children ──────────────────────────
+function shutdown(signal) {
+  console.log(`[guardian] Received ${signal}, shutting down…`);
+  api.kill(signal);
+  process.exit(0);
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));

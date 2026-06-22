@@ -3,7 +3,7 @@ hey there if you read this, that means my contract has been completed, sorry. bt
 Factory Inventory QR System - API Documentation (PROTOTYPE INFRASTUCTURES)
 
 HOW IT WORKS?
-there 2 main logic from this system, where just made it once (1 qr) and keep it forever, there's no need to update qr over and over again just make it one times and qr data will automaticly registered and connected with "in & out" system , sistem in&out adalah sistem logika sederhana dimana pengguna akan scan qr nya dan buat status nya: status:in dan status ini akan terganti jadi out ketika user mengscan lagi qr nya kedua kali nya dengan syarat qr harus dalam status:in dan bukan out dan begitu seterus nya untuk in lagi user harus scan lagi qr nya, jadi qr nya static namun isi dari qr nya dinamis jadi cukup buat 1x sudah terinclude di @SCANLOGIC,
+there 2 main logic from this system, where just made it once (1 qr) and keep it forever, there's no need to update qr over and over again just make it one times and qr data will automaticly registered and connected with "in & out" system , sistem in&out adalah sistem logika sederhana dimana pengguna akan scan qr nya dan buat status nya: dengan system fleksible (baru) agar users bisa melakukan in in in atau out out out di bantu dengan bantuan iot untuk kepatuhan operator (gate) juga di bantu dengan sop, jadi qr nya static namun isi dari qr nya dinamis jadi cukup buat 1x sudah terinclude di @SCANLOGIC,
 
 
 Technical FLOW :
