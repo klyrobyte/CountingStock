@@ -87,5 +87,5 @@ networks:
     name: nginx-public
 
   app-network:
-    driver: bridge
-    name: app-network
+    external: true
+    name: henkaten-db_app-network
