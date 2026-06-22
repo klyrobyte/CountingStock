@@ -45,13 +45,18 @@ const MIME = {
 };
 
 function proxyApi(req, res) {
+  // Strip Origin/Referer so the API sees this as a server-to-server call.
+  // Express CORS middleware treats no-origin requests as same-origin, which
+  // matches reality (browser hit us, we forward internally to 3001).
+  const { origin: _o, referer: _r, ...passHeaders } = req.headers;
+  void _o; void _r;
   const proxyReq = httpRequest(
     {
       host: API_TARGET_HOST,
       port: API_TARGET_PORT,
       method: req.method,
       path: req.url,
-      headers: { ...req.headers, host: `${API_TARGET_HOST}:${API_TARGET_PORT}` },
+      headers: { ...passHeaders, host: `${API_TARGET_HOST}:${API_TARGET_PORT}` },
     },
     (proxyRes) => {
       res.writeHead(proxyRes.statusCode || 502, proxyRes.headers);
