@@ -2,20 +2,21 @@
 # Usage:
 #   1. cp .env.example .env  →  fill in your values
 #   2. docker compose up -d
-#   3. First run only: docker compose exec app npm run migrate
+#   3. First run only: docker compose exec counting-stock npm run migrate
 #
-# Services: app (Node/frontend+backend), db (MySQL 8)
+# Services: counting-stock (Node/frontend+backend), db (MySQL 8)
 # ─────────────────────────────────────────────────────────────────────────────
 
 services:
 
   # ── Application (frontend SSR + Express API) ────────────────────────────────
-  app:
+  counting-stock:
     build:
       context: .
       dockerfile: Dockerfile
       target: runner
-    container_name: pixel-scan-app
+    container_name: counting-stock
+    image: counting-stock
     restart: unless-stopped
     ports:
       - "${APP_PORT:-3000}:3000"   # Vite SSR / TanStack Start
