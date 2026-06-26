@@ -17,6 +17,8 @@ import factoriesRoutes from "./routes/factories.js";
 import privilegesRoutes from "./routes/privileges.js";
 import stockAnalyticsRoutes from "./routes/stockAnalytics.js";
 import teiteiRoutes from "./routes/teitei.js";
+// ── @betogate admin routes (additive) ───────────────────────────────────
+import esp32Routes from "../services/gate/routes/admin.js";
 import { requireAuth } from "./middleware/authMiddleware.js";
 // ── Additive security layer ─────────────────────────────────────────────────
 import { configuredCors, securityHeaders } from "./middleware/securityMiddleware.js";
@@ -86,6 +88,7 @@ app.use("/api/factories", factoriesRoutes);
 app.use("/api/privileges", privilegesRoutes); //API: QR Privilege Handler (internal-key protected)
 app.use("/api/stock-analytics", stockAnalyticsRoutes);
 app.use("/api/teitei", teiteiRoutes);
+app.use("/api/esp32", esp32Routes);   // @betogate: ESP32 device management & privilege admin
 
 // ── 404 fallthrough - must be AFTER all route handlers ───────────────────────
 app.use(notFoundHandler);

@@ -30,6 +30,7 @@ import { Route as UsersIndexRouteImport } from './routes/users/index'
 import { Route as MesinIndexRouteImport } from './routes/mesin/index'
 import { Route as MasterDataIndexRouteImport } from './routes/master-data/index'
 import { Route as UsersCreateRouteImport } from './routes/users/create'
+import { Route as StationProvisioningRouteImport } from './routes/station/provisioning'
 import { Route as StationLoginRouteImport } from './routes/station/login'
 import { Route as StationDashboardRouteImport } from './routes/station/dashboard'
 import { Route as MesinCreateRouteImport } from './routes/mesin/create'
@@ -140,6 +141,11 @@ const UsersCreateRoute = UsersCreateRouteImport.update({
   path: '/users/create',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StationProvisioningRoute = StationProvisioningRouteImport.update({
+  id: '/station/provisioning',
+  path: '/station/provisioning',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StationLoginRoute = StationLoginRouteImport.update({
   id: '/station/login',
   path: '/station/login',
@@ -183,6 +189,7 @@ export interface FileRoutesByFullPath {
   '/mesin/create': typeof MesinCreateRoute
   '/station/dashboard': typeof StationDashboardRoute
   '/station/login': typeof StationLoginRoute
+  '/station/provisioning': typeof StationProvisioningRoute
   '/users/create': typeof UsersCreateRoute
   '/master-data/': typeof MasterDataIndexRoute
   '/mesin/': typeof MesinIndexRoute
@@ -210,6 +217,7 @@ export interface FileRoutesByTo {
   '/mesin/create': typeof MesinCreateRoute
   '/station/dashboard': typeof StationDashboardRoute
   '/station/login': typeof StationLoginRoute
+  '/station/provisioning': typeof StationProvisioningRoute
   '/users/create': typeof UsersCreateRoute
   '/master-data': typeof MasterDataIndexRoute
   '/mesin': typeof MesinIndexRoute
@@ -238,6 +246,7 @@ export interface FileRoutesById {
   '/mesin/create': typeof MesinCreateRoute
   '/station/dashboard': typeof StationDashboardRoute
   '/station/login': typeof StationLoginRoute
+  '/station/provisioning': typeof StationProvisioningRoute
   '/users/create': typeof UsersCreateRoute
   '/master-data/': typeof MasterDataIndexRoute
   '/mesin/': typeof MesinIndexRoute
@@ -267,6 +276,7 @@ export interface FileRouteTypes {
     | '/mesin/create'
     | '/station/dashboard'
     | '/station/login'
+    | '/station/provisioning'
     | '/users/create'
     | '/master-data/'
     | '/mesin/'
@@ -294,6 +304,7 @@ export interface FileRouteTypes {
     | '/mesin/create'
     | '/station/dashboard'
     | '/station/login'
+    | '/station/provisioning'
     | '/users/create'
     | '/master-data'
     | '/mesin'
@@ -321,6 +332,7 @@ export interface FileRouteTypes {
     | '/mesin/create'
     | '/station/dashboard'
     | '/station/login'
+    | '/station/provisioning'
     | '/users/create'
     | '/master-data/'
     | '/mesin/'
@@ -349,6 +361,7 @@ export interface RootRouteChildren {
   MesinCreateRoute: typeof MesinCreateRoute
   StationDashboardRoute: typeof StationDashboardRoute
   StationLoginRoute: typeof StationLoginRoute
+  StationProvisioningRoute: typeof StationProvisioningRoute
   UsersCreateRoute: typeof UsersCreateRoute
   MasterDataIndexRoute: typeof MasterDataIndexRoute
   MesinIndexRoute: typeof MesinIndexRoute
@@ -504,6 +517,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UsersCreateRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/station/provisioning': {
+      id: '/station/provisioning'
+      path: '/station/provisioning'
+      fullPath: '/station/provisioning'
+      preLoaderRoute: typeof StationProvisioningRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/station/login': {
       id: '/station/login'
       path: '/station/login'
@@ -557,6 +577,7 @@ const rootRouteChildren: RootRouteChildren = {
   MesinCreateRoute: MesinCreateRoute,
   StationDashboardRoute: StationDashboardRoute,
   StationLoginRoute: StationLoginRoute,
+  StationProvisioningRoute: StationProvisioningRoute,
   UsersCreateRoute: UsersCreateRoute,
   MasterDataIndexRoute: MasterDataIndexRoute,
   MesinIndexRoute: MesinIndexRoute,
