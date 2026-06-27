@@ -14,6 +14,7 @@ const allowedOrigins: string[] = rawOrigins
     "http://localhost:8080",   // Vite dev server (current port)
     "http://127.0.0.1:5173",
     "http://127.0.0.1:8080",
+    "http://192.168.249.152:5173", // change with you own local ip development 
   ];
 
 export const configuredCors = cors({

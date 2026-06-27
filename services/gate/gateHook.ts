@@ -6,7 +6,7 @@
  * NEVER alters the scan result sent to the client.
  *
  * Usage (in qr.ts, AFTER res.json() is called):
- *   dispatchGateOpenHook({ userId, stationId, machineId, direction, qrCodeId });
+ *   dispatchToGateService({ qr_code_id: string });
  *
  * ADDITIVE ONLY — imported from qr.ts as a side-effect hook.
  */
