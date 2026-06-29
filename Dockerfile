@@ -32,6 +32,7 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules/.bin/tsx /usr/local/bin/tsx
 COPY --from=builder /app/node_modules/tsx ./node_modules/tsx
 COPY server ./server
+COPY services ./services
 
 # Copy the process manager that boots both servers
 COPY guardian.js ./guardian.js
