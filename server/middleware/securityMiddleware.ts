@@ -19,6 +19,7 @@ const allowedOrigins: string[] = rawOrigins
     "http://172.19.82.34:8080",
     "http://172.19.82.34:5173",
     "http://172.19.82.34:4173",
+    "http://counting-stock.sugity.co.id",
   ];
 
 export const configuredCors = cors({

@@ -38,8 +38,9 @@ export default (env: ConfigEnv) => {
       tsConfigPaths({ projects: ["./tsconfig.json"] }),
       tanstackStart(),
       viteReact(),
-      // Cloudflare adapter — build only, optional peer dep
-      ...(command === "build"
+      // Cloudflare adapter — build only, opt-in via BUILD_TARGET=cloudflare.
+      // Docker / Node SSR builds skip this so TanStack Start emits a Node server.
+      ...(command === "build" && process.env.BUILD_TARGET === "cloudflare"
         ? [
             (async () => {
               const { cloudflare } = await import("@cloudflare/vite-plugin");
