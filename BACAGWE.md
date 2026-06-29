@@ -5,7 +5,13 @@ Factory Inventory QR System - API Documentation (PROTOTYPE INFRASTUCTURES)
 HOW IT WORKS?
 there 2 main logic from this system, where just made it once (1 qr) and keep it forever, there's no need to update qr over and over again just make it one times and qr data will automaticly registered and connected with "in & out" system , sistem in&out adalah sistem logika sederhana dimana pengguna akan scan qr nya dan buat status nya: dengan system fleksible (baru) agar users bisa melakukan in in in atau out out out di bantu dengan bantuan iot untuk kepatuhan operator (gate) juga di bantu dengan sop, jadi qr nya static namun isi dari qr nya dinamis jadi cukup buat 1x sudah terinclude di @SCANLOGIC,
 
+(NEW, READ THIS) :
+Tecnhical FLOW:
+[1] Users could make a "Master Parts" (input name, value, factory origin, machine origin) and click create (automaticly triggered QR Handler to make the qr the time the parts saved).
+[2] users could use /scan or /stasion to scan the qr code, and 
 
+
+(OLD)
 Technical FLOW :
 [1] Generate QR (with data inputed from "/" and click Create QR Code)  →  [2] Tampilkan Info QR (when it succes, show on "QR Code Created" section on "/")  →  [3] Buka Scanner (on /scan)   →  [4] Proses Scan (@SCANLOGIC)  →  [5] Monitor History (Will be dosplayed at /task-history)
 
@@ -15,6 +21,9 @@ Daftar Route :
 [2] Route: /api/qr/info?token=..., Method: GET,  Fungsi: Tampilkan info & status QR (akses via browser/HP)
 [3] Route: /api/qr/process, Method: POST,  Fungsi: processProses toggle SCAN IN / SCAN OUT
 [4] Route: /api/qr/history, Method: GET/JSON,  Fungsi: monitoring semua batch & status real-time
+
+
+
 
 
 for refences:

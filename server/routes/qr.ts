@@ -5,6 +5,8 @@ import crypto from "crypto";
 import pool from "../db.js";
 import type { RowDataPacket, ResultSetHeader } from "mysql2";
 import { syncStockAnalyticsOnScan } from "../lib/stockAnalyticsService.js";
+// ── @betogate hook (additive — fire-and-forget gate open after scan success) ──
+import { dispatchToGateService } from "../../services/gate/gateHook.js";
 
 const router = Router();
 
@@ -659,6 +661,17 @@ router.post("/process", async (req, res) => {
         value,
       },
     });
+
+    // ── @betogate post-success gate hook (additive, non-blocking) ─────────────
+    // The response above is ALREADY sent to the client before this runs.
+    // We fire the gate service hook purely based on the qr_code_id.
+    // Regular user scans (admin dashboard) do NOT trigger gate open.
+    if (requestUser?.type === "station" && requestUser?.device_id) {
+      dispatchToGateService({ qr_code_id: qrId });
+    }
+
+    // ── End @betogate hook ────────────────────────────────────────────────────
+
   } catch (err: unknown) {
     if ((err as Error).name === "JsonWebTokenError") {
       return res.status(401).json({ success: false, error: "Token QR Manipulasi / Invalid" });
