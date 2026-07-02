@@ -28,7 +28,8 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
     "/api/auth/login",
     "/api/devices/station-login",
     "/api/health",
-    "/api/qr/info" // Need this for public hardware scanning
+    "/api/qr/info", // Need this for public hardware scanning
+    "/iot",         // ESP32 HTTP polling — no auth token available on hardware
   ];
 
   if (publicPaths.some(path => req.path.startsWith(path))) {

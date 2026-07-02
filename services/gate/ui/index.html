@@ -709,6 +709,134 @@ async function pushSerialConfig() {
   }
 }
 
+// ─── USB WEBSERIAL PROVISIONING ──────────────────────────────────────────────
+let serialPort = null;
+
+async function loadQrsForProvisioning() {
+  const sel = document.getElementById('prov_listen_qrs');
+  sel.innerHTML = '<option disabled>⏳ Memuat QR Codes...</option>';
+  try {
+    const json = await apiFetch('/api/qr');
+    const qrs = json.data || [];
+    if (!qrs.length) {
+      sel.innerHTML = '<option disabled>❌ Belum ada QR Code terdaftar</option>';
+      return;
+    }
+    sel.innerHTML = qrs.map(q => 
+      `<option value="${esc(q.qr_id)}">${esc(q.qr_id)} — ${esc(q.part_name || q.batch_id)}</option>`
+    ).join('');
+  } catch(err) {
+    sel.innerHTML = `<option disabled>❌ Error memuat QR: ${esc(err.message)}</option>`;
+  }
+}
+
+async function connectSerial() {
+  if (!('serial' in navigator)) {
+    alert('WebSerial tidak didukung di browser ini. Gunakan Chrome atau Edge.');
+    return;
+  }
+  
+  try {
+    serialPort = await navigator.serial.requestPort();
+    await serialPort.open({ baudRate: 115200 });
+    
+    document.getElementById('serialStatus').innerHTML = '✅ Terhubung ke ESP32';
+    document.getElementById('serialStatus').style.color = '#68d391';
+    
+    document.getElementById('serialConfigForm').style.display = 'block';
+    // Gunakan timeout agar transisi opacity bekerja
+    setTimeout(() => { document.getElementById('serialConfigForm').style.opacity = '1'; }, 50);
+    
+    document.getElementById('btnConnectSerial').textContent = '✅ Connected';
+    document.getElementById('btnConnectSerial').disabled = true;
+    
+    document.getElementById('serialLog').style.display = 'block';
+    
+    loadQrsForProvisioning();
+    startSerialReadLoop();
+  } catch (err) {
+    console.error('Serial connect error:', err);
+    alert('Gagal menghubungkan ke Serial Port: ' + err.message);
+  }
+}
+
+async function startSerialReadLoop() {
+  const textDecoder = new TextDecoderStream();
+  const readableStreamClosed = serialPort.readable.pipeTo(textDecoder.writable);
+  const reader = textDecoder.readable.getReader();
+  const logContent = document.getElementById('serialLogContent');
+  
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      if (value) {
+        // Appending text
+        const span = document.createElement('span');
+        span.textContent = value;
+        logContent.appendChild(span);
+        
+        // Auto scroll to bottom
+        const logBox = document.getElementById('serialLog');
+        logBox.scrollTop = logBox.scrollHeight;
+      }
+    }
+  } catch (err) {
+    console.error('Serial read loop error:', err);
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+async function pushSerialConfig() {
+  if (!serialPort) {
+    alert('Silakan hubungkan ESP32 via Serial terlebih dahulu.');
+    return;
+  }
+
+  const selectQrs = document.getElementById('prov_listen_qrs');
+  const listenQrs = Array.from(selectQrs.selectedOptions).map(opt => opt.value);
+  const wifi_ssid = document.getElementById('prov_wifi_ssid').value.trim();
+  const wifi_pass = document.getElementById('prov_wifi_pass').value.trim();
+  const server_ip = document.getElementById('prov_server_ip').value.trim();
+
+  if (listenQrs.length === 0 || !wifi_ssid || !server_ip) {
+    showMsg('provMsg', 'error', '❌ SSID, Server IP, dan setidaknya satu QR Code harus dipilih.');
+    return;
+  }
+
+  const btn = document.getElementById('btnPushConfig');
+  btn.disabled = true; btn.textContent = '⏳ Mengirim...';
+
+  const payload = {
+    cmd: "config",
+    wifi_ssid,
+    wifi_pass,
+    server_ip,
+    port: 4000,
+    listen_qrs: listenQrs
+  };
+
+  try {
+    const textEncoder = new TextEncoderStream();
+    const writableStreamClosed = textEncoder.readable.pipeTo(serialPort.writable);
+    const writer = textEncoder.writable.getWriter();
+    
+    // Add newline character to trigger reading on the ESP32 Serial.readStringUntil('\n')
+    const jsonStr = JSON.stringify(payload) + "\n";
+    await writer.write(jsonStr);
+    writer.releaseLock();
+    
+    toast('Konfigurasi dikirim!', 'ok');
+    showMsg('provMsg', 'success', '✅ Konfigurasi JSON berhasil dikirim ke ESP32. Perhatikan log serial di bawah untuk memastikan ESP32 restart dengan konfigurasi baru.');
+  } catch (err) {
+    console.error('Serial write error:', err);
+    toast('Gagal mengirim konfigurasi', 'err');
+    showMsg('provMsg', 'error', '❌ Gagal mengirim: ' + err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = '🚀 Kirim Konfigurasi ke ESP32';
+  }
+}
 
 // ─── PRIVILEGES TAB ──────────────────────────────────────────────────────────
 function populateDeviceSelect() {

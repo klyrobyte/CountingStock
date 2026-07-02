@@ -50,15 +50,55 @@ const pool = mysql.createPool({
 });
 
 // ─── In-memory connection registry ───────────────────────────────────────────
-// device_id → { socket, lastSeen, registeredAt }
 interface DeviceConnection {
   socket: net.Socket;
   lastSeen: Date;
   registeredAt: Date;
   listenQrs: string[];
+  machineCode?: string;
+  webhookPath?: string;
 }
 
 const connections = new Map<string, DeviceConnection>();
+const webhookConnections = new Map<string, DeviceConnection>();
+
+// ─── Retrospective-scan state store ──────────────────────────────────────────
+// Tracks whether a webhook path has an in-flight OPEN_GATE that hasn't been
+// consumed (ack'd) by the ESP32 yet.  Resets to false on ack OR after TTL.
+// Shape: webhookPath → { scanned: boolean; ts: number; resetTimer?: NodeJS.Timeout }
+interface WebhookScanState {
+  scanned: boolean;
+  ts: number;          // epoch ms of last OPEN_GATE dispatch
+  resetTimer?: ReturnType<typeof setTimeout>;
+}
+const webhookState = new Map<string, WebhookScanState>();
+const WEBHOOK_STATE_TTL_MS = 30_000;  // safety-net auto-reset if ESP32 never acks
+
+/** Mark a webhook path as scanned=true and schedule the TTL safety-net reset. */
+function setWebhookScanned(webhookPath: string): void {
+  // Cancel any existing TTL timer for this path before starting a new one
+  const prev = webhookState.get(webhookPath);
+  if (prev?.resetTimer) clearTimeout(prev.resetTimer);
+
+  const resetTimer = setTimeout(() => {
+    const entry = webhookState.get(webhookPath);
+    if (entry?.scanned) {
+      webhookState.set(webhookPath, { scanned: false, ts: Date.now() });
+      log("webhook_state_ttl_reset", { webhookPath, note: "No ack received within TTL; state reset to false" });
+    }
+  }, WEBHOOK_STATE_TTL_MS);
+
+  webhookState.set(webhookPath, { scanned: true, ts: Date.now(), resetTimer });
+  log("webhook_state_set_scanned", { webhookPath });
+}
+
+/** Reset scanned=false for a webhook path (called on ESP32 ack receipt). */
+function resetWebhookScanned(webhookPath: string): void {
+  const prev = webhookState.get(webhookPath);
+  if (prev?.resetTimer) clearTimeout(prev.resetTimer);
+  webhookState.set(webhookPath, { scanned: false, ts: Date.now() });
+  log("webhook_state_reset_on_ack", { webhookPath });
+}
 
 // ─── Logging helper ───────────────────────────────────────────────────────────
 function log(event: string, data?: Record<string, unknown>) {
@@ -96,24 +136,6 @@ async function setDeviceStatus(
   }
 }
 
-// ─── Validate handshake against DB ───────────────────────────────────────────
-async function validateHandshake(
-  deviceId: string,
-  authToken: string
-): Promise<boolean> {
-  const [rows] = await pool.query<mysql.RowDataPacket[]>(
-    "SELECT auth_token, is_active FROM esp32_devices WHERE id = ? LIMIT 1",
-    [deviceId]
-  );
-  if (rows.length === 0) return false;
-  if (!rows[0].is_active) return false;
-  // Constant-time comparison to prevent timing attacks
-  const expected = Buffer.from(rows[0].auth_token as string);
-  const provided = Buffer.from(authToken);
-  if (expected.length !== provided.length) return false;
-  return crypto.timingSafeEqual(expected, provided);
-}
-
 // ─── Handle a single ESP32 TCP connection ────────────────────────────────────
 function handleDeviceConnection(socket: net.Socket) {
   if (connections.size >= MAX_CONNECTIONS) {
@@ -127,7 +149,6 @@ function handleDeviceConnection(socket: net.Socket) {
   let handshakeCompleted = false;
   let buffer = "";
 
-  // Handshake timeout: device must authenticate within 10s or be disconnected
   const handshakeTimer = setTimeout(() => {
     if (!handshakeCompleted) {
       log("handshake_timeout", { remoteAddr });
@@ -141,7 +162,7 @@ function handleDeviceConnection(socket: net.Socket) {
   socket.on("data", async (chunk) => {
     buffer += chunk;
     const lines = buffer.split("\n");
-    buffer = lines.pop() ?? "";  // keep incomplete last line
+    buffer = lines.pop() ?? "";
 
     for (const line of lines) {
       const trimmed = line.trim();
@@ -155,44 +176,61 @@ function handleDeviceConnection(socket: net.Socket) {
         continue;
       }
 
-      // ── HANDSHAKE ──────────────────────────────────────────────────────────
       if (!handshakeCompleted) {
-        // For the new Zero-Touch Serial architecture, ESP32 sends {"type":"register", "mac":"...", "qrs":["QR-1", "QR-2"]}
-        // However, we maintain backward compatibility with the database authToken logic for now.
-        // We assume `msg.device_id` is passed as `msg.mac` or similar from the new firmware.
-        // The firmware will send: {"type":"register", "mac":"<mac>", "qrs":["QR-1"]}
         const did = (msg.mac as string) || (msg.device_id as string);
         const qrs = Array.isArray(msg.qrs) ? (msg.qrs as string[]) : [];
+        const machineCode = (msg.machine_code as string) || "";
+        const webhookPath = (msg.webhook_path as string) || "";
         
-        // Temporarily bypass token DB validation since the new architecture does not provision tokens via webserial
-        // (Alternatively, we just let it connect without auth for now since it's an internal TCP socket)
         if (!did) {
           socketWrite(socket, { type: "error", message: "Missing mac or device_id" });
           socket.destroy();
           return;
         }
 
-        // Evict any stale connection for the same device
         const existing = connections.get(did);
         if (existing) {
           log("evict_stale_connection", { deviceId: did });
           existing.socket.destroy();
           connections.delete(did);
+          if (existing.webhookPath) {
+            webhookConnections.delete(existing.webhookPath);
+            log("evict_webhook_registration", { webhookPath: existing.webhookPath });
+          }
         }
 
         deviceId = did;
         handshakeCompleted = true;
         clearTimeout(handshakeTimer);
 
-        connections.set(deviceId, { socket, lastSeen: new Date(), registeredAt: new Date(), listenQrs: qrs });
+        const connRecord: DeviceConnection = {
+          socket,
+          lastSeen: new Date(),
+          registeredAt: new Date(),
+          listenQrs: qrs,
+          machineCode: machineCode || undefined,
+          webhookPath: webhookPath || undefined,
+        };
+        connections.set(deviceId, connRecord);
         await setDeviceStatus(deviceId, "online", true);
 
+        if (webhookPath) {
+          webhookConnections.set(webhookPath, connRecord);
+          const parts = webhookPath.split("/").filter(Boolean);
+          if (parts.length >= 3) {
+            const machineLevelPath = `/${parts[0]}/${parts[1]}`;
+            if (!webhookConnections.has(machineLevelPath)) {
+              webhookConnections.set(machineLevelPath, connRecord);
+            }
+          }
+          log("webhook_registered", { deviceId, webhookPath, machineCode });
+        }
+
         socketWrite(socket, { type: "handshake_ok", device_id: deviceId });
-        log("device_connected", { deviceId, remoteAddr, listenQrs: qrs, total: connections.size });
+        log("device_connected", { deviceId, remoteAddr, listenQrs: qrs, machineCode, webhookPath, total: connections.size });
         continue;
       }
 
-      // ── HEARTBEAT (PING) ──────────────────────────────────────────────────
       if (msg.type === "ping" && deviceId) {
         const conn = connections.get(deviceId);
         if (conn) conn.lastSeen = new Date();
@@ -201,7 +239,6 @@ function handleDeviceConnection(socket: net.Socket) {
         continue;
       }
 
-      // ── ACK FROM ESP32 ────────────────────────────────────────────────────
       if (msg.type === "ack" && deviceId) {
         log("gate_ack_received", {
           deviceId,
@@ -210,7 +247,19 @@ function handleDeviceConnection(socket: net.Socket) {
           timestamp: msg.timestamp,
         });
 
-        // Update log in DB
+        // v6.2-retro ADD: ESP32 has consumed the OPEN_GATE command — reset
+        // scanned state immediately so the next cycle starts fresh.
+        const ackConn = connections.get(deviceId);
+        if (ackConn?.webhookPath) {
+          resetWebhookScanned(ackConn.webhookPath);
+          // Also reset the machine-level path if it mirrors this connection
+          const parts = ackConn.webhookPath.split("/").filter(Boolean);
+          if (parts.length >= 3) {
+            const machineLevelPath = `/${parts[0]}/${parts[1]}`;
+            resetWebhookScanned(machineLevelPath);
+          }
+        }
+
         try {
           await pool.query(
             `UPDATE gate_command_log
@@ -218,7 +267,7 @@ function handleDeviceConnection(socket: net.Socket) {
              WHERE request_id = ?`,
             [msg.request_id]
           );
-        } catch { /* non-critical */ }
+        } catch { }
         continue;
       }
 
@@ -233,6 +282,17 @@ function handleDeviceConnection(socket: net.Socket) {
   socket.on("close", async () => {
     clearTimeout(handshakeTimer);
     if (deviceId) {
+      const conn = connections.get(deviceId);
+      if (conn?.webhookPath) {
+        webhookConnections.delete(conn.webhookPath);
+        const parts = conn.webhookPath.split("/").filter(Boolean);
+        if (parts.length >= 3) {
+          const machineLevelPath = `/${parts[0]}/${parts[1]}`;
+          if (webhookConnections.get(machineLevelPath) === conn) {
+            webhookConnections.delete(machineLevelPath);
+          }
+        }
+      }
       connections.delete(deviceId);
       await setDeviceStatus(deviceId, "offline");
       log("device_disconnected", { deviceId, remoteAddr, remaining: connections.size });
@@ -240,21 +300,52 @@ function handleDeviceConnection(socket: net.Socket) {
   });
 }
 
-// ─── Server-side heartbeat scanner ───────────────────────────────────────────
-// Proactively destroys connections that haven't sent a ping in HEARTBEAT_TIMEOUT_MS.
 setInterval(() => {
   const cutoff = new Date(Date.now() - HEARTBEAT_TIMEOUT_MS);
   for (const [id, conn] of connections) {
     if (conn.lastSeen < cutoff) {
       log("heartbeat_timeout_evict", { deviceId: id, lastSeen: conn.lastSeen.toISOString() });
       conn.socket.destroy();
+      if (conn.webhookPath) {
+        webhookConnections.delete(conn.webhookPath);
+        const parts = conn.webhookPath.split("/").filter(Boolean);
+        if (parts.length >= 3) {
+          const machineLevelPath = `/${parts[0]}/${parts[1]}`;
+          if (webhookConnections.get(machineLevelPath) === conn) {
+            webhookConnections.delete(machineLevelPath);
+          }
+        }
+      }
       connections.delete(id);
       setDeviceStatus(id, "offline").catch(() => {});
     }
   }
 }, HEARTBEAT_INTERVAL_MS);
 
-// ─── TCP Server ───────────────────────────────────────────────────────────────
+function sendToWebhookPath(
+  webhookPath: string,
+  qr_code_id: string,
+  requestId: string
+): boolean {
+  const conn = webhookConnections.get(webhookPath);
+  if (!conn) return false;
+  const success = socketWrite(conn.socket, {
+    cmd: "OPEN_GATE",
+    request_id: requestId,
+    qr_code_id,
+  });
+  if (success) {
+    log("gate_open_dispatched_via_webhook", {
+      webhookPath,
+      qr_code_id,
+      requestId,
+    });
+    // v6.2-retro ADD: mark this path as scanned=true; TTL auto-resets if no ack
+    setWebhookScanned(webhookPath);
+  }
+  return success;
+}
+
 const tcpServer = net.createServer(handleDeviceConnection);
 
 tcpServer.on("error", (err) => {
@@ -265,14 +356,9 @@ tcpServer.listen(TCP_PORT, () => {
   log("tcp_server_started", { port: TCP_PORT, maxConnections: MAX_CONNECTIONS });
 });
 
-// ─── Internal HTTP API ────────────────────────────────────────────────────────
-// Called by the main backend after a successful QR scan.
-// This is NOT exposed to the internet — bind to localhost only in production.
-
 const httpServer = http.createServer(async (req, res) => {
   const url = new URL(req.url ?? "/", `http://localhost:${HTTP_PORT}`);
 
-  // ── GET / or /admin — serve admin UI ──────────────────────────────────────
   if (req.method === "GET" && (url.pathname === "/" || url.pathname === "/admin")) {
     try {
       const html = fs.readFileSync(UI_PATH, "utf8");
@@ -287,8 +373,86 @@ const httpServer = http.createServer(async (req, res) => {
 
   res.setHeader("Content-Type", "application/json");
 
+  // ── v6.2-retro ADD: GET /webhook/{mc}/{qr}/state ─────────────────────────
+  // Returns the current scanned-state for a webhook path.
+  // scanned=true  → OPEN_GATE has been dispatched but not yet consumed by ESP32.
+  // scanned=false → idle / already consumed.
+  // v6.3 HTTP: ESP32 polls this endpoint instead of listening on TCP.
+  if (req.method === "GET" && url.pathname.startsWith("/webhook/") && url.pathname.endsWith("/state")) {
+    const webhookPath = url.pathname.slice(0, -"/state".length);
+    const entry = webhookState.get(webhookPath);
+    res.writeHead(200, { "Access-Control-Allow-Origin": "*" });
+    res.end(JSON.stringify({
+      webhookPath,
+      scanned: entry?.scanned ?? false,
+      ts: entry?.ts ? new Date(entry.ts).toISOString() : null,
+      deviceOnline: webhookConnections.has(webhookPath),
+    }));
+    return;
+  }
 
-  // ── POST /internal/gate/open ──────────────────────────────────────────────
+  // ── v6.3 HTTP ADD: POST /webhook/{mc}/{qr}/reset ───────────────────────
+  // Called by the ESP32 after it successfully processes the scan signal.
+  // Resets scanned=false so the next cycle starts fresh.
+  if (req.method === "POST" && url.pathname.startsWith("/webhook/") && url.pathname.endsWith("/reset")) {
+    const webhookPath = url.pathname.slice(0, -"/reset".length);
+    resetWebhookScanned(webhookPath);
+    // Also reset the machine-level alias if it exists
+    const parts = webhookPath.split("/").filter(Boolean);
+    if (parts.length >= 3) {
+      resetWebhookScanned(`/${parts[0]}/${parts[1]}`);
+    }
+    res.writeHead(200, { "Access-Control-Allow-Origin": "*" });
+    res.end(JSON.stringify({ success: true, webhookPath, scanned: false }));
+    log("webhook_state_reset_by_esp32", { webhookPath });
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname.startsWith("/webhook/")
+      && !url.pathname.endsWith("/reset")) {
+    let body = "";
+    req.on("data", (c) => { body += c; });
+    req.on("end", async () => {
+      let payload: Record<string, string> = {};
+      try { payload = body ? JSON.parse(body) : {}; } catch { }
+
+      const qrCodeId = payload.qr_code_id || "";
+      const requestId = crypto.randomUUID();
+      const webhookPath = url.pathname;
+
+      // v6.3 HTTP ADD: ALWAYS mark scanned=true so the HTTP-polling ESP32
+      // can detect the signal even when no TCP device is registered.
+      setWebhookScanned(webhookPath);
+      // Also set the machine-level alias
+      const aliasParts = webhookPath.split("/").filter(Boolean);
+      if (aliasParts.length >= 3) {
+        setWebhookScanned(`/${aliasParts[0]}/${aliasParts[1]}`);
+      }
+      log("webhook_scan_signal_set", { webhookPath, qrCodeId, requestId });
+
+      // Opportunistically try TCP dispatch too (for mixed TCP+HTTP fleets)
+      let dispatched = sendToWebhookPath(webhookPath, qrCodeId, requestId);
+      if (!dispatched && aliasParts.length >= 3) {
+        const machineLevelPath = `/${aliasParts[0]}/${aliasParts[1]}`;
+        dispatched = sendToWebhookPath(machineLevelPath, qrCodeId, requestId);
+        if (dispatched) {
+          log("webhook_machine_level_fallback", { original: webhookPath, fallback: machineLevelPath, qrCodeId });
+        }
+      }
+
+      // Always 200 — state is set for HTTP-polling ESP32 regardless of TCP
+      res.writeHead(200, { "Access-Control-Allow-Origin": "*" });
+      res.end(JSON.stringify({
+        success: true,
+        message: dispatched ? "Gate open dispatched (TCP + state set)" : "Scan state set (HTTP polling mode)",
+        requestId,
+        webhookPath,
+        tcpDispatched: dispatched,
+      }));
+    });
+    return;
+  }
+
   if (req.method === "POST" && url.pathname === "/internal/gate/open") {
     let body = "";
     req.on("data", (c) => { body += c; });
@@ -326,8 +490,28 @@ const httpServer = http.createServer(async (req, res) => {
         res.writeHead(200);
         res.end(JSON.stringify({ success: true, message: `Gate open dispatched to ${dispatchedCount} devices`, requestId }));
       } else {
-        res.writeHead(404);
-        res.end(JSON.stringify({ success: false, error: "No online devices listening for this qr_code_id" }));
+        // v4 ADD: also check webhookConnections as fallback for the legacy /internal/gate/open path
+        // when called by v3 dispatchToGateService with only qr_code_id
+        let webhookDispatched = false;
+        for (const [wPath, conn] of webhookConnections) {
+          const isMatch = conn.listenQrs && conn.listenQrs.some(
+            (q) => q.toLowerCase() === qr_code_id.toLowerCase()
+          );
+          if (isMatch) {
+            const ok = socketWrite(conn.socket, { cmd: "OPEN_GATE", request_id: requestId, qr_code_id });
+            if (ok) {
+              webhookDispatched = true;
+              log("gate_open_via_webhook_fallback", { webhookPath: wPath, qr_code_id, requestId });
+            }
+          }
+        }
+        if (webhookDispatched) {
+          res.writeHead(200);
+          res.end(JSON.stringify({ success: true, message: "Gate open dispatched via webhook connection", requestId }));
+        } else {
+          res.writeHead(404);
+          res.end(JSON.stringify({ success: false, error: "No online devices listening for this qr_code_id" }));
+        }
       }
     });
     return;

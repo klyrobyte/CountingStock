@@ -1,13 +1,15 @@
 import type { TvMachine } from "@/hooks/use-tv-dashboard";
+import { Check, X } from "lucide-react";
+import type { ReactNode } from "react";
 
-function statusIcon(status: TvMachine["cardStatus"]): string {
+function statusIcon(status: TvMachine["cardStatus"]): ReactNode {
   switch (status) {
     case "critical":
-      return "💔";
+      return <X className="w-7 h-7 text-[#e84545]" style={{ color: "var(--color-critical)" }} />;
     case "warning":
       return "⚠️";
     case "safe":
-      return "💚";
+      return <Check className="w-7 h-7 text-[#22c55e]" style={{ color: "var(--color-safe)" }} />;
     default:
       return "-";
   }

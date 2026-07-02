@@ -1,11 +1,11 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   TV dashboard - 1:1 layout/CSS from stock_tv.html (scoped under .tv-page)
-   Logic in tv.tsx / components is unchanged; only presentation rules here.
+   TV dashboard — Tier-1 Enterprise Edition
+   Scoped under .tv-page. No business logic changed.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap");
 
-/* --- Isolate route from app shell (Tailwind base / body tokens) --- */
+/* --- Isolate route from app shell --- */
 html:has(.tv-page) {
   height: 100%;
   overflow: hidden;
@@ -16,36 +16,79 @@ html:has(.tv-page) body {
   margin: 0;
   padding: 0;
   overflow: hidden;
-  background-color: #0a0b0d;
-  color: #f0f2f5;
+  background-color: #060709;
+  color: #e8eaf0;
   font-family: "Inter", sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
-/* --- 1. Dynamic Color System (:root from stock_tv.html) --- */
+/* ─── 1. Design Token System ──────────────────────────────────────────────── */
 .tv-page {
-  --color-bg-base: #0a0b0d;
-  --color-bg-surface: #111318;
-  --color-bg-border: #2a2d35;
-  --color-text-primary: #f0f2f5;
-  --color-text-secondary: #8b90a0;
-  --color-text-muted: #555a68;
-  --color-critical: #e84545;
-  --color-critical-bg: #2a1515;
-  --color-critical-dim: #5c1f1f;
-  --color-critical-text: #993333;
-  --color-warning: #f5a623;
-  --color-warning-bg: #2a1e0a;
-  --color-warning-dim: #5c3d10;
-  --color-warning-text: #9a6010;
-  --color-safe: #22c55e;
-  --color-safe-bg: #0f2a1a;
-  --color-safe-dim: #1a5c35;
-  --color-safe-text: #1a7a40;
-  --color-accent: #3b82f6;
-  --chart-grid: rgba(255, 255, 255, 0.04);
+  /* Base palette */
+  --color-bg-base:      #060709;
+  --color-bg-surface:   #0d0f14;
+  --color-bg-surface-2: #111520;
+  --color-bg-border:    #1e2230;
+  --color-bg-border-2:  #2a2f40;
 
+  /* Text */
+  --color-text-primary:   #e8eaf0;
+  --color-text-secondary: #7b82a0;
+  --color-text-muted:     #3e4560;
+
+  /* Status — Critical */
+  --color-critical:         #ff3c3c;
+  --color-critical-bg:      #1a0808;
+  --color-critical-dim:     #3d1010;
+  --color-critical-text:    #cc2222;
+  --color-critical-glow:    rgba(255, 60, 60, 0.18);
+  --color-critical-glow-sm: rgba(255, 60, 60, 0.08);
+
+  /* Status — Warning */
+  --color-warning:         #f5a623;
+  --color-warning-bg:      #1a1005;
+  --color-warning-dim:     #3d2808;
+  --color-warning-text:    #9a6010;
+  --color-warning-glow:    rgba(245, 166, 35, 0.18);
+  --color-warning-glow-sm: rgba(245, 166, 35, 0.08);
+
+  /* Status — Safe */
+  --color-safe:         #16db65;
+  --color-safe-bg:      #061410;
+  --color-safe-dim:     #0d3320;
+  --color-safe-text:    #0d9940;
+  --color-safe-glow:    rgba(22, 219, 101, 0.18);
+  --color-safe-glow-sm: rgba(22, 219, 101, 0.08);
+
+  /* Accent */
+  --color-accent:        #3b6bff;
+  --color-accent-glow:   rgba(59, 107, 255, 0.25);
+
+  /* Gradients */
+  --grad-critical-end:      #120404;
+  --grad-warning-end:       #110a02;
+  --grad-safe-end:          #030d07;
+  --grad-mc-critical-end:   #0d0505;
+  --grad-mc-warning-end:    #0d0802;
+  --grad-mc-safe-end:       #020d05;
+  --grad-right-panel-end:   rgba(13, 15, 20, 0.95);
+  --bg-header:              rgba(6, 7, 9, 0.92);
+
+  /* Textures & Shadows */
+  --scanline-color: rgba(0, 0, 0, 0.08);
+  --dot-color: rgba(255, 255, 255, 0.015);
+  --panel-shadow: rgba(0, 0, 0, 0.15);
+
+  /* Glass */
+  --glass-bg:      rgba(255, 255, 255, 0.028);
+  --glass-border:  rgba(255, 255, 255, 0.06);
+  --glass-blur:    12px;
+
+  /* Chart */
+  --chart-grid:    rgba(255, 255, 255, 0.035);
+
+  /* Positioning */
   position: fixed;
   inset: 0;
   z-index: 9999;
@@ -62,23 +105,83 @@ html:has(.tv-page) body {
   font-family: "Inter", sans-serif;
   font-size: 16px;
   line-height: 1.2;
-  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+/* Scanline + dot-grid texture overlay */
+.tv-page::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      var(--scanline-color) 2px,
+      var(--scanline-color) 4px
+    ),
+    radial-gradient(
+      circle,
+      var(--dot-color) 1px,
+      transparent 1px
+    );
+  background-size: 100% 4px, 28px 28px;
+}
+
+/* Subtle ambient glow from bottom center */
+.tv-page::after {
+  content: "";
+  position: fixed;
+  bottom: -200px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 800px;
+  height: 400px;
+  background: radial-gradient(ellipse at center, rgba(59, 107, 255, 0.06) 0%, transparent 70%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Ensure content sits above texture */
+.tv-page .tv-shell { position: relative; z-index: 1; }
+
+/* Light theme */
 .tv-page[data-theme="light"] {
-  --color-bg-base: #f8f9fa;
-  --color-bg-surface: #ffffff;
-  --color-bg-border: #dde2e5;
-  --color-text-primary: #111318;
-  --color-text-secondary: #495057;
-  --color-text-muted: #adb5bd;
-  --color-critical-bg: #fff5f5;
-  --color-critical-dim: #ffe3e3;
-  --color-warning-bg: #fff9db;
-  --color-warning-dim: #fff3bf;
-  --color-safe-bg: #ebfbee;
-  --color-safe-dim: #d3f9d8;
-  --chart-grid: rgba(0, 0, 0, 0.06);
+  /* Light theme overrides */
+  --color-bg-base:      #f4f5f8;
+  --color-bg-surface:   #fcfdfe;
+  --color-bg-surface-2: #f2f4f8;
+  --color-bg-border:    #d0d5e0;
+  --color-bg-border-2:  #c0c6d4;
+  --color-text-primary:   #111420;
+  --color-text-secondary: #495570;
+  --color-text-muted:     #8f9bb3;
+  --color-critical-bg:  #fff0f0;
+  --color-critical-dim: #ffd1d1;
+  --color-warning-bg:   #fff8e6;
+  --color-warning-dim:  #ffe099;
+  --color-safe-bg:      #e6fcf0;
+  --color-safe-dim:     #a0f0c7;
+  
+  --grad-critical-end:      #ffeded;
+  --grad-warning-end:       #fff5e0;
+  --grad-safe-end:          #e0fbe6;
+  --grad-mc-critical-end:   #ffeded;
+  --grad-mc-warning-end:    #fff5e0;
+  --grad-mc-safe-end:       #e0fbe6;
+  --grad-right-panel-end:   var(--color-bg-surface);
+  --bg-header:              rgba(252, 253, 254, 0.92);
+
+  /* Texture & Shadows */
+  --scanline-color: transparent;
+  --dot-color: rgba(0, 0, 0, 0.02);
+  --panel-shadow: rgba(0, 0, 0, 0.03);
+
+  --glass-bg:     rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(0, 0, 0, 0.06);
+  --chart-grid:   rgba(0, 0, 0, 0.05);
 }
 
 .tv-page *,
@@ -87,24 +190,11 @@ html:has(.tv-page) body {
   box-sizing: border-box;
 }
 
-/* Neutralize Tailwind utility leakage inside TV (class names only, no logic) */
-.tv-page [class*="text-"] {
-  letter-spacing: inherit;
-}
+.tv-page [class*="text-"] { letter-spacing: inherit; }
+.tv-page .text-xs { font-size: 12px !important; line-height: 1.2 !important; }
+.tv-page .text-sm { font-size: 13px !important; line-height: 1.2 !important; }
 
-.tv-page .text-xs {
-  font-size: 12px !important;
-  line-height: 1.2 !important;
-}
-
-.tv-page .text-sm {
-  font-size: 13px !important;
-  line-height: 1.2 !important;
-}
-
-/* --- 2. Structural CSS (stock_tv.html) --- */
-
-/* #app-shell */
+/* ─── 2. Shell ──────────────────────────────────────────────────────────────── */
 .tv-page .tv-shell {
   display: flex;
   flex-direction: column;
@@ -113,13 +203,15 @@ html:has(.tv-page) body {
   overflow: hidden;
 }
 
-/* header */
+/* ─── 3. Header ─────────────────────────────────────────────────────────────── */
 .tv-page .tv-header,
 .tv-page header.tv-header {
-  height: 44px;
-  min-height: 44px;
-  max-height: 44px;
-  background: var(--color-bg-base);
+  height: 52px;
+  min-height: 52px;
+  max-height: 52px;
+  background: var(--bg-header);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--color-bg-border);
   padding: 0 20px;
   display: flex;
@@ -127,24 +219,75 @@ html:has(.tv-page) body {
   justify-content: space-between;
   flex-shrink: 0;
   gap: 0;
+  position: relative;
+}
+
+/* Glowing accent line at header bottom */
+.tv-page .tv-header::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--color-accent) 20%,
+    rgba(59, 107, 255, 0.4) 50%,
+    var(--color-accent) 80%,
+    transparent 100%
+  );
+  opacity: 0.5;
 }
 
 .tv-page .tv-header-title,
 .tv-page .header-title {
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
   line-height: 1.2;
   flex: 0 0 auto;
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Animated accent diamond before title */
+.tv-page .tv-header-title::before {
+  content: "◆";
+  font-size: 8px;
+  color: var(--color-accent);
+  animation: tv-pulse-accent 2.5s ease-in-out infinite;
+}
+
+@keyframes tv-pulse-accent {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
+}
+
+.tv-page .tv-header-subtitle {
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.18em;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  margin-top: 1px;
 }
 
 .tv-page .tv-header-time,
 .tv-page .header-time {
-  font-size: 13px;
-  font-weight: 400;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: "JetBrains Mono", monospace;
+  font-variant-numeric: tabular-nums;
   color: var(--color-text-secondary);
   line-height: 1.2;
   flex: 0 0 auto;
   text-align: center;
+  letter-spacing: 0.04em;
 }
 
 .tv-page .tv-header-right,
@@ -155,11 +298,16 @@ html:has(.tv-page) body {
   flex: 0 0 auto;
 }
 
-.tv-page .tv-header-right>span {
-  font-size: 12px !important;
+.tv-page .tv-header-right > span {
+  font-size: 11px !important;
   font-weight: 600 !important;
   color: var(--color-text-secondary) !important;
+  letter-spacing: 0.08em !important;
   line-height: 1.2 !important;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 6px;
+  padding: 4px 10px;
 }
 
 .tv-page .tv-live-badge,
@@ -167,54 +315,60 @@ html:has(.tv-page) body {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
   color: var(--color-safe);
   line-height: 1.2;
+  background: var(--color-safe-bg);
+  border: 1px solid var(--color-safe-dim);
+  border-radius: 6px;
+  padding: 4px 10px;
 }
 
 .tv-page .tv-live-dot,
 .tv-page .live-dot {
-  width: 8px;
-  height: 8px;
-  min-width: 8px;
-  min-height: 8px;
+  width: 7px;
+  height: 7px;
+  min-width: 7px;
+  min-height: 7px;
   background: var(--color-safe);
   border-radius: 50%;
+  box-shadow: 0 0 6px var(--color-safe);
   animation: tv-pulse-green 1.5s ease-in-out infinite;
 }
 
 @keyframes tv-pulse-green {
-
-  0%,
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-
-  50% {
-    opacity: 0.5;
-    transform: scale(0.8);
-  }
+  0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 6px var(--color-safe); }
+  50%       { opacity: 0.6; transform: scale(0.85); box-shadow: 0 0 2px var(--color-safe); }
 }
 
 .tv-page .tv-btn,
 .tv-page .btn-tv {
   margin: 0;
-  border: 1px solid var(--color-bg-border);
+  border: 1px solid var(--color-bg-border-2);
   border-radius: 6px;
-  padding: 5px 12px;
-  font-size: 11px;
-  font-weight: 600;
+  padding: 5px 14px;
+  font-size: 10px;
+  font-weight: 700;
   font-family: inherit;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   line-height: 1.2;
   color: var(--color-text-secondary);
-  background: transparent;
+  background: var(--glass-bg);
   cursor: pointer;
   appearance: none;
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
 }
 
-/* .main-content */
+.tv-page .tv-btn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-text-primary);
+  background: rgba(59, 107, 255, 0.1);
+}
+
+/* ─── 4. Layout ─────────────────────────────────────────────────────────────── */
 .tv-page .tv-main,
 .tv-page .main-content {
   flex: 1 1 0;
@@ -224,63 +378,88 @@ html:has(.tv-page) body {
   min-height: 0;
 }
 
-/* .left-col */
 .tv-page .tv-left,
 .tv-page .left-col {
   flex: 1 1 0;
   min-width: 0;
-  padding: 16px;
+  padding: 14px 16px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   overflow: hidden;
 }
 
-/* .right-col */
 .tv-page .tv-right,
 .tv-page .right-col {
-  width: 280px;
-  min-width: 280px;
-  max-width: 280px;
-  flex: 0 0 280px;
-  background: var(--color-bg-surface);
+  width: 292px;
+  min-width: 292px;
+  max-width: 292px;
+  flex: 0 0 292px;
+  background: linear-gradient(180deg, var(--color-bg-surface) 0%, var(--grad-right-panel-end) 100%);
   border-left: 1px solid var(--color-bg-border);
-  padding: 16px;
+  padding: 14px 16px;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
   overflow-x: hidden;
+  position: relative;
 }
 
-/* .top-row */
+/* Subtle inner shadow on right panel */
+.tv-page .tv-right::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, var(--panel-shadow) 0%, transparent 30%);
+  pointer-events: none;
+}
+
+/* ─── 5. Top Row (Gauge + KPI) ───────────────────────────────────────────────── */
 .tv-page .tv-top-row,
 .tv-page .top-row {
   display: flex;
   flex-direction: row;
-  gap: 12px;
-  height: 140px;
-  min-height: 140px;
-  max-height: 140px;
+  gap: 10px;
+  height: 144px;
+  min-height: 144px;
+  max-height: 144px;
   flex-shrink: 0;
 }
 
-/* .gauge-container */
+/* ─── 6. Gauge ──────────────────────────────────────────────────────────────── */
 .tv-page .tv-gauge-wrap,
 .tv-page .gauge-container {
-  width: 140px;
-  min-width: 140px;
-  max-width: 140px;
-  height: 140px;
-  min-height: 140px;
-  max-height: 140px;
+  width: 144px;
+  min-width: 144px;
+  max-width: 144px;
+  height: 144px;
+  min-height: 144px;
+  max-height: 144px;
   position: relative;
   flex-shrink: 0;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-bg-border);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .tv-page .tv-gauge-wrap svg {
   display: block;
-  width: 140px;
-  height: 140px;
+  width: 120px;
+  height: 120px;
+}
+
+/* Outer glow ring behind gauge */
+.tv-page .tv-gauge-wrap::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: 12px;
+  background: transparent;
+  box-shadow: inset 0 0 20px rgba(22, 219, 101, 0.05);
+  pointer-events: none;
 }
 
 .tv-page .tv-gauge-text,
@@ -295,21 +474,24 @@ html:has(.tv-page) body {
 
 .tv-page .tv-gauge-val,
 .tv-page .gauge-val {
-  font-size: 28px;
-  font-weight: 700;
+  font-size: 26px;
+  font-weight: 800;
   line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }
 
 .tv-page .tv-gauge-label,
 .tv-page .gauge-label {
-  font-size: 9px;
+  font-size: 8px;
   color: var(--color-text-muted);
-  letter-spacing: 0.12em;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
   line-height: 1.2;
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
-/* .kpi-container */
+/* ─── 7. KPI Cards ───────────────────────────────────────────────────────────── */
 .tv-page .tv-kpi-row,
 .tv-page .kpi-container {
   flex: 1 1 0;
@@ -317,160 +499,217 @@ html:has(.tv-page) body {
   display: flex;
   flex-direction: row;
   gap: 8px;
-  height: 140px;
+  height: 144px;
 }
 
-/* .kpi-card */
 .tv-page .tv-kpi-card,
 .tv-page .kpi-card {
   flex: 1 1 0;
   min-width: 0;
-  border-radius: 0 8px 8px 0;
+  border-radius: 10px;
   padding: 12px 14px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  transition: background-color 0.2s ease;
+  transition: all 0.3s ease;
   height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Shine sweep on KPI cards */
+.tv-page .tv-kpi-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -60%;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.03) 50%,
+    transparent 100%
+  );
+  pointer-events: none;
 }
 
 .tv-page .tv-kpi-card.critical,
 .tv-page .kpi-card.critical {
-  background: var(--color-critical-bg);
+  background: linear-gradient(145deg, var(--color-critical-bg) 0%, var(--grad-critical-end) 100%);
   border: 1px solid var(--color-critical-dim);
   border-left: 3px solid var(--color-critical);
+  box-shadow:
+    inset 0 1px 0 rgba(255,60,60,0.08),
+    0 0 24px var(--color-critical-glow-sm);
 }
 
 .tv-page .tv-kpi-card.warning,
 .tv-page .kpi-card.warning {
-  background: var(--color-warning-bg);
+  background: linear-gradient(145deg, var(--color-warning-bg) 0%, var(--grad-warning-end) 100%);
   border: 1px solid var(--color-warning-dim);
   border-left: 3px solid var(--color-warning);
+  box-shadow:
+    inset 0 1px 0 rgba(245,166,35,0.08),
+    0 0 24px var(--color-warning-glow-sm);
 }
 
 .tv-page .tv-kpi-card.safe,
 .tv-page .kpi-card.safe {
-  background: var(--color-safe-bg);
+  background: linear-gradient(145deg, var(--color-safe-bg) 0%, var(--grad-safe-end) 100%);
   border: 1px solid var(--color-safe-dim);
   border-left: 3px solid var(--color-safe);
+  box-shadow:
+    inset 0 1px 0 rgba(22,219,101,0.08),
+    0 0 24px var(--color-safe-glow-sm);
 }
 
-/* KPI header + footer (override inline styles from tv.tsx) */
-.tv-page .tv-kpi-card>div:first-child {
+/* KPI header row */
+.tv-page .tv-kpi-card > div:first-child {
   display: flex !important;
   justify-content: space-between !important;
-  font-size: 11px !important;
-  font-weight: 600 !important;
+  align-items: center !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
   text-transform: uppercase !important;
+  letter-spacing: 0.12em !important;
   line-height: 1.2 !important;
   margin: 0 !important;
   padding: 0 !important;
 }
 
-.tv-page .tv-kpi-card.critical>div:first-child {
-  color: var(--color-critical) !important;
-}
+.tv-page .tv-kpi-card.critical > div:first-child { color: var(--color-critical) !important; }
+.tv-page .tv-kpi-card.critical > div:first-child span { color: var(--color-critical-text) !important; }
+.tv-page .tv-kpi-card.warning > div:first-child  { color: var(--color-warning) !important; }
+.tv-page .tv-kpi-card.warning > div:first-child span  { color: var(--color-warning-text) !important; }
+.tv-page .tv-kpi-card.safe > div:first-child    { color: var(--color-safe) !important; }
+.tv-page .tv-kpi-card.safe > div:first-child span    { color: var(--color-safe-text) !important; }
 
-.tv-page .tv-kpi-card.critical>div:first-child span {
-  color: var(--color-critical-text) !important;
-}
-
-.tv-page .tv-kpi-card.warning>div:first-child {
-  color: var(--color-warning) !important;
-}
-
-.tv-page .tv-kpi-card.warning>div:first-child span {
-  color: var(--color-warning-text) !important;
-}
-
-.tv-page .tv-kpi-card.safe>div:first-child {
-  color: var(--color-safe) !important;
-}
-
-.tv-page .tv-kpi-card.safe>div:first-child span {
-  color: var(--color-safe-text) !important;
+/* KPI threshold badge */
+.tv-page .tv-kpi-card > div:first-child span {
+  font-size: 9px !important;
+  letter-spacing: 0.06em !important;
+  font-weight: 600 !important;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid currentColor;
+  opacity: 0.7;
 }
 
 .tv-page .tv-kpi-number,
 .tv-page .kpi-number {
-  font-size: 56px;
-  font-weight: 700;
+  font-size: 58px;
+  font-weight: 800;
   line-height: 1;
   margin: auto 0;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
 }
 
-.tv-page .tv-kpi-card>div:last-child {
-  font-size: 11px !important;
-  font-weight: 400 !important;
+.tv-page .tv-kpi-card > div:last-child {
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.1em !important;
   color: var(--color-text-muted) !important;
   line-height: 1.2 !important;
   margin: 0 !important;
   padding: 0 !important;
+  text-transform: uppercase !important;
 }
 
-/* .section-label */
+/* ─── 8. Section Labels ──────────────────────────────────────────────────────── */
 .tv-page .tv-section-label,
 .tv-page .section-label {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 9px;
+  font-weight: 700;
   color: var(--color-text-muted);
-  letter-spacing: 0.1em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   flex-shrink: 0;
   line-height: 1.2;
   margin: 0;
   padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.tv-page .tv-left>.tv-section-label:last-of-type {
-  margin-top: 4px;
+.tv-page .tv-section-label::before {
+  content: "";
+  display: inline-block;
+  width: 16px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--color-accent);
+  opacity: 0.7;
+  flex-shrink: 0;
 }
 
-.tv-page .tv-left>p {
-  font-size: 13px;
+.tv-page .tv-section-label::after {
+  content: "";
+  display: block;
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--color-bg-border) 0%, transparent 100%);
+}
+
+.tv-page .tv-left > .tv-section-label:last-of-type { margin-top: 2px; }
+.tv-page .tv-left > p {
+  font-size: 12px;
   color: var(--color-text-muted);
   margin: 0;
   flex-shrink: 0;
 }
 
-/* .machine-grid */
+/* ─── 9. Machine Grid ────────────────────────────────────────────────────────── */
 .tv-page .tv-machine-grid,
 .tv-page .machine-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  grid-auto-rows: minmax(80px, 90px);
-  gap: 8px;
+  grid-auto-rows: minmax(78px, 86px);
+  gap: 7px;
   flex-shrink: 0;
   width: 100%;
 }
 
-.tv-page .tv-machine-grid>.tv-mc-wrap {
-  display: contents;
-}
+.tv-page .tv-machine-grid > .tv-mc-wrap { display: contents; }
+.tv-page .tv-mc-parts-table { display: none !important; }
 
-.tv-page .tv-mc-parts-table {
-  display: none !important;
-}
-
-/* .mc-card */
+/* Machine Card */
 .tv-page .tv-mc-card,
 .tv-page .mc-card {
   background: var(--color-bg-surface);
-  border-radius: 0 8px 8px 0;
-  padding: 10px 12px;
+  border-radius: 0 10px 10px 0;
+  padding: 9px 11px;
   display: grid;
   grid-template-areas: "id icon" "val icon";
   grid-template-columns: 1fr auto;
   grid-template-rows: auto 1fr;
   border: 1px solid var(--color-bg-border);
-  transition: background-color 0.2s ease;
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Top-right corner highlight */
+.tv-page .tv-mc-card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 32px;
+  height: 32px;
+  background: radial-gradient(circle at top right, rgba(255,255,255,0.03) 0%, transparent 70%);
+  pointer-events: none;
 }
 
 .tv-page .tv-mc-id,
 .tv-page .mc-id {
   grid-area: id;
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   color: var(--color-text-muted);
   line-height: 1.2;
 }
@@ -478,50 +717,63 @@ html:has(.tv-page) body {
 .tv-page .tv-mc-icon,
 .tv-page .mc-icon {
   grid-area: icon;
-  font-size: 28px;
+  font-size: 24px;
   line-height: 1;
   align-self: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .tv-page .tv-mc-val,
 .tv-page .mc-val {
   grid-area: val;
-  font-size: 40px;
-  font-weight: 700;
+  font-size: 38px;
+  font-weight: 800;
   line-height: 1;
   align-self: end;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }
 
 .tv-page .tv-mc-sub {
-  font-size: 10px;
+  font-size: 9px;
   color: var(--color-text-muted);
   display: block;
   margin-top: 2px;
   line-height: 1.2;
+  letter-spacing: 0.04em;
 }
 
+/* Status variants */
 .tv-page .tv-mc-card.tv-mc-critical,
 .tv-page .tv-mc-card.critical,
 .tv-page .mc-card.critical {
+  background: linear-gradient(135deg, var(--color-critical-bg) 0%, var(--grad-mc-critical-end) 100%);
   border: 1px solid var(--color-critical-dim);
   border-left: 3px solid var(--color-critical);
+  box-shadow: 0 0 18px var(--color-critical-glow-sm), inset 0 0 12px rgba(255,60,60,0.03);
 }
 
 .tv-page .tv-mc-card.tv-mc-warning,
 .tv-page .tv-mc-card.warning,
 .tv-page .mc-card.warning {
+  background: linear-gradient(135deg, var(--color-warning-bg) 0%, var(--grad-mc-warning-end) 100%);
   border: 1px solid var(--color-warning-dim);
   border-left: 3px solid var(--color-warning);
+  box-shadow: 0 0 18px var(--color-warning-glow-sm), inset 0 0 12px rgba(245,166,35,0.03);
 }
 
 .tv-page .tv-mc-card.tv-mc-safe,
 .tv-page .tv-mc-card.safe,
 .tv-page .mc-card.safe {
+  background: linear-gradient(135deg, var(--color-safe-bg) 0%, var(--grad-mc-safe-end) 100%);
   border: 1px solid var(--color-safe-dim);
   border-left: 3px solid var(--color-safe);
+  box-shadow: 0 0 18px var(--color-safe-glow-sm), inset 0 0 12px rgba(22,219,101,0.03);
 }
 
-/* .chart-wrapper - fill remaining left column height like stock_tv.html canvas */
+/* ─── 10. Chart Section ──────────────────────────────────────────────────────── */
 .tv-page .tv-chart-wrap,
 .tv-page .chart-wrapper {
   flex: 1 1 0;
@@ -530,8 +782,11 @@ html:has(.tv-page) body {
   display: flex;
   flex-direction: column;
   position: relative;
-  /* overflow: visible so ratio badges above the tallest bar are not clipped */
   overflow: visible;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-bg-border);
+  border-radius: 10px;
+  padding: 2px;
 }
 
 .tv-page .tv-chart-wrap .recharts-responsive-container {
@@ -556,43 +811,136 @@ html:has(.tv-page) body {
   overflow: visible !important;
 }
 
-.tv-page .tv-chart-wrap>p {
-  font-size: 13px;
+.tv-page .tv-chart-wrap > p {
+  font-size: 12px;
   color: var(--color-text-muted);
   padding: 16px;
   margin: 0;
 }
 
-/* .panel-header */
+/* ─── 11. Right Panel — Priority Production ──────────────────────────────────── */
 .tv-page .tv-panel-header,
 .tv-page .panel-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   flex-shrink: 0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--color-bg-border);
 }
 
-.tv-page .tv-panel-header>span:first-child {
-  font-size: 12px !important;
-  font-weight: 600 !important;
-  color: var(--color-text-secondary) !important;
-  letter-spacing: 0.1em !important;
-  line-height: 1.2 !important;
-}
-
-.tv-page .tv-panel-header>span:last-child {
-  background: var(--color-warning-bg) !important;
-  border: 1px solid var(--color-warning-dim) !important;
-  border-radius: 4px !important;
-  padding: 3px 8px !important;
+.tv-page .tv-panel-header > span:first-child {
   font-size: 10px !important;
   font-weight: 700 !important;
+  color: var(--color-text-secondary) !important;
+  letter-spacing: 0.16em !important;
+  line-height: 1.2 !important;
+  text-transform: uppercase !important;
+}
+
+.tv-page .tv-panel-header > span:last-child {
+  background: var(--color-warning-bg) !important;
+  border: 1px solid var(--color-warning-dim) !important;
+  border-radius: 5px !important;
+  padding: 3px 8px !important;
+  font-size: 9px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
   color: var(--color-warning) !important;
   line-height: 1.2 !important;
 }
 
-/* .empty-state */
+/* Priority Table */
+.tv-page .tv-priority-table {
+  width: 100%;
+  font-size: 11px;
+  border-collapse: collapse;
+}
+
+.tv-page .tv-priority-table th,
+.tv-page .tv-priority-table td {
+  padding: 6px 5px;
+  border-bottom: 1px solid rgba(30, 34, 48, 0.7);
+  text-align: left;
+  line-height: 1.2;
+}
+
+.tv-page .tv-priority-table th {
+  color: var(--color-text-muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  padding-bottom: 8px;
+}
+
+/* Alternating row shading */
+.tv-page .tv-priority-table tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.tv-page .tv-priority-table tbody tr:hover {
+  background: rgba(59, 107, 255, 0.06);
+  transition: background 0.15s ease;
+}
+
+/* Status badge in priority table */
+.tv-priority-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 4px;
+  line-height: 1.4;
+}
+
+.tv-priority-status-badge.badge-critical {
+  background: var(--color-critical-bg);
+  color: var(--color-critical);
+  border: 1px solid var(--color-critical-dim);
+}
+
+.tv-priority-status-badge.badge-warning {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+  border: 1px solid var(--color-warning-dim);
+}
+
+.tv-priority-status-badge.badge-safe {
+  background: var(--color-safe-bg);
+  color: var(--color-safe);
+  border: 1px solid var(--color-safe-dim);
+}
+
+.tv-priority-status-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.tv-priority-status-dot.dot-critical {
+  background: var(--color-critical);
+  box-shadow: 0 0 4px var(--color-critical);
+}
+
+.tv-priority-status-dot.dot-warning {
+  background: var(--color-warning);
+  box-shadow: 0 0 4px var(--color-warning);
+}
+
+.tv-priority-status-dot.dot-safe {
+  background: var(--color-safe);
+  box-shadow: 0 0 4px var(--color-safe);
+}
+
+/* ─── 12. Empty State ────────────────────────────────────────────────────────── */
 .tv-page .tv-empty,
 .tv-page .empty-state {
   flex: 1 1 0;
@@ -606,42 +954,33 @@ html:has(.tv-page) body {
   min-height: 0;
 }
 
-.tv-page .tv-empty>div {
-  font-size: 13px;
-  line-height: 1.2;
-}
+.tv-page .tv-empty > div { font-size: 12px; line-height: 1.2; letter-spacing: 0.06em; }
 
-.tv-page .tv-priority-table {
+/* ─── 13. Show All Button ────────────────────────────────────────────────────── */
+.tv-page .tv-show-all-btn {
+  margin-top: 10px;
   width: 100%;
-  font-size: 11px;
-  border-collapse: collapse;
-}
-
-.tv-page .tv-priority-table th,
-.tv-page .tv-priority-table td {
-  padding: 6px 4px;
-  border-bottom: 1px solid var(--color-bg-border);
-  text-align: left;
-  line-height: 1.2;
-}
-
-.tv-page .tv-priority-table th {
-  color: var(--color-text-muted);
-  font-weight: 600;
-  text-transform: uppercase;
+  padding: 6px 0;
   font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: 1px solid var(--color-bg-border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+  font-family: inherit;
 }
 
-/* Mesin create compact override (scoped) */
-.tv-page .tv-mc-compact .tv-mc-val {
-  font-size: 24px;
+.tv-page .tv-show-all-btn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-text-secondary);
+  background: rgba(59, 107, 255, 0.06);
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   PRIORITY PRODUCTION - A/B crossfade pagination animation (additive only)
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-/* Base transition for both slots */
+/* ─── 14. Pagination A/B Crossfade ──────────────────────────────────────────── */
 .priority-slot {
   transition:
     opacity 500ms cubic-bezier(0.4, 0, 0.2, 1),
@@ -650,104 +989,35 @@ html:has(.tv-page) body {
   will-change: opacity, filter, transform;
 }
 
-/* Active slot - fully visible and interactive */
-.priority-slot.slot-active {
-  opacity: 1;
-  filter: blur(0px);
-  transform: scale(1);
-  pointer-events: auto;
-}
+.priority-slot.slot-active   { opacity: 1; filter: blur(0px); transform: scale(1); pointer-events: auto; }
+.priority-slot.slot-inactive { opacity: 0; filter: blur(4px); transform: scale(0.98); pointer-events: none; }
+.priority-slot.slot-active.slot-transitioning   { opacity: 0; filter: blur(4px); transform: scale(0.98); }
+.priority-slot.slot-inactive.slot-transitioning { opacity: 1; filter: blur(0px); transform: scale(1); }
 
-/* Inactive slot - hidden underneath, no interaction */
-.priority-slot.slot-inactive {
-  opacity: 0;
-  filter: blur(4px);
-  transform: scale(0.98);
-  pointer-events: none;
-}
+/* Staggered row entrance */
+.priority-slot .priority-row:nth-child(1)  { transition-delay: 0ms; }
+.priority-slot .priority-row:nth-child(2)  { transition-delay: 25ms; }
+.priority-slot .priority-row:nth-child(3)  { transition-delay: 50ms; }
+.priority-slot .priority-row:nth-child(4)  { transition-delay: 75ms; }
+.priority-slot .priority-row:nth-child(5)  { transition-delay: 100ms; }
+.priority-slot .priority-row:nth-child(6)  { transition-delay: 125ms; }
+.priority-slot .priority-row:nth-child(7)  { transition-delay: 150ms; }
+.priority-slot .priority-row:nth-child(8)  { transition-delay: 175ms; }
+.priority-slot .priority-row:nth-child(9)  { transition-delay: 200ms; }
+.priority-slot .priority-row:nth-child(10) { transition-delay: 225ms; }
+.priority-slot .priority-row:nth-child(11) { transition-delay: 250ms; }
+.priority-slot .priority-row:nth-child(12) { transition-delay: 275ms; }
+.priority-slot .priority-row:nth-child(13) { transition-delay: 300ms; }
+.priority-slot .priority-row:nth-child(14) { transition-delay: 325ms; }
+.priority-slot .priority-row:nth-child(15) { transition-delay: 350ms; }
 
-/* During transition - active slot exits */
-.priority-slot.slot-active.slot-transitioning {
-  opacity: 0;
-  filter: blur(4px);
-  transform: scale(0.98);
-}
-
-/* During transition - inactive slot enters simultaneously */
-.priority-slot.slot-inactive.slot-transitioning {
-  opacity: 1;
-  filter: blur(0px);
-  transform: scale(1);
-}
-
-/* Staggered row entrance - Bloomberg Terminal style cascade */
-.priority-slot .priority-row:nth-child(1) {
-  transition-delay: 0ms;
-}
-
-.priority-slot .priority-row:nth-child(2) {
-  transition-delay: 30ms;
-}
-
-.priority-slot .priority-row:nth-child(3) {
-  transition-delay: 60ms;
-}
-
-.priority-slot .priority-row:nth-child(4) {
-  transition-delay: 90ms;
-}
-
-.priority-slot .priority-row:nth-child(5) {
-  transition-delay: 120ms;
-}
-
-.priority-slot .priority-row:nth-child(6) {
-  transition-delay: 150ms;
-}
-
-.priority-slot .priority-row:nth-child(7) {
-  transition-delay: 180ms;
-}
-
-.priority-slot .priority-row:nth-child(8) {
-  transition-delay: 210ms;
-}
-
-.priority-slot .priority-row:nth-child(9) {
-  transition-delay: 240ms;
-}
-
-.priority-slot .priority-row:nth-child(10) {
-  transition-delay: 270ms;
-}
-
-.priority-slot .priority-row:nth-child(11) {
-  transition-delay: 300ms;
-}
-
-.priority-slot .priority-row:nth-child(12) {
-  transition-delay: 330ms;
-}
-
-.priority-slot .priority-row:nth-child(13) {
-  transition-delay: 360ms;
-}
-
-.priority-slot .priority-row:nth-child(14) {
-  transition-delay: 390ms;
-}
-
-.priority-slot .priority-row:nth-child(15) {
-  transition-delay: 420ms;
-}
-
-/* Cycle progress bar - airport departure board feel */
+/* ─── 15. Progress Bar ──────────────────────────────────────────────────────── */
 .tv-page .tv-priority-progress {
   height: 2px;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
   position: relative;
   overflow: hidden;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   border-radius: 1px;
 }
 
@@ -755,54 +1025,31 @@ html:has(.tv-page) body {
   position: absolute;
   inset: 0;
   height: 100%;
-  background: rgba(255, 255, 255, 0.4);
+  background: linear-gradient(90deg, var(--color-accent) 0%, rgba(59,107,255,0.4) 100%);
   transform-origin: left center;
   animation: tv-progress-fill linear forwards;
+  box-shadow: 0 0 6px var(--color-accent-glow);
 }
 
 @keyframes tv-progress-fill {
-  from {
-    transform: scaleX(0);
-  }
-
-  to {
-    transform: scaleX(1);
-  }
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
 }
 
-/* Responsive - stock_tv.html breakpoints (scoped) */
+/* ─── 16. Compact machine card override ──────────────────────────────────────── */
+.tv-page .tv-mc-compact .tv-mc-val { font-size: 22px; }
+
+/* ─── 17. Responsive ─────────────────────────────────────────────────────────── */
 @media (min-width: 1920px) {
-
-  .tv-page .tv-mc-val,
-  .tv-page .mc-val {
-    font-size: 52px;
-  }
-
-  .tv-page .tv-kpi-number,
-  .tv-page .kpi-number {
-    font-size: 72px;
-  }
-
-  .tv-page .tv-gauge-val,
-  .tv-page .gauge-val {
-    font-size: 36px;
-  }
+  .tv-page .tv-mc-val, .tv-page .mc-val { font-size: 48px; }
+  .tv-page .tv-kpi-number, .tv-page .kpi-number { font-size: 70px; }
+  .tv-page .tv-gauge-val, .tv-page .gauge-val { font-size: 32px; }
+  .tv-page .tv-right, .tv-page .right-col { width: 320px; min-width: 320px; max-width: 320px; flex-basis: 320px; }
 }
 
 @media (min-width: 2560px) {
-
-  .tv-page .tv-mc-val,
-  .tv-page .mc-val {
-    font-size: 64px;
-  }
-
-  .tv-page .tv-kpi-number,
-  .tv-page .kpi-number {
-    font-size: 88px;
-  }
-
-  .tv-page .tv-gauge-val,
-  .tv-page .gauge-val {
-    font-size: 44px;
-  }
+  .tv-page .tv-mc-val, .tv-page .mc-val { font-size: 60px; }
+  .tv-page .tv-kpi-number, .tv-page .kpi-number { font-size: 88px; }
+  .tv-page .tv-gauge-val, .tv-page .gauge-val { font-size: 42px; }
+  .tv-page .tv-right, .tv-page .right-col { width: 360px; min-width: 360px; max-width: 360px; flex-basis: 360px; }
 }

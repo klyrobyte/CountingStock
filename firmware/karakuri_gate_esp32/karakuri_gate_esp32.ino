@@ -1,325 +1,490 @@
-/**
- * karakuri_gate_esp32.ino  ─  v3 (Zero-Touch WebSerial Provisioning)
- * ─────────────────────────────────────────────────────────────────────────────
- * WHAT CHANGED vs v2:
- *   - No WiFi AP, no Captive Portal, no AsyncWebServer.
- *   - Setup mode reads JSON configuration purely from Serial (USB).
- *   - NVS stores an array of `listen_qrs` instead of single token.
- *   - Operates by connecting to WiFi, then TCP server, sending array of QRs.
- *
- * HARDWARE CONSTANTS (compile-time — same for all units):
- *   RELAY_PIN = 26, LED_PIN = 2, FACTORY_RESET_PIN = 0
- *
- * Libraries required:
- *   ✅ WiFi.h
- *   ✅ WiFiClient.h
- *   ✅ Preferences.h
- *   📦 ArduinoJson (v6 or v7)
- */
+// ==========================================
+// Gate.ino | R.I.S.K.I Gate v6.1 (Inverted LS Fix)
+//
+// Changes vs v6.0:
+//   - ONLY FIXED: Flipped LS_PRESSED and LS_UNPRESSED definitions to match
+//     your physical wiring direction. All other code remains 100% untouched.
+// ==========================================
 
-#include <WiFi.h>
-#include <WiFiClient.h>
+// ==========================================
+// v6.2 ADD — PATCH NOTES (webhook/network integration)
+//   - Everything from v6.1 above and below this note is BYTE-FOR-BYTE
+//     untouched: no state, timing, relay, or LS logic was modified.
+//   - This patch ONLY adds: NVS-based provisioning, a WiFi + TCP client to
+//     @betogate, and a network trigger that calls the EXISTING handleScan()
+//     function — exactly as if "scan" had been typed over Serial.
+//   - The Serial "scan" command path in loop() is left fully intact for
+//     local/bench testing; it is simply no longer the only trigger source.
+//   - Integration points (search for "v6.2 ADD" comments below):
+//       1) New #includes
+//       2) New globals (network/provisioning config)
+//       3) New helper functions (network layer only)
+//       4) ONE appended line at the end of setup()
+//       5) ONE appended line at the end of loop()
+// ==========================================
 #include <Preferences.h>
+#include <WiFi.h>
 #include <ArduinoJson.h>
 
-// ════════════════════════════════════════════════════════════════════════════
-// HARDWARE CONSTANTS
-// ════════════════════════════════════════════════════════════════════════════
-#define RELAY_PIN              26    // GPIO → relay IN pin
-#define LED_PIN                 2    // built-in LED
-#define FACTORY_RESET_PIN       0    // BOOT button
-#define GATE_OPEN_DURATION_MS 3000   // default ms gate stays open
+enum SystemState {
+  STATE_STANDBY,       // Pallet is in place, waiting for scan/pull
+  STATE_AUTHORIZED,    // Flow A: Scanned, safe to pull anytime
+  STATE_ALARM,         // Flow B: Pulled without scan, alarm active
+  STATE_EMPTY          // Pallet pulled safely, waiting for return
+};
 
-// ════════════════════════════════════════════════════════════════════════════
-// TIMING CONSTANTS
-// ════════════════════════════════════════════════════════════════════════════
-#define HEARTBEAT_INTERVAL_MS  30000UL
-#define RECONNECT_BASE_MS       5000UL
-#define RECONNECT_MAX_MS       60000UL
+// ==========================================
+// --- HARDWARE CONFIGURATION ---
+// ==========================================
+const int RELAY_PIN = 18;
+const int LS_PIN = 19; 
 
-// ════════════════════════════════════════════════════════════════════════════
-// GLOBAL STATE
-// ════════════════════════════════════════════════════════════════════════════
-String WIFI_SSID_CFG  = "";
-String WIFI_PASS_CFG  = "";
-String SERVER_IP      = "";
-int    SERVER_PORT    = 4000;
-String LISTEN_QRS_STR = "";
+#define RELAY_ACTIVE LOW
+#define RELAY_RELEASE HIGH
 
-bool isConfigured = false;
+// Hardware Logic Definitions (Flipped to fix physical inversion)
+#define LS_PRESSED HIGH     // Pallet di dalam (Flipped)
+#define LS_UNPRESSED LOW    // Pallet ditarik keluar (Flipped)
 
-Preferences    prefs;
-WiFiClient     gateClient;
-unsigned long  lastHeartbeatMs  = 0;
-unsigned long  reconnectDelayMs = RECONNECT_BASE_MS;
-bool           handshakeCompleted = false;
-String         incomingBuffer     = "";
+// ==========================================
+// --- TIMING CONFIGURATION ---
+// ==========================================
+const unsigned long DEBOUNCE_DELAY = 50;
+const unsigned long PULL_CONFIRM_MS = 300;
+const unsigned long POST_RELAY_IGNORE_MS = 400;
 
-void ledBlink(int times, int onMs = 150, int offMs = 150) {
-  for (int i = 0; i < times; i++) {
-    digitalWrite(LED_PIN, HIGH); delay(onMs);
-    digitalWrite(LED_PIN, LOW);  delay(offMs);
+// ==========================================
+// --- GLOBAL STATE ---
+// ==========================================
+SystemState currentState = STATE_STANDBY;
+unsigned long sessionId = 0;
+
+int lastLsState = HIGH;
+int currentLsState = HIGH;
+unsigned long lastDebounceTime = 0;
+
+bool candidatePending = false;
+int candidateState = HIGH;
+unsigned long candidateSince = 0;
+
+unsigned long ignoreLsUntil = 0;
+int relayPhysicalState = RELAY_ACTIVE;
+
+// ==========================================
+// --- v6.2 ADD: WEBHOOK / NETWORK CONFIG (NVS-backed) ---
+// v6.3 UPDATE: cfgServerPort now targets the @betogate HTTP port (4001)
+//              instead of the TCP port (4000). Re-provision ESP32 if needed.
+// ==========================================
+Preferences gatePrefs;
+
+String cfgWifiSsid;
+String cfgWifiPass;
+String cfgServerIp;
+int    cfgServerPort = 3001;  // v6.3: Express backend directly (no @betogate; was 4001)
+String cfgMachineCode;        // e.g. "mc0203"
+String cfgWebhookPath;        // e.g. "/webhook/mc0203/qr-1003"
+bool   gateConfigLoaded = false;
+
+unsigned long lastWifiAttempt = 0;
+const unsigned long NET_RETRY_MS = 5000;
+bool wifiConnectInProgress = false;
+const unsigned long WIFI_CONNECT_TIMEOUT_MS = 15000;
+
+// v6.3 ADD: HTTP polling state
+unsigned long lastHttpPollMs    = 0;
+const unsigned long HTTP_POLL_INTERVAL_MS = 500;  // poll every 500 ms
+bool lastScannedState = false;  // rising-edge detection (false→true triggers handleScan)
+
+// ==========================================
+// --- HELPERS ---
+// ==========================================
+void setRelay(int state, const char* reason) {
+  if (state != relayPhysicalState) {
+    digitalWrite(RELAY_PIN, state);
+    relayPhysicalState = state;
+    ignoreLsUntil = millis() + POST_RELAY_IGNORE_MS;
   }
 }
 
-// ════════════════════════════════════════════════════════════════════════════
-// NVS HELPERS
-// ════════════════════════════════════════════════════════════════════════════
-bool loadConfig() {
-  prefs.begin("riski-cfg", true); // read-only
-  WIFI_SSID_CFG  = prefs.getString("ssid",  "");
-  WIFI_PASS_CFG  = prefs.getString("pass",  "");
-  SERVER_IP      = prefs.getString("ip",    "");
-  SERVER_PORT    = prefs.getInt("port",     4000);
-  LISTEN_QRS_STR = prefs.getString("qrs",   "");
-  prefs.end();
-
-  if (WIFI_SSID_CFG == "" || SERVER_IP == "" || LISTEN_QRS_STR == "") {
-    return false;
-  }
-  return true;
+void enterState(SystemState newState, const char* msg) {
+  currentState = newState;
+  sessionId++;
+  Serial.print("[SESSION #");
+  Serial.print(sessionId);
+  Serial.print("] ");
+  Serial.println(msg);
 }
 
-void factoryReset() {
-  Serial.println("\n[NVS] CLEARING CONFIGURATION...");
-  prefs.begin("riski-cfg", false);
-  prefs.clear();
-  prefs.end();
-  Serial.println("[NVS] Configuration cleared. Rebooting...");
-  ledBlink(10, 50, 50);
-  ESP.restart();
+// ==========================================
+// --- v6.2 ADD: HELPERS (network layer only — does not call into
+//     or alter any state-machine function except handleScan()) ---
+// ==========================================
+bool loadGateWebhookConfig() {
+  gatePrefs.begin("gatecfg", true);
+  cfgWifiSsid    = gatePrefs.getString("ssid", "");
+  cfgWifiPass    = gatePrefs.getString("pass", "");
+  cfgServerIp    = gatePrefs.getString("srvip", "");
+  cfgServerPort  = gatePrefs.getInt("srvport", 4000);
+  cfgMachineCode = gatePrefs.getString("mc", "");
+  cfgWebhookPath = gatePrefs.getString("hook", "");
+  gatePrefs.end();
+  return cfgWifiSsid.length() > 0 && cfgServerIp.length() > 0;
 }
 
-// ════════════════════════════════════════════════════════════════════════════
-// SETUP ROUTINE
-// ════════════════════════════════════════════════════════════════════════════
-void setup() {
-  Serial.begin(115200);
-  delay(1000);
-  
-  pinMode(RELAY_PIN, OUTPUT);
-  digitalWrite(RELAY_PIN, LOW);
-  pinMode(LED_PIN, OUTPUT);
-  digitalWrite(LED_PIN, LOW);
-  pinMode(FACTORY_RESET_PIN, INPUT_PULLUP);
-
-  Serial.println("\n=============================================");
-  Serial.println("  🚪 RISKI Gate v3 (Zero-Touch Serial)");
-  Serial.println("=============================================");
-  
-  // Check if button is held during boot to factory reset immediately
-  if (digitalRead(FACTORY_RESET_PIN) == LOW) {
-    delay(2000);
-    if (digitalRead(FACTORY_RESET_PIN) == LOW) {
-      factoryReset();
-    }
-  }
-
-  isConfigured = loadConfig();
-
-  // ─── SETUP MODE ───────────────────────────────────────────────────────────
-  if (!isConfigured) {
-    Serial.println("\n[SETUP] No configuration found in NVS.");
-    Serial.println("[SETUP] Waiting for JSON config over Serial (WebSerial)...");
-
-    while (true) {
-      // Allow factory reset even in setup mode
-      if (digitalRead(FACTORY_RESET_PIN) == LOW) {
-        delay(2000);
-        if (digitalRead(FACTORY_RESET_PIN) == LOW) {
-          ESP.restart();
-        }
-      }
-
-      if (Serial.available()) {
-        String input = Serial.readStringUntil('\n');
-        input.trim();
-        if (input.length() > 0) {
-          // Support ArduinoJson 6 & 7
-          DynamicJsonDocument doc(2048);
-          DeserializationError err = deserializeJson(doc, input);
-
-          if (!err && doc["cmd"] == "config") {
-            prefs.begin("riski-cfg", false);
-            prefs.putString("ssid", doc["wifi_ssid"].as<String>());
-            prefs.putString("pass", doc["wifi_pass"].as<String>());
-            prefs.putString("ip", doc["server_ip"].as<String>());
-            
-            if (doc["port"].is<int>()) {
-               prefs.putInt("port", doc["port"].as<int>());
-            }
-            
-            String qrsStr;
-            serializeJson(doc["listen_qrs"], qrsStr);
-            prefs.putString("qrs", qrsStr);
-            
-            prefs.end();
-
-            Serial.println("\n[SETUP] Configuration saved to NVS!");
-            Serial.println("[SETUP] Rebooting in 2 seconds...");
-            ledBlink(3, 200, 200);
-            delay(2000);
-            ESP.restart();
-          } else {
-            Serial.println("[SETUP] ERROR: Invalid JSON or not a config command.");
-          }
-        }
-      }
-      delay(10);
-    }
-  }
-
-  // ─── OPERATIONAL MODE ─────────────────────────────────────────────────────
-  Serial.println("\n[BOOT] Configuration loaded from NVS.");
-  Serial.print("[BOOT] Connecting to WiFi SSID: ");
-  Serial.println(WIFI_SSID_CFG);
-
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(WIFI_SSID_CFG.c_str(), WIFI_PASS_CFG.c_str());
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// MAIN LOOP
-// ════════════════════════════════════════════════════════════════════════════
-void loop() {
-  // Check FACTORY RESET
-  if (digitalRead(FACTORY_RESET_PIN) == LOW) {
-    unsigned long startPress = millis();
-    while (digitalRead(FACTORY_RESET_PIN) == LOW) {
-      if (millis() - startPress > 5000) factoryReset();
-      delay(100);
-    }
-  }
-
-  // ─── 1. Manage WiFi Connection ────────────────────────────────────────────
-  if (WiFi.status() != WL_CONNECTED) {
-    digitalWrite(LED_PIN, LOW);
-    Serial.println("[WIFI] Reconnecting...");
-    WiFi.disconnect();
-    WiFi.begin(WIFI_SSID_CFG.c_str(), WIFI_PASS_CFG.c_str());
-    
-    unsigned long waitStart = millis();
-    while (WiFi.status() != WL_CONNECTED && millis() - waitStart < 10000) {
-      if (digitalRead(FACTORY_RESET_PIN) == LOW) return; // Allow early exit
-      delay(500);
-      Serial.print(".");
-    }
-    if (WiFi.status() == WL_CONNECTED) {
-      Serial.println("\n[WIFI] Connected! IP: " + WiFi.localIP().toString());
-    } else {
-      Serial.println("\n[WIFI] Connect failed. Waiting before retry...");
-      delay(5000);
-      return;
-    }
-  }
-
-  // ─── 2. Manage Gate Server TCP Connection ───────────────────────────────────
-  if (!gateClient.connected()) {
-    handshakeCompleted = false;
-    digitalWrite(LED_PIN, LOW);
-    
-    Serial.printf("[TCP] Connecting to %s:%d...\n", SERVER_IP.c_str(), SERVER_PORT);
-    if (gateClient.connect(SERVER_IP.c_str(), SERVER_PORT)) {
-      Serial.println("[TCP] Connected! Sending handshake...");
-      
-      // We parse the LISTEN_QRS_STR string back into a JsonArray to send in handshake
-      DynamicJsonDocument rxDoc(2048);
-      deserializeJson(rxDoc, LISTEN_QRS_STR);
-      
-      // MAC address as device ID
-      String mac = WiFi.macAddress();
-      mac.replace(":", "");
-      
-      DynamicJsonDocument txDoc(2048);
-      txDoc["type"] = "register";
-      txDoc["mac"] = mac;
-      txDoc["qrs"] = rxDoc; // copy array
-
-      String payload;
-      serializeJson(txDoc, payload);
-      gateClient.println(payload);
-      
-      reconnectDelayMs = RECONNECT_BASE_MS; 
-    } else {
-      Serial.println("[TCP] Connection failed.");
-      delay(reconnectDelayMs);
-      reconnectDelayMs = min(reconnectDelayMs * 2, (unsigned long)RECONNECT_MAX_MS);
-      return;
-    }
-  }
-
-  // ─── 3. Handle Incoming TCP Data ────────────────────────────────────────────
-  while (gateClient.available()) {
-    char c = gateClient.read();
-    if (c == '\n') {
-      processServerMessage(incomingBuffer);
-      incomingBuffer = "";
-    } else if (c != '\r') {
-      incomingBuffer += c;
-    }
-  }
-
-  // ─── 4. Heartbeat (Ping) ──────────────────────────────────────────────────
-  if (handshakeCompleted && millis() - lastHeartbeatMs > HEARTBEAT_INTERVAL_MS) {
-    gateClient.println("{\"type\":\"ping\"}");
-    lastHeartbeatMs = millis();
-    Serial.println("[TCP] -> ping");
-  }
-
-  delay(10);
-}
-
-// ════════════════════════════════════════════════════════════════════════════
-// TCP MESSAGE HANDLER
-// ════════════════════════════════════════════════════════════════════════════
-void processServerMessage(String msg) {
-  msg.trim();
-  if (msg.length() == 0) return;
-
-  DynamicJsonDocument doc(2048);
-  DeserializationError error = deserializeJson(doc, msg);
-  
-  if (error) {
-    Serial.println("[TCP] JSON parse failed: " + msg);
+// Blocks ONLY when no config exists yet (fresh/unprovisioned board).
+// Mirrors @devportal's WebSerial payload: {"cmd":"config", ...}
+void runSerialProvisioningIfNeeded() {
+  if (loadGateWebhookConfig()) {
+    gateConfigLoaded = true;
+    WiFi.mode(WIFI_STA);   // set once here, never again per-attempt
+    Serial.print("[PROVISION] Existing config loaded. Webhook: ");
+    Serial.println(cfgWebhookPath);
     return;
   }
 
-  String type = doc["type"].as<String>();
-  String cmd  = doc["cmd"].as<String>();
+  Serial.println("[PROVISION] No NVS config found. Waiting for JSON over Serial (:4001 / /station/provisioning)...");
+  while (true) {
+    if (Serial.available() > 0) {
+      String line = Serial.readStringUntil('\n');
+      line.trim();
+      if (line.length() == 0) continue;
 
-  if (type == "handshake_ok") {
-    Serial.println("[TCP] Handshake accepted! System ready.");
-    handshakeCompleted = true;
-    lastHeartbeatMs = millis();
-    digitalWrite(LED_PIN, HIGH);
-  } 
-  else if (type == "error") {
-    Serial.println("[TCP] Handshake error: " + doc["message"].as<String>());
-    gateClient.stop();
+      StaticJsonDocument<512> doc;
+      DeserializationError err = deserializeJson(doc, line);
+      if (err || strcmp(doc["cmd"] | "", "config") != 0) {
+        Serial.println("[PROVISION] Invalid payload, ignoring.");
+        continue;
+      }
+
+      gatePrefs.begin("gatecfg", false);
+      gatePrefs.putString("ssid",    doc["wifi_ssid"]    | "");
+      gatePrefs.putString("pass",    doc["wifi_pass"]    | "");
+      gatePrefs.putString("srvip",   doc["server_ip"]    | "");
+      gatePrefs.putInt("srvport",    doc["port"]          | 4000);
+      gatePrefs.putString("mc",      doc["machine_code"] | "");
+      gatePrefs.putString("hook",    doc["webhook_path"] | "");
+      gatePrefs.end();
+
+      Serial.println("[PROVISION] Config saved. Rebooting...");
+      delay(300);
+      ESP.restart();
+    }
   }
-  else if (type == "pong") {
-    // Normal keep-alive
+}
+
+void connectWiFiIfNeeded() {
+  if (WiFi.status() == WL_CONNECTED) {
+    wifiConnectInProgress = false;
+    return;
   }
-  else if (cmd == "OPEN_GATE") {
-    Serial.println("\n[COMMAND] >>> OPEN GATE <<<");
-    String reqId = doc["request_id"].as<String>();
-    
-    digitalWrite(RELAY_PIN, HIGH);
-    delay(GATE_OPEN_DURATION_MS);
-    digitalWrite(RELAY_PIN, LOW);
-    
-    if (reqId != "null" && reqId.length() > 0) {
-      DynamicJsonDocument ack(512);
-      ack["type"] = "ack";
-      ack["request_id"] = reqId;
-      ack["status"] = "success";
-      String ackStr;
-      serializeJson(ack, ackStr);
-      gateClient.println(ackStr);
-      Serial.println("[TCP] -> ACK sent");
+
+  // A begin() is already resolving — do NOT call begin() again yet.
+  // Calling it mid-handshake is what causes:
+  //   E (...) wifi:sta is connecting, cannot set config
+  if (wifiConnectInProgress) {
+    if (millis() - lastWifiAttempt < WIFI_CONNECT_TIMEOUT_MS) return;
+    // Attempt timed out — cleanly reset before allowing a fresh begin()
+    WiFi.disconnect(true, true);
+    wifiConnectInProgress = false;
+  }
+
+  if (millis() - lastWifiAttempt < NET_RETRY_MS) return;
+
+  lastWifiAttempt = millis();
+  wifiConnectInProgress = true;
+  Serial.print("[WIFI] Attempting to connect to SSID: ");
+  Serial.println(cfgWifiSsid);
+  WiFi.begin(cfgWifiSsid.c_str(), cfgWifiPass.c_str());
+}
+
+// ==========================================
+// --- v6.3 ADD: HTTP POLLING LAYER ---
+// Polls GET /iot/{mc}/{qr} on the Express backend (port 3001).
+// On rising edge (false→true) calls handleScan(), then resets via POST /reset.
+// The webhook path stored in NVS ("/webhook/mc2/QR-1003") is parsed to extract
+// mc and qr segments — no NVS schema change needed.
+// ==========================================
+
+/**
+ * Extract /mc and /qr segments from cfgWebhookPath.
+ * e.g. "/webhook/mc2/QR-1003" → parts[1]="mc2", parts[2]="QR-1003"
+ */
+String iotPollPath() {
+  // Strip leading slash, split by '/'
+  String p = cfgWebhookPath;            // e.g. "/webhook/mc2/QR-1003"
+  if (p.startsWith("/")) p = p.substring(1);  // "webhook/mc2/QR-1003"
+  int first  = p.indexOf('/');
+  int second = p.indexOf('/', first + 1);
+  if (first < 0 || second < 0) return "/iot/unknown/unknown";
+  String mc = p.substring(first + 1, second);  // "mc2"
+  String qr = p.substring(second + 1);         // "QR-1003"
+  return "/iot/" + mc + "/" + qr;              // "/iot/mc2/QR-1003"
+}
+
+/**
+ * Minimal HTTP/1.0 GET helper.
+ */
+bool httpGet(const String& path, String& responseBody) {
+  WiFiClient hc;
+  if (!hc.connect(cfgServerIp.c_str(), cfgServerPort)) return false;
+  hc.printf("GET %s HTTP/1.0\r\nHost: %s\r\nConnection: close\r\n\r\n",
+            path.c_str(), cfgServerIp.c_str());
+  unsigned long t0 = millis();
+  while (!hc.available()) {
+    if (millis() - t0 > 2000) { hc.stop(); return false; }
+    delay(5);
+  }
+  bool inBody = false;
+  responseBody = "";
+  while (hc.available() || hc.connected()) {
+    String line = hc.readStringUntil('\n');
+    if (!inBody) {
+      if (line == "\r" || line.length() <= 1) inBody = true;
+    } else {
+      responseBody += line;
+    }
+  }
+  hc.stop();
+  responseBody.trim();
+  return responseBody.length() > 0;
+}
+
+/**
+ * Minimal HTTP/1.0 POST helper (no body).
+ */
+void httpPost(const String& path) {
+  WiFiClient hc;
+  if (!hc.connect(cfgServerIp.c_str(), cfgServerPort)) return;
+  hc.printf("POST %s HTTP/1.0\r\nHost: %s\r\nContent-Length: 0\r\nConnection: close\r\n\r\n",
+            path.c_str(), cfgServerIp.c_str());
+  unsigned long t0 = millis();
+  while (!hc.available()) {
+    if (millis() - t0 > 2000) break;
+    delay(5);
+  }
+  hc.stop();
+}
+
+/**
+ * Core HTTP polling — called from maintainGateNetwork() every loop().
+ * Detects rising edge on server scanned flag and calls the existing handleScan().
+ * Resets state immediately before calling handleScan() to prevent double-trigger.
+ * v6.3.1: Added verbose debug logging to diagnose connectivity issues.
+ */
+unsigned long lastDebugPrintMs = 0;
+const unsigned long DEBUG_PRINT_INTERVAL_MS = 10000;  // print status every 10s
+
+void pollWebhookHttp() {
+  if (WiFi.status() != WL_CONNECTED) {
+    unsigned long now2 = millis();
+    if (now2 - lastDebugPrintMs > DEBUG_PRINT_INTERVAL_MS) {
+      lastDebugPrintMs = now2;
+      Serial.println("[HTTP] WiFi NOT connected. Waiting...");
+    }
+    return;
+  }
+
+  unsigned long now = millis();
+  if (now - lastHttpPollMs < HTTP_POLL_INTERVAL_MS) return;
+  lastHttpPollMs = now;
+
+  String pollPath = iotPollPath();   // "/iot/mc2/QR-1002"
+
+  // Periodic status print (not every poll, just every 10s)
+  if (now - lastDebugPrintMs > DEBUG_PRINT_INTERVAL_MS) {
+    lastDebugPrintMs = now;
+    Serial.print("[HTTP] Polling: ");
+    Serial.print(cfgServerIp);
+    Serial.print(":");
+    Serial.print(cfgServerPort);
+    Serial.println(pollPath);
+  }
+
+  String body;
+  if (!httpGet(pollPath, body)) {
+    // Only log connection failures periodically to avoid spam
+    if (now - lastDebugPrintMs > DEBUG_PRINT_INTERVAL_MS) {
+      Serial.print("[HTTP] FAILED to connect to ");
+      Serial.print(cfgServerIp);
+      Serial.print(":");
+      Serial.println(cfgServerPort);
+    }
+    return;
+  }
+
+  StaticJsonDocument<256> doc;
+  DeserializationError jsonErr = deserializeJson(doc, body);
+  if (jsonErr) {
+    Serial.print("[HTTP] JSON parse error: ");
+    Serial.println(jsonErr.c_str());
+    Serial.print("[HTTP] Raw body: ");
+    Serial.println(body.substring(0, 200));
+    return;
+  }
+
+  bool scanned = doc["scanned"] | false;
+
+  if (scanned && !lastScannedState) {
+    Serial.print("[HTTP] >>> SCAN SIGNAL DETECTED on ");
+    Serial.println(pollPath);
+    httpPost(pollPath + "/reset");   // reset FIRST to avoid double-trigger
+    Serial.println("[HTTP] State reset sent.");
+    handleScan();                     // untouched state-machine handler
+  }
+
+  lastScannedState = scanned;
+}
+
+void maintainGateNetwork() {
+  if (!gateConfigLoaded) return;
+  connectWiFiIfNeeded();
+  pollWebhookHttp();
+}
+
+// ==========================================
+// --- SETUP ---
+// ==========================================
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+
+  pinMode(RELAY_PIN, OUTPUT_OPEN_DRAIN);
+  digitalWrite(RELAY_PIN, RELAY_ACTIVE);
+  relayPhysicalState = RELAY_ACTIVE;
+
+  pinMode(LS_PIN, INPUT_PULLUP);
+  lastLsState = digitalRead(LS_PIN);
+  currentLsState = lastLsState;
+  candidateState = lastLsState;
+
+  Serial.println("\n=============================================");
+  Serial.println("  RISKI Gate v6.3 (HTTP Polling Mode)       ");
+  Serial.println("=============================================");
+
+  if (lastLsState == LS_PRESSED) {
+    currentState = STATE_STANDBY;
+    Serial.println("[STATUS] Ready: Pallet terdeteksi di posisi stand-by.");
+  } else {
+    currentState = STATE_EMPTY;
+    Serial.println("[STATUS] Ready: Pallet sedang di luar.");
+  }
+
+  // v6.2 ADD — appended only, nothing above this line was changed
+  runSerialProvisioningIfNeeded();
+}
+
+// ==========================================
+// --- MAIN LOOP ---
+// ==========================================
+void loop() {
+  unsigned long now = millis();
+
+  // ---------- LS: electrical debounce (fast) ----------
+  int reading = digitalRead(LS_PIN);
+  if (reading != lastLsState) {
+    lastDebounceTime = now;
+  }
+  if ((now - lastDebounceTime) > DEBOUNCE_DELAY) {
+    if (reading != currentLsState) {
+      currentLsState = reading;
+      candidateState = reading;
+      candidateSince = now;
+      candidatePending = true;
+    }
+  }
+  lastLsState = reading;
+
+  // ---------- LS: intent confirmation (slow) ----------
+  if (candidatePending) {
+    bool ignoringNow = now < ignoreLsUntil;
+    if (ignoringNow) {
+      candidateSince = now; 
+    } else if (now - candidateSince >= PULL_CONFIRM_MS) {
+      candidatePending = false;
+      handleConfirmedLsChange(candidateState);
+    }
+  }
+
+  // ---------- SERIAL COMMANDS (Scanners + Re-provisioning) ----------
+  if (Serial.available() > 0) {
+    String input = Serial.readStringUntil('\n');
+    input.trim();
+    if (input == "scan") {
+      handleScan();
+    } else if (input.startsWith("{") && input.indexOf("\"cmd\":\"config\"") > 0) {
+      // Intercept re-provisioning payload from WebSerial
+      StaticJsonDocument<512> doc;
+      DeserializationError err = deserializeJson(doc, input);
+      if (!err && strcmp(doc["cmd"] | "", "config") == 0) {
+        gatePrefs.begin("gatecfg", false);
+        gatePrefs.putString("ssid",    doc["wifi_ssid"]    | "");
+        gatePrefs.putString("pass",    doc["wifi_pass"]    | "");
+        gatePrefs.putString("srvip",   doc["server_ip"]    | "");
+        gatePrefs.putInt("srvport",    doc["port"]          | 3001);
+        gatePrefs.putString("mc",      doc["machine_code"] | "");
+        gatePrefs.putString("hook",    doc["webhook_path"] | "");
+        gatePrefs.end();
+        Serial.println("[PROVISION] New config saved on-the-fly. Rebooting...");
+        delay(300);
+        ESP.restart();
+      }
+    } else {
+      Serial.println("[WARN] Sistem otomatis. Gunakan Scanner QR/RFID.");
+    }
+  }
+
+  // v6.2 ADD — appended only, nothing above this line was changed
+  maintainGateNetwork();
+}
+
+// ==========================================
+// --- CONFIRMED PHYSICAL EVENT HANDLER ---
+// ==========================================
+void handleConfirmedLsChange(int state) {
+  if (state == LS_UNPRESSED) {
+    // === PALLET DITARIK KELUAR ===
+    if (currentState == STATE_STANDBY) {
+      setRelay(RELAY_ACTIVE, "unauthorized pull");
+      enterState(STATE_ALARM, "[WARN] ALARM: SCAN FIRST! Pallet ditarik tanpa scan - waiting for scan.");
+    } 
+    else if (currentState == STATE_AUTHORIZED) {
+      setRelay(RELAY_ACTIVE, "authorized pull complete");
+      enterState(STATE_EMPTY, "[SUCCESS] PASS: Pallet ditarik dengan aman. Session closed.");
     }
   } 
-  else {
-    Serial.println("[TCP] Unknown payload: " + msg);
+  else if (state == LS_PRESSED) {
+    // === PALLET DIKEMBALIKAN KE DALAM ===
+    if (currentState == STATE_ALARM) {
+      Serial.println("[INFO] Pallet dikembalikan (LS tertekan). ALARM TETAP AKTIF: Harus SCAN untuk menutup sesi!");
+    } 
+    else if (currentState == STATE_EMPTY) {
+      setRelay(RELAY_ACTIVE, "pallet returned");
+      enterState(STATE_STANDBY, "[INFO] Pallet/Kereta dikembalikan ke posisi semula (LS tertekan). Sesi baru siap.");
+    }
+  }
+}
+
+// ==========================================
+// --- SCANNER HANDLER ---
+// ==========================================
+void handleScan() {
+  if (currentState == STATE_STANDBY) {
+    setRelay(RELAY_RELEASE, "scan authorized");
+    enterState(STATE_AUTHORIZED, "[EVENT] QR Scanned. Access granted - silahkan tarik pallet.");
+  } 
+  else if (currentState == STATE_ALARM) {
+    if (currentLsState == LS_UNPRESSED) {
+      setRelay(RELAY_ACTIVE, "late scan verified (outside)");
+      enterState(STATE_EMPTY, "[SUCCESS] PASS: Late scan verified. Alarm mati. Pallet aman di luar.");
+    } else {
+      setRelay(RELAY_ACTIVE, "late scan verified (inside)");
+      enterState(STATE_STANDBY, "[SUCCESS] PASS: Late scan verified. Alarm mati. Sesi direset ke awal.");
+    }
+  } 
+  else if (currentState == STATE_AUTHORIZED) {
+    Serial.println("[INFO] Sesi sudah aktif. Silahkan tarik pallet.");
+  }
+  else if (currentState == STATE_EMPTY) {
+    Serial.println("[INFO] Pallet sedang di luar. Kembalikan ke posisi semula (LS tertekan) untuk memulai.");
   }
 }

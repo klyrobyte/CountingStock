@@ -121,15 +121,14 @@ const CustomBar = (props: CustomBarProps) => {
 
   return (
     <g>
-      <g style={{ filter: "drop-shadow(0px 0px 8px rgba(255, 255, 255, 0.4))" }}>
+      <g style={{ filter: `drop-shadow(0px 0px 15px ${color}30)` }}>
         <motion.path
           initial={{ d: startPath }}
           animate={{ d: endPath }}
           transition={{ duration: 0.7, ease: "easeOut" }}
           fill={color}
-          fillOpacity={0.65}
-          stroke="#FFFFFF"
-          strokeWidth={1.5}
+          fillOpacity={0.9}
+          stroke="none"
         />
       </g>
 
@@ -139,13 +138,12 @@ const CustomBar = (props: CustomBarProps) => {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.3, duration: 0.5 }}
         x={x + width / 2}
-        y={y + height - 15}
-        fill="#FFFFFF"
-        fontSize={12}
-        fontWeight={700}
+        y={y + height - 20}
+        fill="#ffffff"
         textAnchor="middle"
       >
-        {`${value} PCs`}
+        <tspan fontSize={18} fontWeight={800}>{value}</tspan>
+        <tspan fontSize={13} fontWeight={600} dx="4">PCs</tspan>
       </motion.text>
 
       {/* Hour Pill */}
@@ -157,23 +155,26 @@ const CustomBar = (props: CustomBarProps) => {
         >
           {/* Hour Pill */}
           <rect
-            x={x + width / 2 - 20}
-            y={-22}
-            width={40}
-            height={20}
-            rx={4}
-            fill={color}
-            stroke="#FFFFFF"
+            x={x + width / 2 - 28}
+            y={-28}
+            width={56}
+            height={22}
+            rx={2}
+            fill="var(--color-bg-surface)"
+            stroke={color}
             strokeWidth={1}
+            style={{ filter: `drop-shadow(0px 0px 8px ${color}40)` }}
           />
           <text
             x={x + width / 2}
-            y={-12}
-            dy="0.3em"
-            fill={status === "warning" ? "#000000" : "#FFFFFF"}
-            fontSize={11}
+            y={-17}
+            dy="0.35em"
+            fill="var(--color-text-primary)"
+            fontSize={10}
             fontWeight={700}
+            fontFamily="JetBrains Mono, monospace"
             textAnchor="middle"
+            letterSpacing="0.05em"
           >
             {formattedJam}
           </text>
@@ -339,7 +340,12 @@ function TvPage() {
     >
       <div className="tv-shell">
         <header className="tv-header">
-          <div className="tv-header-title">STOCK MONITORING</div>
+          <div className="tv-header-title">
+            <div>
+              STOCK MONITORING
+              <div className="tv-header-subtitle">REAL-TIME PRODUCTION INTELLIGENCE</div>
+            </div>
+          </div>
           <div className="tv-header-time">{clock}</div>
           <div className="tv-header-right">
             {fac && (
@@ -639,8 +645,11 @@ function TvPage() {
                               <td>{p.partName}</td>
                               <td style={{ display: 'none' }}>{p.partNumber}</td>
                               <td>{p.stokJam.toFixed(1)}</td>
-                              <td style={{ color: stColor, fontWeight: 700, textTransform: 'uppercase' }}>
-                                {rowStatus}
+                              <td>
+                                <div className={`tv-priority-status-badge badge-${rowStatus}`}>
+                                  <span className={`tv-priority-status-dot dot-${rowStatus}`} />
+                                  {rowStatus}
+                                </div>
                               </td>
                             </tr>
                           );
@@ -687,8 +696,11 @@ function TvPage() {
                               <td>{p.partName}</td>
                               <td style={{ display: 'none' }}>{p.partNumber}</td>
                               <td>{p.stokJam.toFixed(1)}</td>
-                              <td style={{ color: stColor, fontWeight: 700, textTransform: 'uppercase' }}>
-                                {rowStatus}
+                              <td>
+                                <div className={`tv-priority-status-badge badge-${rowStatus}`}>
+                                  <span className={`tv-priority-status-dot dot-${rowStatus}`} />
+                                  {rowStatus}
+                                </div>
                               </td>
                             </tr>
                           );
