@@ -26,8 +26,10 @@ const IS_PROD = process.env.NODE_ENV === 'production';
 // ── Paths ─────────────────────────────────────────────────────────────────────
 const BACKEND_SRC = resolve(APP_DIR, 'server', 'index.ts');
 const FRONTEND_DIST = resolve(APP_DIR, 'dist', 'server', 'assets', 'worker-entry-*.js');
-// TanStack Start SSR entry point from the production build
-const SSR_ENTRY = resolve(APP_DIR, 'dist', 'server', 'index.js');
+// Node listener that imports the built Web-Fetch handler (dist/server/server.js)
+// and binds it to PORT. Created because TanStack Start's build is runtime-agnostic.
+const SSR_ENTRY = resolve(APP_DIR, 'server', 'ssr-node.mjs');
+const SSR_BUILD = resolve(APP_DIR, 'dist', 'server', 'server.js');
 
 /**
  * Returns true for structured HTTP access log lines.
@@ -94,7 +96,7 @@ const api = spawnProcess('api', 'npx', ['tsx', BACKEND_SRC]);
 
 // ── Spawn SSR frontend in production mode ────────────────────────────────────
 // In development, the Vite dev server is started separately by `npm run dev`.
-if (IS_PROD && existsSync(SSR_ENTRY)) {
+if (IS_PROD && existsSync(SSR_BUILD)) {
   spawnProcess('ssr', 'node', [SSR_ENTRY], {
     env: {
       ...process.env,
@@ -102,7 +104,7 @@ if (IS_PROD && existsSync(SSR_ENTRY)) {
     },
   });
 } else if (IS_PROD) {
-  console.warn('[guardian] Production mode but dist/server/index.js not found.');
+  console.warn(`[guardian] Production mode but ${SSR_BUILD} not found.`);
   console.warn('[guardian] Run `npm run build` before starting in production.');
 }
 
