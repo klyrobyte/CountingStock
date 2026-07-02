@@ -25,7 +25,7 @@ const allowedOrigins: string[] = rawOrigins
     "http://192.168.31.152:3001",
     "http://192.168.31.152:3000",
     "http://192.168.31.152:4001",
-    "http://192.168.31.152:8080"
+    "http://192.168.31.152:8080",
     "http://counting-stock.sugity.co.id",
   ];
 
