@@ -192,6 +192,8 @@ void connectWiFiIfNeeded() {
 
   lastWifiAttempt = millis();
   wifiConnectInProgress = true;
+  Serial.print("[WIFI] Attempting to connect to SSID: ");
+  Serial.println(cfgWifiSsid);
   WiFi.begin(cfgWifiSsid.c_str(), cfgWifiPass.c_str());
 }
 
