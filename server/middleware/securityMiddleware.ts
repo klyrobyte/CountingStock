@@ -14,11 +14,18 @@ const allowedOrigins: string[] = rawOrigins
     "http://localhost:8080",   // Vite dev server (current port)
     "http://127.0.0.1:5173",
     "http://127.0.0.1:8080",
-    "http://172.19.82.34:3000", // change with you own local ip development 
+    "http://172.19.82.34:3000", // this for prevent cors blocked on production change with subdomain if you have it yah 
     "http://172.19.82.34:3001",
     "http://172.19.82.34:8080",
     "http://172.19.82.34:5173",
     "http://172.19.82.34:4173",
+    //this section are for local development, you should add port 3000,3001,8080,5173,4173,...
+    //
+    "http://192.168.31.152:5173",
+    "http://192.168.31.152:3001",
+    "http://192.168.31.152:3000",
+    "http://192.168.31.152:4001",
+    "http://192.168.31.152:8080"
   ];
 
 export const configuredCors = cors({

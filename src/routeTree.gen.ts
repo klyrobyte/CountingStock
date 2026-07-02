@@ -30,11 +30,11 @@ import { Route as UsersIndexRouteImport } from './routes/users/index'
 import { Route as MesinIndexRouteImport } from './routes/mesin/index'
 import { Route as MasterDataIndexRouteImport } from './routes/master-data/index'
 import { Route as UsersCreateRouteImport } from './routes/users/create'
-import { Route as StationProvisioningRouteImport } from './routes/station/provisioning'
 import { Route as StationLoginRouteImport } from './routes/station/login'
 import { Route as StationDashboardRouteImport } from './routes/station/dashboard'
 import { Route as MesinCreateRouteImport } from './routes/mesin/create'
 import { Route as MasterDataCreateRouteImport } from './routes/master-data/create'
+import { Route as AdminProvisioningRouteImport } from './routes/admin.provisioning'
 
 const ViewStockRoute = ViewStockRouteImport.update({
   id: '/view-stock',
@@ -141,11 +141,6 @@ const UsersCreateRoute = UsersCreateRouteImport.update({
   path: '/users/create',
   getParentRoute: () => rootRouteImport,
 } as any)
-const StationProvisioningRoute = StationProvisioningRouteImport.update({
-  id: '/station/provisioning',
-  path: '/station/provisioning',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const StationLoginRoute = StationLoginRouteImport.update({
   id: '/station/login',
   path: '/station/login',
@@ -164,6 +159,11 @@ const MesinCreateRoute = MesinCreateRouteImport.update({
 const MasterDataCreateRoute = MasterDataCreateRouteImport.update({
   id: '/master-data/create',
   path: '/master-data/create',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminProvisioningRoute = AdminProvisioningRouteImport.update({
+  id: '/admin/provisioning',
+  path: '/admin/provisioning',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -185,11 +185,11 @@ export interface FileRoutesByFullPath {
   '/teitei': typeof TeiteiRoute
   '/tv': typeof TvRoute
   '/view-stock': typeof ViewStockRoute
+  '/admin/provisioning': typeof AdminProvisioningRoute
   '/master-data/create': typeof MasterDataCreateRoute
   '/mesin/create': typeof MesinCreateRoute
   '/station/dashboard': typeof StationDashboardRoute
   '/station/login': typeof StationLoginRoute
-  '/station/provisioning': typeof StationProvisioningRoute
   '/users/create': typeof UsersCreateRoute
   '/master-data/': typeof MasterDataIndexRoute
   '/mesin/': typeof MesinIndexRoute
@@ -213,11 +213,11 @@ export interface FileRoutesByTo {
   '/teitei': typeof TeiteiRoute
   '/tv': typeof TvRoute
   '/view-stock': typeof ViewStockRoute
+  '/admin/provisioning': typeof AdminProvisioningRoute
   '/master-data/create': typeof MasterDataCreateRoute
   '/mesin/create': typeof MesinCreateRoute
   '/station/dashboard': typeof StationDashboardRoute
   '/station/login': typeof StationLoginRoute
-  '/station/provisioning': typeof StationProvisioningRoute
   '/users/create': typeof UsersCreateRoute
   '/master-data': typeof MasterDataIndexRoute
   '/mesin': typeof MesinIndexRoute
@@ -242,11 +242,11 @@ export interface FileRoutesById {
   '/teitei': typeof TeiteiRoute
   '/tv': typeof TvRoute
   '/view-stock': typeof ViewStockRoute
+  '/admin/provisioning': typeof AdminProvisioningRoute
   '/master-data/create': typeof MasterDataCreateRoute
   '/mesin/create': typeof MesinCreateRoute
   '/station/dashboard': typeof StationDashboardRoute
   '/station/login': typeof StationLoginRoute
-  '/station/provisioning': typeof StationProvisioningRoute
   '/users/create': typeof UsersCreateRoute
   '/master-data/': typeof MasterDataIndexRoute
   '/mesin/': typeof MesinIndexRoute
@@ -272,11 +272,11 @@ export interface FileRouteTypes {
     | '/teitei'
     | '/tv'
     | '/view-stock'
+    | '/admin/provisioning'
     | '/master-data/create'
     | '/mesin/create'
     | '/station/dashboard'
     | '/station/login'
-    | '/station/provisioning'
     | '/users/create'
     | '/master-data/'
     | '/mesin/'
@@ -300,11 +300,11 @@ export interface FileRouteTypes {
     | '/teitei'
     | '/tv'
     | '/view-stock'
+    | '/admin/provisioning'
     | '/master-data/create'
     | '/mesin/create'
     | '/station/dashboard'
     | '/station/login'
-    | '/station/provisioning'
     | '/users/create'
     | '/master-data'
     | '/mesin'
@@ -328,11 +328,11 @@ export interface FileRouteTypes {
     | '/teitei'
     | '/tv'
     | '/view-stock'
+    | '/admin/provisioning'
     | '/master-data/create'
     | '/mesin/create'
     | '/station/dashboard'
     | '/station/login'
-    | '/station/provisioning'
     | '/users/create'
     | '/master-data/'
     | '/mesin/'
@@ -357,11 +357,11 @@ export interface RootRouteChildren {
   TeiteiRoute: typeof TeiteiRoute
   TvRoute: typeof TvRoute
   ViewStockRoute: typeof ViewStockRoute
+  AdminProvisioningRoute: typeof AdminProvisioningRoute
   MasterDataCreateRoute: typeof MasterDataCreateRoute
   MesinCreateRoute: typeof MesinCreateRoute
   StationDashboardRoute: typeof StationDashboardRoute
   StationLoginRoute: typeof StationLoginRoute
-  StationProvisioningRoute: typeof StationProvisioningRoute
   UsersCreateRoute: typeof UsersCreateRoute
   MasterDataIndexRoute: typeof MasterDataIndexRoute
   MesinIndexRoute: typeof MesinIndexRoute
@@ -517,13 +517,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UsersCreateRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/station/provisioning': {
-      id: '/station/provisioning'
-      path: '/station/provisioning'
-      fullPath: '/station/provisioning'
-      preLoaderRoute: typeof StationProvisioningRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/station/login': {
       id: '/station/login'
       path: '/station/login'
@@ -552,6 +545,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MasterDataCreateRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/provisioning': {
+      id: '/admin/provisioning'
+      path: '/admin/provisioning'
+      fullPath: '/admin/provisioning'
+      preLoaderRoute: typeof AdminProvisioningRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -573,11 +573,11 @@ const rootRouteChildren: RootRouteChildren = {
   TeiteiRoute: TeiteiRoute,
   TvRoute: TvRoute,
   ViewStockRoute: ViewStockRoute,
+  AdminProvisioningRoute: AdminProvisioningRoute,
   MasterDataCreateRoute: MasterDataCreateRoute,
   MesinCreateRoute: MesinCreateRoute,
   StationDashboardRoute: StationDashboardRoute,
   StationLoginRoute: StationLoginRoute,
-  StationProvisioningRoute: StationProvisioningRoute,
   UsersCreateRoute: UsersCreateRoute,
   MasterDataIndexRoute: MasterDataIndexRoute,
   MesinIndexRoute: MesinIndexRoute,

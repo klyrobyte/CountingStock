@@ -19,6 +19,8 @@ import stockAnalyticsRoutes from "./routes/stockAnalytics.js";
 import teiteiRoutes from "./routes/teitei.js";
 // ── @betogate admin routes (additive) ───────────────────────────────────
 import esp32Routes from "../services/gate/routes/admin.js";
+// ── IoT Gate State — direct HTTP polling (no @betogate TCP needed) ───────
+import iotStateRoutes from "./routes/iotState.js";
 import { requireAuth } from "./middleware/authMiddleware.js";
 // ── Additive security layer ─────────────────────────────────────────────────
 import { configuredCors, securityHeaders } from "./middleware/securityMiddleware.js";
@@ -42,7 +44,13 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 // Structured JSON request logger
 app.use(requestLogger);
 
-// Apply global auth middleware
+// ── IoT state endpoints (public — ESP32 has no auth token) ───────────────────
+// MUST be before requireAuth so the ESP32's raw HTTP requests are not blocked.
+// GET  /iot/:mc/:qr        → { scanned: bool }   (ESP32 polls every 500 ms)
+// POST /iot/:mc/:qr/reset  → resets state to false (ESP32 calls after consuming)
+app.use("/iot", iotStateRoutes);
+
+// Apply global auth middleware (AFTER /iot so hardware devices bypass JWT)
 app.use(requireAuth);
 
 // ── Rate limiting on login endpoints (BEFORE route handlers) ─────────────────

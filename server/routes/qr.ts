@@ -5,8 +5,10 @@ import crypto from "crypto";
 import pool from "../db.js";
 import type { RowDataPacket, ResultSetHeader } from "mysql2";
 import { syncStockAnalyticsOnScan } from "../lib/stockAnalyticsService.js";
-// ── @betogate hook (additive — fire-and-forget gate open after scan success) ──
-import { dispatchToGateService } from "../../services/gate/gateHook.js";
+// ── @betogate hook (kept for backward compat with TCP fleet) ────────────────
+import { dispatchToGateService, triggerMachineWebhook } from "../../services/gate/gateHook.js";
+// ── IoT Gate State — direct in-process signal for HTTP-polling ESP32 units ──
+import { setIotScanned } from "./iotState.js";
 
 const router = Router();
 
@@ -86,16 +88,31 @@ async function updateStock(
 
 // ═══════════════════════════════════════════════════════════════════════════
 // [1] GET /api/qr - list all QR codes
+// v4 ADDITIVE: optional ?machine_code=MC0203 filter — scopes list to QRs
+// whose machine_origin matches the given code (read-only, no schema change).
 // ═══════════════════════════════════════════════════════════════════════════
 router.get("/", async (req, res) => {
   try {
     const search = (req.query.search as string) || "";
+    // v4 ADD: machine_code filter for provisioning portal machine-scoped QR list
+    const machineCode = (req.query.machine_code as string) || "";
     let query = "SELECT * FROM qr_codes";
     const params: string[] = [];
+    const conditions: string[] = [];
 
     if (search) {
-      query += " WHERE part_name LIKE ? OR qr_id LIKE ?";
+      conditions.push("(part_name LIKE ? OR qr_id LIKE ?)");
       params.push(`%${search}%`, `%${search}%`);
+    }
+
+    // v4 ADD: filter by machine_origin when machine_code is provided
+    if (machineCode) {
+      conditions.push("machine_origin = ?");
+      params.push(machineCode);
+    }
+
+    if (conditions.length > 0) {
+      query += " WHERE " + conditions.join(" AND ");
     }
 
     query += " ORDER BY created_at DESC";
@@ -158,9 +175,9 @@ router.post("/generate", async (req, res) => {
     // part_id links this QR to a master_parts row for stable edit-mode lookups
     const partIdValue = partId ? Number(partId) : null;
     const [result] = await pool.query<ResultSetHeader>(
-      `INSERT INTO qr_codes (qr_id, batch_id, part_name, factory, material, qr_value, units, token, short_token, qr_image_base64, status, part_id)
-       VALUES (?, ?, ?, ?, '', ?, ?, ?, ?, ?, 'out', ?)`,
-      [qrId, batchId, partName, factoryOrigin, String(unitValue), unitValue, token, shortToken, qrImageBase64, partIdValue]
+      `INSERT INTO qr_codes (qr_id, batch_id, part_name, factory, material, qr_value, units, token, short_token, qr_image_base64, status, part_id, machine_origin)
+       VALUES (?, ?, ?, ?, '', ?, ?, ?, ?, ?, 'out', ?, ?)`,
+      [qrId, batchId, partName, factoryOrigin, String(unitValue), unitValue, token, shortToken, qrImageBase64, partIdValue, machineOrigin ?? ""]
     );
 
     // ── Save to stock with current_stock = 0 (starts empty) ──────────────────
@@ -611,12 +628,15 @@ router.post("/process", async (req, res) => {
       }
     }
 
-    // Get matching qr_id from DB for record-keeping
+    // Get matching qr_id and machine_origin from DB for record-keeping
+    // v4 ADD: also fetch machine_origin for webhook routing
     const [qrRows] = await pool.query<RowDataPacket[]>(
-      "SELECT qr_id FROM qr_codes WHERE batch_id = ? LIMIT 1",
+      "SELECT qr_id, machine_origin FROM qr_codes WHERE batch_id = ? LIMIT 1",
       [batchId]
     );
     const qrId = qrRows.length > 0 ? qrRows[0].qr_id : batchId;
+    // v4 ADD: machine_origin used for webhook routing (null-safe)
+    const machineOriginForWebhook: string = qrRows.length > 0 ? (qrRows[0].machine_origin || "") : "";
 
     // Update qr_codes status in DB
     await pool.query("UPDATE qr_codes SET status = ? WHERE batch_id = ?", [newStatus, batchId]);
@@ -662,12 +682,29 @@ router.post("/process", async (req, res) => {
       },
     });
 
-    // ── @betogate post-success gate hook (additive, non-blocking) ─────────────
+    // ── @betogate + IoT Gate State post-success hook (additive, non-blocking) ─────
     // The response above is ALREADY sent to the client before this runs.
-    // We fire the gate service hook purely based on the qr_code_id.
-    // Regular user scans (admin dashboard) do NOT trigger gate open.
+    // Station scans trigger the gate; regular admin scans do NOT.
+    console.log("[IOT_DEBUG] Scan hook triggered. User:", requestUser?.username, "Type:", requestUser?.type, "Device:", requestUser?.device_id);
     if (requestUser?.type === "station" && requestUser?.device_id) {
-      dispatchToGateService({ qr_code_id: qrId });
+      console.log("[IOT_DEBUG] Station condition met. machineOriginForWebhook:", machineOriginForWebhook, "qrId:", qrId);
+      if (machineOriginForWebhook) {
+        // ── IoT direct signal (HTTP-polling ESP32 on port 3001) ────────────────
+        const mc = machineOriginForWebhook.toLowerCase().replace(/[^a-z0-9]/g, "");
+        // Force QR to uppercase to match NVS provisioning (e.g. 'QR-1003') just in case
+        const normalizedQrId = qrId.toUpperCase();
+        const iotPath = `/webhook/${mc}/${normalizedQrId}`;
+        console.log("[IOT_DEBUG] Setting state for iotPath:", iotPath);
+        setIotScanned(iotPath);   // zero-latency: same Node process, no HTTP hop
+        // ── Legacy @betogate hook (kept for TCP-provisioned units) ──────────────
+        triggerMachineWebhook({ machine_code: machineOriginForWebhook, qr_code_id: qrId });
+      } else {
+        console.log("[IOT_DEBUG] Fallback: No machineOriginForWebhook. Using legacy flat dispatch.");
+        // Fallback: v3 flat dispatch for QRs without machine_origin
+        dispatchToGateService({ qr_code_id: qrId });
+      }
+    } else {
+      console.log("[IOT_DEBUG] Scan did not trigger IoT because user is not a station or lacks device_id.");
     }
 
     // ── End @betogate hook ────────────────────────────────────────────────────
