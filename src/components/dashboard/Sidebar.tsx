@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { ScanLine, Boxes, History, Smartphone, Menu, QrCode, Users, Database, Sparkles, BadgeCheck, CreditCard, Bell, LogOut, ChevronsUpDown, Sun, Moon, MonitorCog, ShieldCheck } from "lucide-react";
+import { ScanLine, Boxes, History, Smartphone, Menu, QrCode, Users, Database, Sparkles, BadgeCheck, CreditCard, Bell, LogOut, ChevronsUpDown, Sun, Moon, MonitorCog, ShieldCheck, Monitor, Cpu } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -73,6 +73,18 @@ export const MANAGEMENT_ITEMS: NavItem[] = [
     to: "/qr-privileges",
     icon: ShieldCheck,
   },
+  {
+    label: "Stock Display",
+    description: "Tampilan Monitor Stock",
+    to: "/tvsection",
+    icon: Monitor,
+  },
+  {
+    label: "Provisioning",
+    description: "Provisioning Mesin dengan IoT - ESP32",
+    to: "/admin/provisioning",
+    icon: Cpu,
+  }
 ];
 
 export const MASTER_DATA_ITEMS: NavItem[] = [

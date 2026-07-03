@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ViewStockRouteImport } from './routes/view-stock'
+import { Route as TvsectionRouteImport } from './routes/tvsection'
 import { Route as TvRouteImport } from './routes/tv'
 import { Route as TeiteiRouteImport } from './routes/teitei'
 import { Route as TaskHistoryRouteImport } from './routes/task-history'
@@ -39,6 +40,11 @@ import { Route as AdminProvisioningRouteImport } from './routes/admin.provisioni
 const ViewStockRoute = ViewStockRouteImport.update({
   id: '/view-stock',
   path: '/view-stock',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TvsectionRoute = TvsectionRouteImport.update({
+  id: '/tvsection',
+  path: '/tvsection',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TvRoute = TvRouteImport.update({
@@ -184,6 +190,7 @@ export interface FileRoutesByFullPath {
   '/task-history': typeof TaskHistoryRoute
   '/teitei': typeof TeiteiRoute
   '/tv': typeof TvRoute
+  '/tvsection': typeof TvsectionRoute
   '/view-stock': typeof ViewStockRoute
   '/admin/provisioning': typeof AdminProvisioningRoute
   '/master-data/create': typeof MasterDataCreateRoute
@@ -212,6 +219,7 @@ export interface FileRoutesByTo {
   '/task-history': typeof TaskHistoryRoute
   '/teitei': typeof TeiteiRoute
   '/tv': typeof TvRoute
+  '/tvsection': typeof TvsectionRoute
   '/view-stock': typeof ViewStockRoute
   '/admin/provisioning': typeof AdminProvisioningRoute
   '/master-data/create': typeof MasterDataCreateRoute
@@ -241,6 +249,7 @@ export interface FileRoutesById {
   '/task-history': typeof TaskHistoryRoute
   '/teitei': typeof TeiteiRoute
   '/tv': typeof TvRoute
+  '/tvsection': typeof TvsectionRoute
   '/view-stock': typeof ViewStockRoute
   '/admin/provisioning': typeof AdminProvisioningRoute
   '/master-data/create': typeof MasterDataCreateRoute
@@ -271,6 +280,7 @@ export interface FileRouteTypes {
     | '/task-history'
     | '/teitei'
     | '/tv'
+    | '/tvsection'
     | '/view-stock'
     | '/admin/provisioning'
     | '/master-data/create'
@@ -299,6 +309,7 @@ export interface FileRouteTypes {
     | '/task-history'
     | '/teitei'
     | '/tv'
+    | '/tvsection'
     | '/view-stock'
     | '/admin/provisioning'
     | '/master-data/create'
@@ -327,6 +338,7 @@ export interface FileRouteTypes {
     | '/task-history'
     | '/teitei'
     | '/tv'
+    | '/tvsection'
     | '/view-stock'
     | '/admin/provisioning'
     | '/master-data/create'
@@ -356,6 +368,7 @@ export interface RootRouteChildren {
   TaskHistoryRoute: typeof TaskHistoryRoute
   TeiteiRoute: typeof TeiteiRoute
   TvRoute: typeof TvRoute
+  TvsectionRoute: typeof TvsectionRoute
   ViewStockRoute: typeof ViewStockRoute
   AdminProvisioningRoute: typeof AdminProvisioningRoute
   MasterDataCreateRoute: typeof MasterDataCreateRoute
@@ -375,6 +388,13 @@ declare module '@tanstack/react-router' {
       path: '/view-stock'
       fullPath: '/view-stock'
       preLoaderRoute: typeof ViewStockRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tvsection': {
+      id: '/tvsection'
+      path: '/tvsection'
+      fullPath: '/tvsection'
+      preLoaderRoute: typeof TvsectionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/tv': {
@@ -572,6 +592,7 @@ const rootRouteChildren: RootRouteChildren = {
   TaskHistoryRoute: TaskHistoryRoute,
   TeiteiRoute: TeiteiRoute,
   TvRoute: TvRoute,
+  TvsectionRoute: TvsectionRoute,
   ViewStockRoute: ViewStockRoute,
   AdminProvisioningRoute: AdminProvisioningRoute,
   MasterDataCreateRoute: MasterDataCreateRoute,
