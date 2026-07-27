@@ -15,12 +15,17 @@ const allowedOrigins: string[] = rawOrigins
     "http://127.0.0.1:5173",
     "http://127.0.0.1:8080",
     "http://172.19.82.34:3000", // this for prevent cors blocked on production change with subdomain if you have it yah 
-    "http://172.19.82.34:3001",
+    "http://172.19.82.34:4000 //ganti endpoint ini saat deployment",
     "http://172.19.82.34:8080",
     "http://172.19.82.34:5173",
     "http://172.19.82.34:4173",
-    //this section are for local development, you should add port 3000,3001,8080,5173,4173,...
+    //this section are for local development, you should add port 3000,4000 // sesuaikan port ini #deployment,8080,5173,4173,...
     //
+    "http://10.137.28.152:5173",
+    "http://10.137.28.152:4000 //ganti endpoint ini saat deployment",
+    "http://10.137.28.152:8080",
+    "http://10.137.28.152:4001",
+    "http://10.137.28.152:3000",
   ];
 
 export const configuredCors = cors({

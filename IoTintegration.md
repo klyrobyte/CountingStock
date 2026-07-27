@@ -54,7 +54,7 @@ You will analyze the full system flow described below, then implement **only the
 [http://localhost:5173/station/dashboard] ← DO NOT TOUCH (Scanning logic, @gatelogic)
         │
         ▼
-[R.I.S.K.I API Layer (:3001)] ─► Validation Success!
+[R.I.S.K.I API Layer (:4000 //ganti endpoint ini saat deployment)] ─► Validation Success!
         │
         └──────────────────────► [Auto-Generated Machine Webhook] ◄── @machinewebhook (NEW)
                                    POST /webhook/{machine_code}/{qr_id}

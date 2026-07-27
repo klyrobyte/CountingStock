@@ -80,7 +80,7 @@ Preferences gatePrefs;
 String cfgWifiSsid;
 String cfgWifiPass;
 String cfgServerIp;
-int    cfgServerPort = 3001;  // v6.3: Express backend directly (no @betogate; was 4001)
+int    cfgServerPort = 4000 // sesuaikan port ini #deployment;  // v6.3: Express backend directly (no @betogate; was 4001)
 String cfgMachineCode;        // e.g. "mc0203"
 String cfgWebhookPath;        // e.g. "/webhook/mc0203/qr-1003"
 bool   gateConfigLoaded = false;
@@ -199,7 +199,7 @@ void connectWiFiIfNeeded() {
 
 // ==========================================
 // --- v6.3 ADD: HTTP POLLING LAYER ---
-// Polls GET /iot/{mc}/{qr} on the Express backend (port 3001).
+// Polls GET /iot/{mc}/{qr} on the Express backend (port 4000 // sesuaikan port ini #deployment).
 // On rising edge (false→true) calls handleScan(), then resets via POST /reset.
 // The webhook path stored in NVS ("/webhook/mc2/QR-1003") is parsed to extract
 // mc and qr segments — no NVS schema change needed.
@@ -420,7 +420,7 @@ void loop() {
         gatePrefs.putString("ssid",    doc["wifi_ssid"]    | "");
         gatePrefs.putString("pass",    doc["wifi_pass"]    | "");
         gatePrefs.putString("srvip",   doc["server_ip"]    | "");
-        gatePrefs.putInt("srvport",    doc["port"]          | 3001);
+        gatePrefs.putInt("srvport",    doc["port"]          | 4000 // sesuaikan port ini #deployment);
         gatePrefs.putString("mc",      doc["machine_code"] | "");
         gatePrefs.putString("hook",    doc["webhook_path"] | "");
         gatePrefs.end();

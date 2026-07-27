@@ -13,7 +13,7 @@ This document covers every REST API endpoint exposed by the Express server (`ser
 
 | Environment | Base URL |
 |---|---|
-| **Local development** | `http://localhost:3001/api` |
+| **Local development** | `http://localhost:4000 //ganti endpoint ini saat deployment/api` |
 | **Via Vite proxy** | `/api` (proxied automatically by `vite.config.ts`) |
 | **Production** | Your configured domain + `/api` |
 

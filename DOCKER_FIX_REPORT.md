@@ -12,7 +12,7 @@
 2. After Dockerfile fix → `[guardian] ssr exited with code 0` (silent exit, no listener).
 3. After entry-path fix → still `[guardian] ssr exited with code 0`.
 4. After Node-listener fix → server up on port 3000, but browser shows **blank white screen** with `Failed to load module script ... MIME type "text/html"` errors for every `/assets/*.js`.
-5. After static-file fix → site loads, but **login hits port 3000 instead of 3001**.
+5. After static-file fix → site loads, but **login hits port 3000 instead of 4000 // sesuaikan port ini #deployment**.
 6. After API-proxy fix → login reaches API but → `CORS: Origin http://172.19.82.34:3000 not allowed`.
 7. After Origin-strip fix → CORS passes, but → `getaddrinfo EAI_AGAIN henkaten-db` on the VM.
 8. After external-network attach → DB resolves, login works end-to-end.
@@ -101,7 +101,7 @@ The build-existence check (`SSR_BUILD`) is split from the launched script (`SSR_
 
 Minimal Node HTTP server that ties everything together. Order of resolution per request:
 
-1. **API proxy** — if path starts with `/api`, forward to `http://127.0.0.1:3001` (Express). Strips `Origin` and `Referer` so the API sees a server-to-server call and falls into the `!origin` allow branch of the CORS middleware. Configurable via `API_PROXY_HOST` / `API_PORT`.
+1. **API proxy** — if path starts with `/api`, forward to `http://127.0.0.1:4000 //ganti endpoint ini saat deployment` (Express). Strips `Origin` and `Referer` so the API sees a server-to-server call and falls into the `!origin` allow branch of the CORS middleware. Configurable via `API_PROXY_HOST` / `API_PORT`.
 2. **Static files** — serves `dist/client/**` with correct MIME types and `Cache-Control: public, max-age=31536000, immutable` for `/assets/`. Path normalization prevents directory traversal.
 3. **SSR fallback** — dynamically imports `dist/server/server.js`, grabs `default.fetch`, converts Node `IncomingMessage` ↔ Web `Request`/`Response` using `Readable.toWeb` / `Readable.fromWeb`.
 4. **Listens** on `process.env.PORT || 3000`, `HOST=0.0.0.0`.
@@ -171,7 +171,7 @@ docker compose exec counting-stock getent hosts henkaten-db   # should print an 
 
 Expected log lines:
 ```
-[api]  …Express server listening on 3001
+[api]  …Express server listening on 4000 // sesuaikan port ini #deployment
 [ssr]  listening on http://0.0.0.0:3000
 ```
 
@@ -186,7 +186,7 @@ Browser:
 | Service | Container | Host (default) | Override |
 |---------|-----------|----------------|----------|
 | Frontend SSR | 3000 | 3000 | `APP_PORT` |
-| Express API | 3001 | 3001 | `API_PORT` |
+| Express API | 4000 // sesuaikan port ini #deployment | 4000 // sesuaikan port ini #deployment | `API_PORT` |
 | MySQL | — | external (`henkaten-db` container) | n/a |
 
 ---

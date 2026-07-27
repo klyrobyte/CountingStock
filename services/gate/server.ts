@@ -24,8 +24,8 @@ import dotenv from "dotenv";
 
 // Resolve __dirname for ESM
 const __filename = fileURLToPath(import.meta.url);
-const __dirname  = path.dirname(__filename);
-const UI_PATH    = path.join(__dirname, "ui", "index.html");
+const __dirname = path.dirname(__filename);
+const UI_PATH = path.join(__dirname, "ui", "index.html");
 
 dotenv.config();
 
@@ -181,7 +181,7 @@ function handleDeviceConnection(socket: net.Socket) {
         const qrs = Array.isArray(msg.qrs) ? (msg.qrs as string[]) : [];
         const machineCode = (msg.machine_code as string) || "";
         const webhookPath = (msg.webhook_path as string) || "";
-        
+
         if (!did) {
           socketWrite(socket, { type: "error", message: "Missing mac or device_id" });
           socket.destroy();
@@ -317,7 +317,7 @@ setInterval(() => {
         }
       }
       connections.delete(id);
-      setDeviceStatus(id, "offline").catch(() => {});
+      setDeviceStatus(id, "offline").catch(() => { });
     }
   }
 }, HEARTBEAT_INTERVAL_MS);
@@ -409,7 +409,7 @@ const httpServer = http.createServer(async (req, res) => {
   }
 
   if (req.method === "POST" && url.pathname.startsWith("/webhook/")
-      && !url.pathname.endsWith("/reset")) {
+    && !url.pathname.endsWith("/reset")) {
     let body = "";
     req.on("data", (c) => { body += c; });
     req.on("end", async () => {
@@ -536,10 +536,10 @@ const httpServer = http.createServer(async (req, res) => {
   // ── OPTIONS preflight — browsers send this before cross-origin POSTs ──────
   if (req.method === "OPTIONS") {
     res.writeHead(204, {
-      "Access-Control-Allow-Origin":  "*",
+      "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      "Access-Control-Max-Age":       "86400",
+      "Access-Control-Max-Age": "86400",
     });
     res.end();
     return;
@@ -547,11 +547,11 @@ const httpServer = http.createServer(async (req, res) => {
 
   // ── /api/* — Reverse-proxy to main backend ────────────────────────────────
   // The admin UI is served from port 4001. It calls /api/... relative URLs,
-  // which land here and are forwarded to the main Express server on port 3001.
+  // which land here and are forwarded to the main Express server on port 4000 // sesuaikan port ini #deployment.
   // This removes ALL browser CORS constraints — the browser only ever sees
   // one origin (port 4001). This is the permanent fix for NetworkError.
   if (url.pathname.startsWith("/api/")) {
-    const MAIN_PORT = Number(process.env.API_PORT) || 3001;
+    const MAIN_PORT = Number(process.env.API_PORT) || 4000 // sesuaikan port ini #deployment;
     const proxyOpts: http.RequestOptions = {
       hostname: "127.0.0.1",
       port: MAIN_PORT,
@@ -609,7 +609,7 @@ async function shutdown(signal: string) {
   log("shutdown", { signal });
   for (const [id, conn] of connections) {
     conn.socket.destroy();
-    await setDeviceStatus(id, "offline").catch(() => {});
+    await setDeviceStatus(id, "offline").catch(() => { });
   }
   tcpServer.close();
   httpServer.close();
@@ -618,4 +618,4 @@ async function shutdown(signal: string) {
 }
 
 process.on("SIGTERM", () => shutdown("SIGTERM"));
-process.on("SIGINT",  () => shutdown("SIGINT"));
+process.on("SIGINT", () => shutdown("SIGINT"));
