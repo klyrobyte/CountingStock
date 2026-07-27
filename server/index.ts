@@ -1,7 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
-import { Iris } from '@sugity/iris-node';
-import { registerExpressApp } from '@sugity/iris-node/express';
+// import { Iris } from '@sugity/iris-node';
+// import { registerExpressApp } from '@sugity/iris-node/express';
 // file route management, imported from ./routes 
 import qrRoutes from "./routes/qr.js";
 import stockRoutes from "./routes/stock.js";
@@ -34,7 +34,7 @@ import pool from "./db.js";
 
 dotenv.config();
 
-const iris = new Iris({}); // ponytail: zero-config init, passes empty object to avoid SDK bug
+// const iris = new Iris({}); // ponytail: zero-config init, passes empty object to avoid SDK bug
 const app = express();
 const PORT = Number(process.env.API_PORT) || 4000 // sesuaikan port ini #deployment; //Deploy: #4000 // sesuaikan port ini #deployment change the port based on deploy enviroment 
 
@@ -114,13 +114,13 @@ const server = app.listen(PORT, async () => {
   console.log(`🚀 API server berajalan di http://localhost:${PORT}`); //deploy: #localhost adjust with deploy inviroment 
   console.log(`   check kesehata nyah: http://localhost:${PORT}/api/health`); //deploy: #localhost
   // ponytail: catch errors so telemetry failures don't crash the main app
-  try {
-    await iris.init();
-    await registerExpressApp(iris, app);
-    console.log("IRIS connected & routes synced.");
-  } catch (err) {
-    console.error("IRIS init failed:", err);
-  }
+  // try {
+  //   await iris.init();
+  //   await registerExpressApp(iris, app);
+  //   console.log("IRIS connected & routes synced.");
+  // } catch (err) {
+  //   console.error("IRIS init failed:", err);
+  // }
 });
 
 function gracefulShutdown(signal: string) {
