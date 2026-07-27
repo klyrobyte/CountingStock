@@ -257,7 +257,7 @@ DB_NAME=outindb
 
 # ─── Express API Server ───────────────────────────────────────────────────────
 # Port the API server listens on. The Vite proxy forwards /api/* to this port.
-API_PORT=3001
+API_PORT=4000 // sesuaikan port ini #deployment
 
 # ─── JWT Secret ───────────────────────────────────────────────────────────────
 # Used to sign and verify auth tokens. Use a long, random string in production.
@@ -15077,7 +15077,7 @@ import { requireAuth } from "./middleware/authMiddleware.js";
 dotenv.config();
 
 const app = express();
-const PORT = Number(process.env.API_PORT) || 3001; //Deploy: #3001 change the port based on deploy enviroment 
+const PORT = Number(process.env.API_PORT) || 4000 // sesuaikan port ini #deployment; //Deploy: #4000 // sesuaikan port ini #deployment change the port based on deploy enviroment 
 
 app.use(cors());
 app.use(express.json({ limit: "10mb" }));
@@ -15744,7 +15744,7 @@ export default defineConfig({
         allowedHosts: true,
         proxy: {
             "/api": {
-                target: "http://localhost:3001",
+                target: "http://localhost:4000 //ganti endpoint ini saat deployment",
                 changeOrigin: true,
                 secure: false,
             },
@@ -20344,7 +20344,7 @@ const sessionCache = new Map<string, { metadata: Record<string, unknown>; scanne
 
 const SECRET_KEY = process.env.JWT_SECRET || "pixel-scan-secret-key-2026"; //change with sha1 encrypt
 // BASE_URL is kept for any future use but is no longer embedded in QR payloads
-const _BASE_URL = process.env.API_BASE_URL || "http://localhost:3001";
+const _BASE_URL = process.env.API_BASE_URL || "http://localhost:4000 //ganti endpoint ini saat deployment";
 void _BASE_URL; // intentionally unused - QR now stores only a short token
 
 // ─── Helper: generate a short opaque token (8 URL-safe chars) ────────────────

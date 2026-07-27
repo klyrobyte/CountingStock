@@ -19,8 +19,8 @@ services:
     image: counting-stock
     restart: unless-stopped
     ports:
-      - "${APP_PORT:-3000}:3000"   # Vite SSR / TanStack Start
-      - "${API_PORT:-3001}:3001"   # Express API
+      - "${APP_PORT:-3000}:3000" # Vite SSR / TanStack Start
+      - "${API_PORT:-4000 // sesuaikan port ini #deployment}:4000 //ganti endpoint ini saat deployment" # Express API
     environment:
       # Database — overridden by .env or docker compose --env-file
       DB_HOST: ${DB_HOST:-127.0.0.1}
@@ -29,7 +29,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME:-outindb}
       # API
-      API_PORT: 3001
+      API_PORT: 4000 // sesuaikan port ini #deployment
       JWT_SECRET: ${JWT_SECRET}
       API_BASE_URL: ${API_BASE_URL:-http://localhost:3000}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY}
@@ -45,7 +45,6 @@ services:
       # Optional: mount .env at runtime (alternative to env vars above)
       # - ./.env:/app/.env:ro
       - app-logs:/app/logs
-
   # ── MySQL 8 Database ─────────────────────────────────────────────────────────
   # db:
   #   image: mysql:8.0
@@ -71,7 +70,7 @@ services:
   #   networks:
   #     - pixel-net
 
-# ── Named volumes ─────────────────────────────────────────────────────────────
+  # ── Named volumes ─────────────────────────────────────────────────────────────
 volumes:
   # db-data:
   #   driver: local

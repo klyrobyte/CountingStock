@@ -18,7 +18,7 @@ const sessionCache = new Map<string, { metadata: Record<string, unknown>; scanne
 
 const SECRET_KEY = process.env.JWT_SECRET || "pixel-scan-secret-key-2026"; //change with sha1 encrypt
 // BASE_URL is kept for any future use but is no longer embedded in QR payloads
-const _BASE_URL = process.env.API_BASE_URL || "http://localhost:3001";
+const _BASE_URL = process.env.API_BASE_URL || "http://localhost:4000 //ganti endpoint ini saat deployment";
 void _BASE_URL; // intentionally unused - QR now stores only a short token
 
 // ─── Helper: generate a short opaque token (8 URL-safe chars) ────────────────
@@ -689,7 +689,7 @@ router.post("/process", async (req, res) => {
     if (requestUser?.type === "station" && requestUser?.device_id) {
       console.log("[IOT_DEBUG] Station condition met. machineOriginForWebhook:", machineOriginForWebhook, "qrId:", qrId);
       if (machineOriginForWebhook) {
-        // ── IoT direct signal (HTTP-polling ESP32 on port 3001) ────────────────
+        // ── IoT direct signal (HTTP-polling ESP32 on port 4000 // sesuaikan port ini #deployment) ────────────────
         const mc = machineOriginForWebhook.toLowerCase().replace(/[^a-z0-9]/g, "");
         // Force QR to uppercase to match NVS provisioning (e.g. 'QR-1003') just in case
         const normalizedQrId = qrId.toUpperCase();
