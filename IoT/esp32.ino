@@ -1,5 +1,5 @@
 // ==========================================
-// Gate.ino | R.I.S.K.I Gate v6.3.2 (Silent HTTP Polling)
+// Gate.ino | R.I.S.K.I Gate v6.4.2 (Workflow Adjusted)
 //
 // all resource are documented on https://github.com/rizkydaffy/iot-gate-ino
 // ==========================================
@@ -42,17 +42,18 @@
 //    - flow changes: (markdowned, not deleted) Flow A, we onl use flow B and C
 //    - new flow: we're change the relay function from = if it on that mean alarm on, onto relay used as scan validate, how it work? users pull palete => alarm on (THE REQUEST ARE HANDLED WITH HARDWARE TEAM) and the relay jobs are to make the alarm of like : alarm => users scan => relay on  for bout 5s and after 5s the relay turn of again (it uses are just menated for hardware team as a triggered to make thier listen only the relay on, or the simple word are if it on  for 5s that means users has been scanned and process/flow start all over again from the start) 
 //    - the new flow: FLOW B = 1. (no pallet / ls not touched) pallete sedang di luar, 2. (Ls got pressed) pallete terdeteksi masuk system standby, 3. (ls got pulled) PALLETE DI TARIK, SEGERA LAKUKAN SCAN [alarm on, we're not handle this, the hardware team handle all of the alarm thing] => 4. (User Scan) Berhasil melakukan scan, sistem reset ke awal [Relay on for 5s and get of afterward, hardware team could use this as triggered to turn of the alarm system they build]
-//    -
+
 #include <Preferences.h>
 #include <WiFi.h>
 #include <ArduinoJson.h>
 
 enum SystemState {
-  // we're only use : Pallet is in place, waiting for scan/pull, flow b and Pallet pulled safely, waiting for return
-  STATE_STANDBY,       // Pallet is in place, waiting for scan/pull
-  STATE_AUTHORIZED,    // Flow A: Scanned, safe to pull anytime (markdowned)
-  STATE_ALARM,         // Flow B: Pulled without scan, alarm active
-  STATE_EMPTY          // Pallet pulled safely, waiting for return
+  // v6.4.2: Only Flow B and C are active. Flow A is markdowned (kept for reference, not used).
+  STATE_STANDBY,       // Flow B step 2: Pallet is in place, waiting for pull
+  // STATE_AUTHORIZED,    // Flow A (markdowned): Scanned before pull - no longer used
+  STATE_AUTHORIZED,    // Flow A (markdowned - kept to avoid compile break on legacy references)
+  STATE_ALARM,         // Flow B step 3: Pallet pulled, alarm on (hardware handles alarm)
+  STATE_EMPTY          // Flow C: Pallet pulled safely, waiting for return
 };
 
 // ==========================================
@@ -91,6 +92,10 @@ unsigned long candidateSince = 0;
 
 unsigned long ignoreLsUntil = 0;
 int relayPhysicalState = RELAY_RELEASE;
+
+// v6.4.2 ADD: relay pulse tracking (5s scan-confirmation pulse)
+const unsigned long RELAY_PULSE_MS = 5000;
+unsigned long relayPulseUntil = 0;  // 0 = no active pulse
 
 // ==========================================
 // --- v6.2 ADD: WEBHOOK / NETWORK CONFIG (NVS-backed) ---
@@ -404,7 +409,7 @@ void setup() {
   candidateState = lastLsState;
 
   Serial.println("\n=============================================");
-  Serial.println("  RISKI Gate v6.3.2 (Silent HTTP Polling)   ");
+  Serial.println("  RISKI Gate v6.4.2 (Workflow Adjusted)     ");
   Serial.println("=============================================");
 
   if (lastLsState == LS_PRESSED) {
@@ -479,6 +484,13 @@ void loop() {
     }
   }
 
+  // v6.4.2 ADD: relay pulse auto-release after RELAY_PULSE_MS
+  if (relayPulseUntil > 0 && millis() >= relayPulseUntil) {
+    relayPulseUntil = 0;
+    setRelay(RELAY_RELEASE, "scan pulse expired - relay OFF");
+    Serial.println("[RELAY] 5s scan pulse complete. Relay OFF.");
+  }
+
   // v6.2 ADD — appended only, nothing above this line was changed
   maintainGateNetwork();
 }
@@ -490,22 +502,20 @@ void handleConfirmedLsChange(int state) {
   if (state == LS_UNPRESSED) {
     // === PALLET DITARIK KELUAR ===
     if (currentState == STATE_STANDBY) {
-      setRelay(RELAY_ACTIVE, "unauthorized pull - siren ON");
-      enterState(STATE_ALARM, "[WARN] ALARM: SCAN FIRST! Pallet ditarik tanpa scan - waiting for scan.");
+      // v6.4.2: Alarm is hardware-handled. ESP32 does NOT fire relay here.
+      // Relay role changed: relay is now a 5s scan-confirmation pulse only.
+      enterState(STATE_ALARM, "[WARN] PALLETE DI TARIK, SEGERA LAKUKAN SCAN - waiting for scan.");
     } 
-    else if (currentState == STATE_AUTHORIZED) {
-      setRelay(RELAY_RELEASE, "authorized pull complete - siren stays OFF");
-      enterState(STATE_EMPTY, "[SUCCESS] PASS: Pallet ditarik dengan aman. Session closed.");
-    }
+    // Flow A (markdowned - STATE_AUTHORIZED branch kept to avoid dead-code compile issues)
+    // else if (currentState == STATE_AUTHORIZED) { ... }
   } 
   else if (state == LS_PRESSED) {
     // === PALLET DIKEMBALIKAN KE DALAM ===
     if (currentState == STATE_ALARM) {
-      Serial.println("[INFO] Pallet dikembalikan (LS tertekan). ALARM TETAP AKTIF: Harus SCAN untuk menutup sesi!");
+      Serial.println("[INFO] Pallet dikembalikan (LS tertekan). Harus SCAN untuk menutup sesi!");
     } 
     else if (currentState == STATE_EMPTY) {
-      setRelay(RELAY_RELEASE, "pallet returned - siren stays OFF");
-      enterState(STATE_STANDBY, "[INFO] Pallet/Kereta dikembalikan ke posisi semula (LS tertekan). Sesi baru siap.");
+      enterState(STATE_STANDBY, "[INFO] Pallet terdeteksi masuk - system standby.");
     }
   }
 }
@@ -514,21 +524,25 @@ void handleConfirmedLsChange(int state) {
 // --- SCANNER HANDLER ---
 // ==========================================
 void handleScan() {
-  if (currentState == STATE_STANDBY) {
-    setRelay(RELAY_RELEASE, "scan authorized");
-    enterState(STATE_AUTHORIZED, "[EVENT] QR Scanned. Access granted - silahkan tarik pallet.");
-  } 
-  else if (currentState == STATE_ALARM) {
+  // Flow A (markdowned): STATE_STANDBY scan-before-pull path removed from active flow.
+  // if (currentState == STATE_STANDBY) { ... }
+
+  if (currentState == STATE_ALARM) {
+    // v6.4.2: Scan received during alarm.
+    // Fire relay ON for 5s as scan-confirmation pulse (hardware team uses this
+    // as trigger to turn off their alarm system). Then reset flow to start.
+    setRelay(RELAY_ACTIVE, "scan confirmed - 5s pulse start");
+    relayPulseUntil = millis() + RELAY_PULSE_MS;
+    Serial.println("[RELAY] Scan confirmed. Relay ON for 5s (scan-confirmation pulse).");
+
     if (currentLsState == LS_UNPRESSED) {
-      setRelay(RELAY_RELEASE, "late scan verified (outside) - siren OFF");
-      enterState(STATE_EMPTY, "[SUCCESS] PASS: Late scan verified. Alarm mati. Pallet aman di luar.");
+      enterState(STATE_EMPTY, "[SUCCESS] Berhasil melakukan scan. Pallet aman di luar.");
     } else {
-      setRelay(RELAY_RELEASE, "late scan verified (inside) - siren OFF");
-      enterState(STATE_STANDBY, "[SUCCESS] PASS: Late scan verified. Alarm mati. Sesi direset ke awal.");
+      enterState(STATE_STANDBY, "[SUCCESS] Berhasil melakukan scan, sistem reset ke awal.");
     }
   } 
-  else if (currentState == STATE_AUTHORIZED) {
-    Serial.println("[INFO] Sesi sudah aktif. Silahkan tarik pallet.");
+  else if (currentState == STATE_STANDBY) {
+    Serial.println("[INFO] Sistem standby. Pallet belum ditarik.");
   }
   else if (currentState == STATE_EMPTY) {
     Serial.println("[INFO] Pallet sedang di luar. Kembalikan ke posisi semula (LS tertekan) untuk memulai.");
