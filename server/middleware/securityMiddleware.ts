@@ -21,11 +21,13 @@ const allowedOrigins: string[] = rawOrigins
     "http://172.19.82.34:4173",
     //this section are for local development, you should add port 3000,4000 // sesuaikan port ini #deployment,8080,5173,4173,...
     //
-    "http://10.137.28.152:5173",
-    "http://10.137.28.152:4000 //ganti endpoint ini saat deployment",
-    "http://10.137.28.152:8080",
-    "http://10.137.28.152:4001",
-    "http://10.137.28.152:3000",
+    "http://192.168.31.152:5173",
+    "http://192.168.31.152:3001",
+    "http://192.168.31.152:3000",
+    "http://192.168.31.152:4000",
+    "http://192.168.31.152:4001",
+    "http://192.168.31.152:8080",
+    "http://counting-stock.sugity.co.id",
   ];
 
 export const configuredCors = cors({
