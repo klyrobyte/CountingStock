@@ -35,6 +35,7 @@ services:
       INTERNAL_API_KEY: ${INTERNAL_API_KEY}
       VITE_INTERNAL_API_KEY: ${VITE_INTERNAL_API_KEY}
       NODE_ENV: production
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://cstock.sugity.co.id}
     networks:
       - app-network
       - nginx-public
