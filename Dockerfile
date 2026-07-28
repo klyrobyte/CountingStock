@@ -43,7 +43,7 @@ COPY .env.example .env.example
 # Expose ports
 # 3000 = Vite SSR / TanStack Start (frontend)
 # 4000 // sesuaikan port ini #deployment = Express API server (backend)
-EXPOSE 3000 4000 // sesuaikan port ini #deployment
+EXPOSE 3000 4000
 
 # Health-check — pings the Express health endpoint every 30 s
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
