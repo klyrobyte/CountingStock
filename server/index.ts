@@ -36,7 +36,7 @@ dotenv.config();
 
 // const iris = new Iris({}); // ponytail: zero-config init, passes empty object to avoid SDK bug
 const app = express();
-const PORT = Number(process.env.API_PORT) || 4000 // sesuaikan port ini #deployment; //Deploy: #4000 // sesuaikan port ini #deployment change the port based on deploy enviroment 
+const PORT = Number(process.env.API_PORT) || 4000;
 
 // Security headers must be first - sets all protective HTTP headers
 app.use(securityHeaders);
@@ -111,8 +111,8 @@ app.use(globalErrorHandler);
 // Allows in-flight requests to complete before the process exits.
 // Triggered by: pm2 restart, docker stop, kubernetes rolling update, CTRL+C.
 const server = app.listen(PORT, async () => {
-  console.log(`🚀 API server berajalan di http://localhost:${PORT}`); //deploy: #localhost adjust with deploy inviroment 
-  console.log(`   check kesehata nyah: http://localhost:${PORT}/api/health`); //deploy: #localhost
+  console.log(`🚀 API server berajalan di http://localhost:${PORT}`);
+  console.log(`   check kesehata nyah: http://localhost:${PORT}/api/health`);
   // ponytail: catch errors so telemetry failures don't crash the main app
   // try {
   //   await iris.init();

@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import { config } from "../config.js";
 
-const SECRET_KEY = process.env.JWT_SECRET || "pixel-scan-secret-key-2026";
+const SECRET_KEY = config.JWT_SECRET;
 
 // Decoded JWT payload shape attached to every authenticated request
 interface JwtPayload {

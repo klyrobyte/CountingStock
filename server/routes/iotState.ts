@@ -15,6 +15,7 @@
  */
 
 import { Router } from "express";
+import { requireInternalKey } from "../middleware/internalKeyMiddleware.js";
 
 const router = Router();
 
@@ -58,9 +59,9 @@ function toPath(mc: string, qr: string): string {
 }
 
 // ── GET /iot/debug — shows all current IoT state entries ─────────────────────
-// Open http://192.168.31.152:4000 //ganti endpoint ini saat deployment/iot/debug in a browser to see all states
+// Open /iot/debug in a browser to see all states
 // MUST be before /:mc/:qr to avoid Express matching "debug" as a :mc param
-router.get("/debug", (_req, res) => {
+router.get("/debug", requireInternalKey, (_req, res) => {
   const entries: Record<string, { scanned: boolean; ts: string | null }> = {};
   for (const [key, val] of iotMap.entries()) {
     entries[key] = {
@@ -77,8 +78,8 @@ router.get("/debug", (_req, res) => {
 });
 
 // ── POST /iot/set/:mc/:qr — manually set scanned=true for testing ────────────
-// curl -X POST http://192.168.31.152:4000 //ganti endpoint ini saat deployment/iot/set/mc2/QR-1002
-router.post("/set/:mc/:qr", (req, res) => {
+// curl -X POST /iot/set/mc2/QR-1002
+router.post("/set/:mc/:qr", requireInternalKey, (req, res) => {
   const path = toPath(req.params.mc, req.params.qr);
   setIotScanned(path);
   res.setHeader("Access-Control-Allow-Origin", "*");

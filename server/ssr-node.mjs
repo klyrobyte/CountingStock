@@ -22,7 +22,7 @@ const CLIENT_DIR = resolve(__dirname, '..', 'dist', 'client');
 const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || '0.0.0.0';
 const API_TARGET_HOST = process.env.API_PROXY_HOST || '127.0.0.1';
-const API_TARGET_PORT = Number(process.env.API_PORT || 4000 // sesuaikan port ini #deployment);
+const API_TARGET_PORT = Number(process.env.API_PORT || 4000);
 
 const MIME = {
   '.js': 'application/javascript; charset=utf-8',
@@ -47,7 +47,7 @@ const MIME = {
 function proxyApi(req, res) {
   // Strip Origin/Referer so the API sees this as a server-to-server call.
   // Express CORS middleware treats no-origin requests as same-origin, which
-  // matches reality (browser hit us, we forward internally to 4000 // sesuaikan port ini #deployment).
+  // matches reality (browser hit us, we forward internally to API_TARGET_PORT).
   const { origin: _o, referer: _r, ...passHeaders } = req.headers;
   void _o; void _r;
   const proxyReq = httpRequest(

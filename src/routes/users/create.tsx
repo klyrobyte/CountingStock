@@ -71,7 +71,7 @@ function CreateUserPage() {
       setUsername(editUser.username);
       setNik(editUser.nik ?? "");
       setRole(
-        editUser.role === "viewer" ? "usertv" : editUser.role
+        (editUser.role as string) === "viewer" ? "usertv" : editUser.role
       );
       setStatus(editUser.status);
       setTvFactory(editUser.tv_factory ?? "");

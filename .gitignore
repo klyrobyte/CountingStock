@@ -19,11 +19,14 @@ dist-ssr
 
 # Secrets
 .env
-.env.local
-.env.*.local
 .env*
+
 # Docker build artifacts (keep compose + Dockerfile tracked, not cache)
 .dockerignore
+
+#Md
+roast*.md
+.iris-tmp
 
 # Wrangler / Cloudflare
 .wrangler/

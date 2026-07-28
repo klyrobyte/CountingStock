@@ -1,13 +1,9 @@
 import { Router } from "express";
-import crypto from "crypto";
 import pool from "../db.js";
 import type { RowDataPacket, ResultSetHeader } from "mysql2";
+import { hashPassword } from "../lib/crypto.js";
 
 const router = Router();
-
-function hashPassword(pw: string): string {
-  return crypto.createHash("sha256").update(pw).digest("hex");
-}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // [1] GET /api/users
@@ -64,7 +60,7 @@ router.post("/", async (req, res) => {
       [
         username.trim(),
         nik.trim(),
-        hashPassword(password),
+        await hashPassword(password),
         normalizedRole,
         status,
         tvFactory,
@@ -137,7 +133,7 @@ router.put("/:id", async (req, res) => {
 
     if (password) {
       fields.push("password_hash = ?");
-      values.push(hashPassword(password));
+      values.push(await hashPassword(password));
     }
 
     values.push(id);

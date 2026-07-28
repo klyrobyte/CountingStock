@@ -14,9 +14,7 @@ export type { AuthUser };
 // Auth state is initialized synchronously from localStorage on app boot.
 // isTokenValid() also auto-evicts expired tokens so stale sessions are never surfaced.
 export function useAuth() {
-  const [user, setUser] = useState<AuthUser | null>(() =>
-    isTokenValid() ? getAuthUser() : null
-  );
+  const [user, setUser] = useState<AuthUser | null>(() => getAuthUser());
   const [token, setToken] = useState<string | null>(() =>
     isTokenValid() ? getAuthToken() : null
   );

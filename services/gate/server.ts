@@ -547,11 +547,11 @@ const httpServer = http.createServer(async (req, res) => {
 
   // ── /api/* — Reverse-proxy to main backend ────────────────────────────────
   // The admin UI is served from port 4001. It calls /api/... relative URLs,
-  // which land here and are forwarded to the main Express server on port 4000 // sesuaikan port ini #deployment.
+  // which land here and are forwarded to the main Express server on MAIN_PORT.
   // This removes ALL browser CORS constraints — the browser only ever sees
   // one origin (port 4001). This is the permanent fix for NetworkError.
   if (url.pathname.startsWith("/api/")) {
-    const MAIN_PORT = Number(process.env.API_PORT) || 4000 // sesuaikan port ini #deployment;
+    const MAIN_PORT = Number(process.env.API_PORT) || 4000;
     const proxyOpts: http.RequestOptions = {
       hostname: "127.0.0.1",
       port: MAIN_PORT,

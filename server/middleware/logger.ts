@@ -8,12 +8,7 @@ import { Request, Response, NextFunction } from "express";
 // Output goes to stdout - pipe to a log aggregator (datadog, papertrail, etc.)
 // in production or read with `pm2 logs` / `docker logs`.
 
-function getClientIp(req: Request): string {
-  const forwarded = req.headers["x-forwarded-for"];
-  if (forwarded) return String(forwarded).split(",")[0].trim();
-  return req.ip || req.socket?.remoteAddress || "unknown";
-}
-
+import { getClientIp } from "../lib/request.js";
 export function requestLogger(req: Request, res: Response, next: NextFunction) {
   const startMs = Date.now();
   const ip = getClientIp(req);

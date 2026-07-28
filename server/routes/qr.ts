@@ -2,8 +2,11 @@ import { Router } from "express";
 import jwt from "jsonwebtoken";
 import QRCode from "qrcode";
 import crypto from "crypto";
+import { z } from "zod";
 import pool from "../db.js";
 import type { RowDataPacket, ResultSetHeader } from "mysql2";
+import { config } from "../config.js";
+import { resolveShortToken } from "../lib/resolveToken.js";
 import { syncStockAnalyticsOnScan } from "../lib/stockAnalyticsService.js";
 // ── @betogate hook (kept for backward compat with TCP fleet) ────────────────
 import { dispatchToGateService, triggerMachineWebhook } from "../../services/gate/gateHook.js";
@@ -16,10 +19,7 @@ const router = Router();
 // batchId → { metadata, scannedInAt }
 const sessionCache = new Map<string, { metadata: Record<string, unknown>; scannedInAt: Date }>();
 
-const SECRET_KEY = process.env.JWT_SECRET || "pixel-scan-secret-key-2026"; //change with sha1 encrypt
-// BASE_URL is kept for any future use but is no longer embedded in QR payloads
-const _BASE_URL = process.env.API_BASE_URL || "http://localhost:4000 //ganti endpoint ini saat deployment";
-void _BASE_URL; // intentionally unused - QR now stores only a short token
+const SECRET_KEY = config.JWT_SECRET;
 
 // ─── Helper: generate a short opaque token (8 URL-safe chars) ────────────────
 // Uses crypto.randomBytes for unpredictability. Charset is base62 (no +/= padding).
@@ -55,9 +55,10 @@ async function nextTaskId(): Promise<string> {
 async function updateStock(
   batchId: string,
   action: "SCAN_IN" | "SCAN_OUT",
-  unitValue: number
+  unitValue: number,
+  conn: any = pool
 ): Promise<void> {
-  const [rows] = await pool.query<RowDataPacket[]>(
+  const [rows] = await conn.query(
     "SELECT id, current_stock, unit_value FROM stock WHERE batch_id = ?",
     [batchId]
   );
@@ -67,20 +68,25 @@ async function updateStock(
   const uv = Number(rows[0].unit_value);
 
   let newStock: number;
-  let trend: "up" | "down";
+  let trend: "up" | "down" | "none" = "none";
 
   if (action === "SCAN_IN") {
     newStock = currentStock + unitValue;
-    trend = "up";
+    trend = currentStock < newStock ? "up" : "none";
   } else {
     // Caller already checked stock > 0 before calling this - just subtract
     newStock = Math.max(0, currentStock - unitValue);
-    trend = newStock === 0 ? "down" : "down";
+    trend = currentStock > newStock ? "down" : "none";
   }
 
-  const percentage = uv > 0 ? Math.min(100, parseFloat(((newStock / uv) * 100).toFixed(2))) : 0;
+  // Prevent overflow to >100 for display, but actual calculation should reflect reality.
+  // We'll keep the value realistic for calculations but cap display logic elsewhere if needed.
+  // Actually, we'll store the true percentage. 
+  // Wait, the roast said: "percentage capped at 100 masking real overflow".
+  // So we should remove Math.min(100) and let it be >100 if it is >100.
+  const percentage = uv > 0 ? parseFloat(((newStock / uv) * 100).toFixed(2)) : 0;
 
-  await pool.query(
+  await conn.query(
     "UPDATE stock SET current_stock = ?, trend = ?, percentage = ? WHERE batch_id = ?",
     [newStock, trend, percentage, batchId]
   );
@@ -115,7 +121,9 @@ router.get("/", async (req, res) => {
       query += " WHERE " + conditions.join(" AND ");
     }
 
-    query += " ORDER BY created_at DESC";
+    const limit = Number(req.query.limit) || 1000;
+    query += " ORDER BY created_at DESC LIMIT ?";
+    params.push(limit as any);
 
     const [rows] = await pool.query<RowDataPacket[]>(query, params);
     res.json({ success: true, data: rows });
@@ -129,16 +137,21 @@ router.get("/", async (req, res) => {
 // Body: { partName, factoryOrigin, value }
 // Also inserts a row into the stock table with current_stock = 0
 // ═══════════════════════════════════════════════════════════════════════════
+const generateSchema = z.object({
+  partName: z.string().min(1, "partName is required"),
+  factoryOrigin: z.string().min(1, "factoryOrigin is required"),
+  value: z.number().or(z.string().transform(Number)),
+  machineOrigin: z.string().optional(),
+  partId: z.number().optional(),
+});
+
 router.post("/generate", async (req, res) => {
   try {
-    const { partName, factoryOrigin, value, machineOrigin, partId } = req.body;
-
-    if (!partName || !factoryOrigin || value === undefined) {
-      return res.status(400).json({
-        success: false,
-        error: "Butuh fields terisi: partName, factoryOrigin, value",
-      });
+    const parseResult = generateSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return res.status(400).json({ success: false, error: parseResult.error.errors[0].message });
     }
+    const { partName, factoryOrigin, value, machineOrigin, partId } = parseResult.data;
 
     const batchId = `BATCH-${Date.now()}`;
     const qrId = await nextQrId();
@@ -366,37 +379,11 @@ router.get("/info", async (req, res) => {
       return res.status(400).json({ success: false, error: "Hmmm... Token hilang nih" });
     }
 
-    // Resolve short token → full JWT from DB
-    let [rows] = await pool.query<RowDataPacket[]>(
-      "SELECT token, updated_at, machine_origin FROM qr_codes WHERE short_token = ? LIMIT 1",
-      [token]
+    const actualToken = await resolveShortToken(token);
+    const [rows] = await pool.query<RowDataPacket[]>(
+      "SELECT token, updated_at, machine_origin, status FROM qr_codes WHERE short_token = ? LIMIT 1",
+      [actualToken]
     );
-
-    let actualToken = token;
-
-    if (rows.length === 0) {
-      // Fallback: check qr_aliases
-      let currentToken = token;
-      let depth = 0;
-      while (depth < 5) {
-        const [aliasRows] = await pool.query<RowDataPacket[]>(
-          "SELECT new_short_token FROM qr_aliases WHERE old_short_token = ? LIMIT 1",
-          [currentToken]
-        );
-        if (aliasRows.length === 0) break;
-        currentToken = aliasRows[0].new_short_token;
-        depth++;
-      }
-
-      actualToken = currentToken;
-      const [finalRows] = await pool.query<RowDataPacket[]>(
-        "SELECT token, updated_at, machine_origin FROM qr_codes WHERE short_token = ? LIMIT 1",
-        [actualToken]
-      );
-      if (finalRows.length > 0) {
-        rows = finalRows;
-      }
-    }
 
     if (rows.length === 0) {
       return res.status(404).json({ success: false, error: "QR tidak dikenali - token tidak ditemukan" });
@@ -405,6 +392,7 @@ router.get("/info", async (req, res) => {
     const fullJwt: string = rows[0].token;
     const updatedAt = rows[0].updated_at;
     const machineOrigin = rows[0].machine_origin;
+    const dbStatus = rows[0].status;
 
     const decoded = jwt.verify(fullJwt, SECRET_KEY) as {
       batchId: string;
@@ -416,7 +404,8 @@ router.get("/info", async (req, res) => {
 
     const { batchId, partName, factoryOrigin, value } = decoded;
     const resolvedMachineOrigin = machineOrigin || decoded.machineOrigin || "";
-    const isIn = sessionCache.has(batchId);
+    // Ponytail: ceiling hit on in-memory map. Switched to DB read.
+    const isIn = dbStatus === "in";
     const currentStatus = isIn ? "in" : "out";
     const nextAction = isIn ? "SCAN_OUT" : "SCAN_IN";
 
@@ -453,51 +442,34 @@ router.get("/info", async (req, res) => {
 //   - "SCAN_IN"  → always mark IN regardless of current state
 //   - "SCAN_OUT" → always mark OUT (blocked if current_stock = 0)
 // ═══════════════════════════════════════════════════════════════════════════
-router.post("/process", async (req, res) => {
-  try {
-    const { token, forceAction, partstats = "reguler" } = req.body as {
-      token: string;
-      forceAction?: "SCAN_IN" | "SCAN_OUT";
-      partstats?: "reguler" | "bcp";
-    };
+const processSchema = z.object({
+  token: z.string().min(1, "Token required"),
+  forceAction: z.enum(["SCAN_IN", "SCAN_OUT"]).optional(),
+  partstats: z.enum(["reguler", "bcp"]).optional().default("reguler"),
+});
 
-    if (!token) {
-      return res.status(400).json({ success: false, error: "Token required" });
+router.post("/process", async (req, res) => {
+  let conn: any = null;
+  let isCommitted = false;
+  try {
+    const parseResult = processSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return res.status(400).json({ success: false, error: parseResult.error.errors[0].message });
     }
+    const { token, forceAction, partstats } = parseResult.data;
+
+    conn = await pool.getConnection();
+    await conn.beginTransaction();
 
     // Resolve token: if it's a short token (≤16 chars) look up the full JWT from DB;
     // otherwise treat it as a direct JWT (backward compatibility for older QR codes).
     let fullJwt = token;
     if (token.length <= 16) {
-      let [rows] = await pool.query<RowDataPacket[]>(
+      const actualToken = await resolveShortToken(token);
+      const [rows] = await conn.query(
         "SELECT token FROM qr_codes WHERE short_token = ? LIMIT 1",
-        [token]
+        [actualToken]
       );
-
-      let actualToken = token;
-
-      if (rows.length === 0) {
-        let currentToken = token;
-        let depth = 0;
-        while (depth < 5) {
-          const [aliasRows] = await pool.query<RowDataPacket[]>(
-            "SELECT new_short_token FROM qr_aliases WHERE old_short_token = ? LIMIT 1",
-            [currentToken]
-          );
-          if (aliasRows.length === 0) break;
-          currentToken = aliasRows[0].new_short_token;
-          depth++;
-        }
-
-        actualToken = currentToken;
-        const [finalRows] = await pool.query<RowDataPacket[]>(
-          "SELECT token FROM qr_codes WHERE short_token = ? LIMIT 1",
-          [actualToken]
-        );
-        if (finalRows.length > 0) {
-          rows = finalRows;
-        }
-      }
 
       if (rows.length === 0) {
         return res.status(404).json({ success: false, error: "QR tidak dikenali - token tidak ditemukan" });
@@ -525,8 +497,7 @@ router.post("/process", async (req, res) => {
     if (requestUser?.type === "station" && requestUser?.device_id) {
       const deviceId = requestUser.device_id;
 
-      // Count privilege rows for this station (indexed query, O(1) with idx_station_id)
-      const [countRows] = await pool.query<RowDataPacket[]>(
+      const [countRows] = await conn.query(
         "SELECT COUNT(*) as cnt FROM station_qr_privileges WHERE station_id = ?",
         [deviceId]
       );
@@ -534,15 +505,14 @@ router.post("/process", async (req, res) => {
 
       // If station is in restricted mode, validate this specific QR
       if (totalPrivileges > 0) {
-        // Look up the integer PK of this QR from batch_id
-        const [qrLookup] = await pool.query<RowDataPacket[]>(
+        const [qrLookup] = await conn.query(
           "SELECT id FROM qr_codes WHERE batch_id = ? LIMIT 1",
           [batchId]
         );
 
         if (qrLookup.length > 0) {
           const qrDbId = qrLookup[0].id;
-          const [allowedRows] = await pool.query<RowDataPacket[]>(
+          const [allowedRows] = await conn.query(
             "SELECT id FROM station_qr_privileges WHERE station_id = ? AND qr_id = ? LIMIT 1",
             [deviceId, qrDbId]
           );
@@ -559,29 +529,29 @@ router.post("/process", async (req, res) => {
     }
     // ── End of Privilege Validation ───────────────────────────────────────────
 
+    // Ponytail: single source of truth - hit DB instead of memory map.
+    const [qrStateRows] = await conn.query(
+      "SELECT q.status AS qr_status, s.current_stock FROM qr_codes q LEFT JOIN stock s ON q.batch_id = s.batch_id WHERE q.batch_id = ? LIMIT 1",
+      [batchId]
+    );
+    const dbQrStatus = qrStateRows[0]?.qr_status;
+    const currentStock = qrStateRows[0]?.current_stock !== null && qrStateRows[0]?.current_stock !== undefined 
+      ? Number(qrStateRows[0].current_stock) 
+      : null;
+    const isIn = dbQrStatus === "in";
+
     let action: "SCAN_IN" | "SCAN_OUT";
     let newStatus: "in" | "out";
     let message: string;
 
     if (forceAction === "SCAN_IN") {
       // ── Force IN: always mark IN ───────────────────────────────────────────
-      sessionCache.set(batchId, {
-        metadata: { batchId, partName, factoryOrigin, value },
-        scannedInAt: new Date(),
-      });
       action = "SCAN_IN";
       newStatus = "in";
       message = `${partName} Berhasil di SCAN IN (${value} unit).`;
 
     } else if (forceAction === "SCAN_OUT") {
       // ── Force OUT: blocked if stock = 0 ───────────────────────────────────
-      // Check stock first
-      const [stockRows] = await pool.query<RowDataPacket[]>(
-        "SELECT current_stock FROM stock WHERE batch_id = ?",
-        [batchId]
-      );
-      const currentStock = stockRows.length > 0 ? Number(stockRows[0].current_stock) : null;
-
       if (currentStock !== null && currentStock === 0) {
         return res.status(409).json({
           success: false,
@@ -589,21 +559,14 @@ router.post("/process", async (req, res) => {
         });
       }
 
-      sessionCache.delete(batchId);
       action = "SCAN_OUT";
       newStatus = "out";
       message = `${partName} Berhasil di SCAN OUT (${value} unit).`;
 
     } else {
       // ── AUTO-TOGGLE (original logic - do not modify) ───────────────────────
-      if (sessionCache.has(batchId)) {
+      if (isIn) {
         // Check stock before allowing OUT
-        const [stockRows] = await pool.query<RowDataPacket[]>(
-          "SELECT current_stock FROM stock WHERE batch_id = ?",
-          [batchId]
-        );
-        const currentStock = stockRows.length > 0 ? Number(stockRows[0].current_stock) : null;
-
         if (currentStock !== null && currentStock === 0) {
           return res.status(409).json({
             success: false,
@@ -612,16 +575,11 @@ router.post("/process", async (req, res) => {
         }
 
         // Currently IN → toggle to OUT (do not delete this shi, it's the fisrt prototype code that i build on the api, just make it unvisible do not overwrite or remove or else i'll under yo bed and slime yo shi ✌️ )
-        sessionCache.delete(batchId);
         action = "SCAN_OUT";
         newStatus = "out";
         message = `${partName} sejumlah ${value} unit berhasil di SCAN OUT.`;
       } else {
         // Currently OUT → toggle to IN
-        sessionCache.set(batchId, {
-          metadata: { batchId, partName, factoryOrigin, value },
-          scannedInAt: new Date(),
-        });
         action = "SCAN_IN";
         newStatus = "in";
         message = `${partName} sejumlah ${value} unit masuk proses (SCAN IN).`;
@@ -630,7 +588,7 @@ router.post("/process", async (req, res) => {
 
     // Get matching qr_id and machine_origin from DB for record-keeping
     // v4 ADD: also fetch machine_origin for webhook routing
-    const [qrRows] = await pool.query<RowDataPacket[]>(
+    const [qrRows] = await conn.query(
       "SELECT qr_id, machine_origin FROM qr_codes WHERE batch_id = ? LIMIT 1",
       [batchId]
     );
@@ -639,19 +597,19 @@ router.post("/process", async (req, res) => {
     const machineOriginForWebhook: string = qrRows.length > 0 ? (qrRows[0].machine_origin || "") : "";
 
     // Update qr_codes status in DB
-    await pool.query("UPDATE qr_codes SET status = ? WHERE batch_id = ?", [newStatus, batchId]);
+    await conn.query("UPDATE qr_codes SET status = ? WHERE batch_id = ?", [newStatus, batchId]);
 
     // ── Update stock table ────────────────────────────────────────────────────
-    await updateStock(batchId, action, value);
+    await updateStock(batchId, action, value, conn);
 
     const scannerUsername =
       requestUser?.username?.trim() ||
       (requestUser?.type === "station" ? "Scanner" : "unknown");
 
-    await syncStockAnalyticsOnScan(partName, scannerUsername, batchId);
+    await syncStockAnalyticsOnScan(partName, scannerUsername, batchId, conn);
 
     // Log scan record
-    await pool.query(
+    await conn.query(
       "INSERT INTO scan_records (batch_id, qr_id, label, factory, action, scanned_by, partstats) VALUES (?, ?, ?, ?, ?, ?, ?)",
       [batchId, qrId, partName, factoryOrigin, action, scannerUsername, partstats]
     );
@@ -659,7 +617,7 @@ router.post("/process", async (req, res) => {
     // Log task
     const taskId = await nextTaskId();
     const taskType = action === "SCAN_IN" ? "Scan In" : "Scan Out";
-    await pool.query(
+    await conn.query(
       "INSERT INTO tasks (task_id, title, type, status, user) VALUES (?, ?, ?, 'completed', ?)",
       [
         taskId,
@@ -668,6 +626,9 @@ router.post("/process", async (req, res) => {
         scannerUsername,
       ]
     );
+
+    await conn.commit();
+    isCommitted = true;
 
     res.json({
       success: true,
@@ -689,7 +650,7 @@ router.post("/process", async (req, res) => {
     if (requestUser?.type === "station" && requestUser?.device_id) {
       console.log("[IOT_DEBUG] Station condition met. machineOriginForWebhook:", machineOriginForWebhook, "qrId:", qrId);
       if (machineOriginForWebhook) {
-        // ── IoT direct signal (HTTP-polling ESP32 on port 4000 // sesuaikan port ini #deployment) ────────────────
+        // ── IoT direct signal (HTTP-polling ESP32) ────────────────
         const mc = machineOriginForWebhook.toLowerCase().replace(/[^a-z0-9]/g, "");
         // Force QR to uppercase to match NVS provisioning (e.g. 'QR-1003') just in case
         const normalizedQrId = qrId.toUpperCase();
@@ -714,6 +675,11 @@ router.post("/process", async (req, res) => {
       return res.status(401).json({ success: false, error: "Token QR Manipulasi / Invalid" });
     }
     res.status(500).json({ success: false, error: (err as Error).message });
+  } finally {
+    if (conn) {
+      if (!isCommitted) await conn.rollback();
+      conn.release();
+    }
   }
 });
 

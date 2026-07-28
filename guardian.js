@@ -3,7 +3,7 @@
  *
  * Process manager for the Pixel Scan Dashboard.
  * Spawns two processes in parallel:
- *   1. Express API server  (server/index.ts  → port 4000 // sesuaikan port ini #deployment)
+ *   1. Express API server  (server/index.ts  → port 4000)
  *   2. TanStack Start SSR  (dist/server/ → port 3000)  — production only
  *
  * In development (npm run dev:all) only the API is spawned here;

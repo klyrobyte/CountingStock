@@ -30,15 +30,7 @@ setInterval(() => {
   }
 }, 5 * 60 * 1000);
 
-function getClientIp(req: Request): string {
-  // Trust X-Forwarded-For when behind a reverse proxy (nginx, cloudflare)
-  const forwarded = req.headers["x-forwarded-for"];
-  if (forwarded) {
-    return String(forwarded).split(",")[0].trim();
-  }
-  return req.ip || req.socket?.remoteAddress || "unknown";
-}
-
+import { getClientIp } from "../lib/request.js";
 /**
  * loginRateLimiter - apply this middleware BEFORE login route handlers.
  *

@@ -989,7 +989,7 @@
 
     // ─── Auth ────────────────────────────────────────────────────────────────────
     // The UI uses RELATIVE URLs (/api/...) — the gate service at port 4001
-    // proxies these to the main backend at port 4000 // sesuaikan port ini #deployment (no CORS issues).
+    // proxies these to the main backend (no CORS issues).
     function doLogin() {
       const tok = document.getElementById('authToken').value.trim();
       if (!tok) { showAuthErr('Token tidak boleh kosong'); return; }
