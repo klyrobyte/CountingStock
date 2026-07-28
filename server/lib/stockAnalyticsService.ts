@@ -176,13 +176,14 @@ export async function syncShikakeSettingsToAnalytics(
 export async function syncStockAnalyticsOnScan(
   partName: string,
   scannerUsername: string,
-  batchId?: string
+  batchId?: string,
+  conn: any = pool
 ): Promise<void> {
   const normalizedName = partName.trim().toUpperCase();
   let stockActual: number | null = null;
 
   if (batchId) {
-    const [stockRows] = await pool.query<RowDataPacket[]>(
+    const [stockRows] = await conn.query(
       "SELECT current_stock FROM stock WHERE batch_id = ? LIMIT 1",
       [batchId]
     );
@@ -191,14 +192,14 @@ export async function syncStockAnalyticsOnScan(
     }
   }
 
-  const [rows] = await pool.query<RowDataPacket[]>(
+  const [rows] = await conn.query(
     `SELECT * FROM stock_analytics
      WHERE UPPER(part_name) = ?`,
     [normalizedName]
   );
 
   if (!rows.length) {
-    const [mpRows] = await pool.query<RowDataPacket[]>(
+    const [mpRows] = await conn.query(
       `SELECT part_number, part_name, model, machine FROM master_parts
        WHERE UPPER(part_name) = ? AND machine IS NOT NULL AND machine != ''`,
       [normalizedName]
@@ -210,7 +211,7 @@ export async function syncStockAnalyticsOnScan(
         model: mpRows[0].model as string,
         machine: mpRows[0].machine as string,
       });
-      const [again] = await pool.query<RowDataPacket[]>(
+      const [again] = await conn.query(
         `SELECT * FROM stock_analytics WHERE UPPER(part_name) = ?`,
         [normalizedName]
       );
@@ -223,19 +224,26 @@ export async function syncStockAnalyticsOnScan(
 
   for (const row of rows) {
     if (stockActual !== null) {
-      await pool.query(
-        "UPDATE stock_analytics SET stock_actual = ? WHERE id = ?",
-        [stockActual, row.id]
-      );
+      row.stock_actual = stockActual;
     }
-    await pool.query(
-      "UPDATE stock_analytics SET jam_update = ?, pic = ? WHERE id = ?",
-      [jamUpdate, pic, row.id]
+    
+    const computed = computeStockAnalytics({
+      qtyPerDay: Number(row.qty_per_day),
+      stockActual: Number(row.stock_actual),
+      shikake: Number(row.shikake),
+      minPlaceholder: Number(row.min_val),
+    });
+
+    await conn.query(
+      `UPDATE stock_analytics SET 
+        stock_actual = ?, jam_update = ?, pic = ?,
+        stok_jam = ?, judge = ?, qty_per_hour = ?, max_val = ?
+       WHERE id = ?`,
+      [
+        row.stock_actual, jamUpdate, pic,
+        computed.stockJam, computed.judge, computed.qtyPerHour, computed.max,
+        row.id
+      ]
     );
-    const [fresh] = await pool.query<RowDataPacket[]>(
-      "SELECT * FROM stock_analytics WHERE id = ?",
-      [row.id]
-    );
-    if (fresh[0]) await persistComputedFields(fresh[0]);
   }
 }

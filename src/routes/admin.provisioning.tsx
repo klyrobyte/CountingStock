@@ -253,7 +253,7 @@ function ProvisioningPage() {
       wifi_ssid: ssid,
       wifi_pass: pass,
       server_ip: serverIp,
-      port: 4000, // sesuaikan port ini #deployment   // Express backend port — ESP32 polls GET /iot/:mc/:qr here
+      port: Number(import.meta.env.VITE_API_PORT) || 4000,
       machine_code: mcNormalized,
       listen_qrs: listenQrsArr,
       webhook_path: webhookPath,
@@ -573,7 +573,7 @@ function ProvisioningPage() {
                     className="w-full rounded-lg border border-border-surface bg-card-elevated px-3 py-2 text-sm outline-none focus:border-[#C05C30]"
                   />
                   <p className="text-[10px] text-muted-foreground mt-1">
-                    IP komputer yang menjalankan @betogate TCP Server (port 4000).
+                    IP komputer yang menjalankan API Server (port {import.meta.env.VITE_API_PORT || 4000}).
                   </p>
                 </div>
 

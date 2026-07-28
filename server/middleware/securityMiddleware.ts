@@ -1,31 +1,22 @@
 import { Request, Response, NextFunction } from "express";
 import cors from "cors";
 
+import { config } from "../config.js";
+
 // ── CORS - restrict to known origins ──────────────────────────────────────────
-// In production set ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
+// In production set ALLOWED_ORIGINS=https://yourdomain.com,http://192.168.1.100:3000
 // In development defaults to localhost Vite ports.
-const rawOrigins = process.env.ALLOWED_ORIGINS || "";
+const rawOrigins = config.ALLOWED_ORIGINS;
 const allowedOrigins: string[] = rawOrigins
   ? rawOrigins.split(",").map((o) => o.trim()).filter(Boolean)
   : [
     "http://localhost:5173",
     "http://localhost:4173",
     "http://localhost:3000",
-    "http://localhost:8080",   // Vite dev server (current port)
+    "http://localhost:4000",
+    "http://localhost:8080",
     "http://127.0.0.1:5173",
     "http://127.0.0.1:8080",
-    "http://172.19.82.34:3000", // this for prevent cors blocked on production change with subdomain if you have it yah 
-    "http://172.19.82.34:4000 //ganti endpoint ini saat deployment",
-    "http://172.19.82.34:8080",
-    "http://172.19.82.34:5173",
-    "http://172.19.82.34:4173",
-    //this section are for local development, you should add port 3000,4000 // sesuaikan port ini #deployment,8080,5173,4173,...
-    //
-    "http://10.137.28.152:5173",
-    "http://10.137.28.152:4000 //ganti endpoint ini saat deployment",
-    "http://10.137.28.152:8080",
-    "http://10.137.28.152:4001",
-    "http://10.137.28.152:3000",
   ];
 
 export const configuredCors = cors({

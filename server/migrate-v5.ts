@@ -7,6 +7,7 @@
 import mysql from "mysql2/promise";
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import { config } from "./config.js";
 
 dotenv.config();
 
@@ -25,14 +26,14 @@ async function columnExists(
 
 async function migrate() {
   const conn = await mysql.createConnection({
-    host: process.env.DB_HOST || "localhost",
-    port: Number(process.env.DB_PORT) || 3306,
-    user: process.env.DB_USER || "root",
-    password: process.env.DB_PASSWORD || "",
-    database: process.env.DB_NAME || "pixel_scan_dashboard",
+    host: config.DB.host,
+    port: config.DB.port,
+    user: config.DB.user,
+    password: config.DB.password,
+    database: config.DB.database,
   });
 
-  const SECRET_KEY = process.env.JWT_SECRET || "pixel-scan-secret-key-2026";
+  const SECRET_KEY = config.JWT_SECRET;
 
   console.log("🔄 Running V5 migration...\n");
 

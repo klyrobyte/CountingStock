@@ -23,7 +23,9 @@ router.get("/", async (req, res) => {
       params.push(factory);
     }
 
-    query += " ORDER BY part_name ASC";
+    const limit = Number(req.query.limit) || 1000;
+    query += " ORDER BY part_name ASC LIMIT ?";
+    params.push(limit as any);
 
     const [rows] = await pool.query<RowDataPacket[]>(query, params);
     res.json({ success: true, data: rows });

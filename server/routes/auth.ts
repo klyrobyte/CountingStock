@@ -1,15 +1,12 @@
 import { Router } from "express";
 import jwt from "jsonwebtoken";
-import crypto from "crypto";
 import pool from "../db.js";
 import type { RowDataPacket } from "mysql2";
+import { config } from "../config.js";
+import { verifyHash, hashPassword } from "../lib/crypto.js";
 
 const router = Router();
-const SECRET_KEY = process.env.JWT_SECRET || "pixel-scan-secret-key-2026"; //change from .env
-
-function hashPassword(pw: string): string {
-  return crypto.createHash("sha256").update(pw).digest("hex");
-}
+const SECRET_KEY = config.JWT_SECRET;
 
 // ═══════════════════════════════════════════════════════════════════════════
 // POST /api/auth/login
@@ -35,9 +32,15 @@ router.post("/login", async (req, res) => {
     }
 
     const user = rows[0];
-    const valid = user.password_hash === hashPassword(password);
+    const { valid, needsRehash } = await verifyHash(password, user.password_hash);
     if (!valid) {
       return res.status(401).json({ success: false, error: "Username atau password salah" });
+    }
+
+    if (needsRehash) {
+      // Ponytail: Silent upgrade from SHA-256 to bcrypt on successful login
+      const newHash = await hashPassword(password);
+      await pool.query("UPDATE users SET password_hash = ? WHERE id = ?", [newHash, user.id]);
     }
 
     const role =

@@ -1,15 +1,12 @@
 import { Router } from "express";
-import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import pool from "../db.js";
 import type { RowDataPacket, ResultSetHeader } from "mysql2";
+import { config } from "../config.js";
+import { hashPin, verifyHash } from "../lib/crypto.js";
 
 const router = Router();
-const SECRET_KEY = process.env.JWT_SECRET || "pixel-scan-secret-key-2026";
-
-function hashPin(pin: string): string {
-  return crypto.createHash("sha256").update(pin).digest("hex");
-}
+const SECRET_KEY = config.JWT_SECRET;
 
 // ═══════════════════════════════════════════════════════════════════════════
 // GET /api/devices - list all devices
@@ -20,8 +17,8 @@ router.get("/", async (_req, res) => {
       "SELECT * FROM devices ORDER BY status ASC, name ASC"
     );
     res.json({ success: true, data: rows });
-  } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+  } catch (err: unknown) {
+    res.status(500).json({ success: false, error: (err as Error).message });
   }
 });
 
@@ -60,7 +57,7 @@ router.post("/", async (req, res) => {
         type,
         location.trim(),
         device_role,
-        hashPin(String(pin)),
+        await hashPin(String(pin)),
         active_status,
       ]
     );
@@ -71,11 +68,11 @@ router.post("/", async (req, res) => {
     );
 
     res.status(201).json({ success: true, data: newRow[0] });
-  } catch (err: any) {
-    if (err.message?.includes("Duplicate entry")) {
+  } catch (err: unknown) {
+    if ((err as Error).message?.includes("Duplicate entry")) {
       return res.status(409).json({ success: false, error: "Device Code sudah digunakan." });
     }
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, error: (err as Error).message });
   }
 });
 
@@ -112,7 +109,7 @@ router.put("/:id", async (req, res) => {
     if (active_status !== undefined) { updates.push("active_status = ?"); params.push(active_status); }
     if (pin !== undefined && String(pin).trim() !== "") {
       updates.push("pin_hash = ?");
-      params.push(hashPin(String(pin)));
+      params.push(await hashPin(String(pin)));
     }
 
     if (updates.length === 0) {
@@ -124,11 +121,11 @@ router.put("/:id", async (req, res) => {
 
     await pool.query(`UPDATE devices SET ${updates.join(", ")} WHERE id = ?`, params);
     res.json({ success: true });
-  } catch (err: any) {
-    if (err.message?.includes("Duplicate entry")) {
+  } catch (err: unknown) {
+    if ((err as Error).message?.includes("Duplicate entry")) {
       return res.status(409).json({ success: false, error: "Device Code sudah digunakan." });
     }
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({ success: false, error: (err as Error).message });
   }
 });
 
@@ -140,8 +137,8 @@ router.delete("/:id", async (req, res) => {
     const { id } = req.params;
     await pool.query("DELETE FROM devices WHERE id = ?", [id]);
     res.json({ success: true, message: "Device berhasil dihapus." });
-  } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+  } catch (err: unknown) {
+    res.status(500).json({ success: false, error: (err as Error).message });
   }
 });
 
@@ -172,8 +169,14 @@ router.post("/station-login", async (req, res) => {
     }
 
     const device = rows[0];
-    if (device.pin_hash !== hashPin(String(pin))) {
+    const { valid, needsRehash } = await verifyHash(String(pin), device.pin_hash);
+    if (!valid) {
       return res.status(401).json({ success: false, error: "PIN salah." });
+    }
+
+    if (needsRehash) {
+      const newHash = await hashPin(String(pin));
+      await pool.query("UPDATE devices SET pin_hash = ? WHERE id = ?", [newHash, device.id]);
     }
 
     // Mark device as online
@@ -207,8 +210,8 @@ router.post("/station-login", async (req, res) => {
         },
       },
     });
-  } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message });
+  } catch (err: unknown) {
+    res.status(500).json({ success: false, error: (err as Error).message });
   }
 });
 

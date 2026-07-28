@@ -37,43 +37,9 @@ const DEFAULT_MODULES: Module[] = [
         icon: "M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
         route: "#",
     },
-    {
-        title: "Reports",
-        description: "Generate and export production reports by date range, material type, or station.",
-        icon: "M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
-        route: "#",
-    },
-    {
-        title: "Reports",
-        description: "Generate and export production reports by date range, material type, or station.",
-        icon: "M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
-        route: "#",
-    },
-    {
-        title: "Reports",
-        description: "Generate and export production reports by date range, material type, or station.",
-        icon: "M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
-        route: "#",
-    },
 ];
 
-// ─── System-theme detection hook ──────────────────────────────────────────────
-function useSystemTheme(): boolean /* isDark */ {
-    const [isDark, setIsDark] = useState<boolean>(() =>
-        typeof window !== "undefined"
-            ? window.matchMedia("(prefers-color-scheme: dark)").matches
-            : false
-    );
-
-    useEffect(() => {
-        const mq = window.matchMedia("(prefers-color-scheme: dark)");
-        const handler = (e: MediaQueryListEvent) => setIsDark(e.matches);
-        mq.addEventListener("change", handler);
-        return () => mq.removeEventListener("change", handler);
-    }, []);
-
-    return isDark;
-}
+import { useTheme } from "@/hooks/use-theme";
 
 // ─── Theme-aware AppLayout ────────────────────────────────────────────────────
 
@@ -350,7 +316,8 @@ function IndexContent({
 
 // ─── Exported Landing Page (used by index.tsx) ─────────────────────────────────
 export function DashboardLandingPage() {
-    const isDark = useSystemTheme();
+    const { theme } = useTheme();
+    const isDark = theme === "dark";
     // In landing mode (unauthenticated), user is explicitly null
     return (
         <AppLayout isDark={isDark} user={null}>
