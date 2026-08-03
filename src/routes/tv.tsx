@@ -55,8 +55,8 @@ export const Route = createFileRoute("/tv")({
   validateSearch: searchSchema,
   head: () => ({
     meta: [
-      { title: "STOCK MONITORING - TV" },
-      { name: "description", content: "Factory stock monitoring display" },
+      { title: "REALTIME STOCK MONITORING - TV" },
+      { name: "description", content: "REALTIME Factory stock monitoring display" },
     ],
   }),
   component: TvPage,
@@ -342,7 +342,7 @@ function TvPage() {
         <header className="tv-header">
           <div className="tv-header-title">
             <div>
-              STOCK MONITORING
+              REALTIME STOCK MONITORING
               <div className="tv-header-subtitle">REAL-TIME PRODUCTION INTELLIGENCE</div>
             </div>
           </div>

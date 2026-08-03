@@ -205,3 +205,9 @@ html.light {
     border-radius: 9999px;
   }
 }
+
+/* rizky: global override for Recharts tick text to avoid touching JS chart configs (ceiling: dynamic per-chart theming requires Recharts tick element mapping) */
+.recharts-text.recharts-cartesian-axis-tick-value {
+  fill: #ffffff !important;
+  font-weight: 300 !important;
+}
